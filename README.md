@@ -1,4 +1,4 @@
-# Wild Watercolors
+# Barnyard Breakroom
 
 The newest National Geographic animal story each morning, painted as a cute storybook watercolor.
 
