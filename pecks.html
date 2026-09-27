@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Hen Pecks: a daily animal-expression puzzle from Barnyard Breakroom. Five pecks, one hint, one phrase to crack.">
+<meta name="description" content="Hen Pecks: a daily animal-expression puzzle from Barnyard Breakroom. Seven pecks, one hint, one phrase to crack.">
 <title>Hen Pecks · Barnyard Breakroom</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
@@ -165,8 +165,8 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
       <summary>How to play</summary>
       <ol>
         <li>Today's answer is an animal expression. Each blank is one letter.</li>
-        <li>You get <b>5 pecks</b>. A peck is either one vowel (A E I O U Y) or one consonant pair, like <b>BC</b> or <b>TZ</b>. Every matching letter shows up.</li>
-        <li>After your 5th peck you get a hint. Type the letters that are still missing.</li>
+        <li>You get <b>7 pecks</b>. A peck is either one vowel (A E I O U Y) or one consonant pair, like <b>BC</b> or <b>TZ</b>. Every matching letter shows up.</li>
+        <li>After your 7th peck you get a hint. Type the letters that are still missing.</li>
         <li>You have 3 tries. On a wrong try, the letters you got right stay put.</li>
       </ol>
     </details>
@@ -237,7 +237,7 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
 /* ---------- Puzzles ----------
    One per day, in order, starting on START_DATE. Add more to the end any time.
    p: the phrase (capitals; apostrophes and hyphens are shown for free)
-   hint: shown after the 5th peck
+   hint: shown after the last peck
    meaning + blurb: shown when the round ends */
 const START_DATE = "2026-09-27";
 const PUZZLES = [
@@ -306,7 +306,7 @@ const PUZZLES = [
 /* Consonant pairs, as drawn on the notepad: BC DF across the top, then columns. */
 const VOWELS = ["A","E","I","O","U","Y"];
 const PAIRS  = ["BC","DF","GL","HM","JN","KP","QV","RW","SX","TZ"];
-const MAX_PECKS = 5, MAX_TRIES = 3, STORE = "henpecks:v1";
+const MAX_PECKS = 7, MAX_TRIES = 3, STORE = "henpecks:v1";
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------- Date helpers (local time) ---------- */
