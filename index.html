@@ -35,6 +35,12 @@
 body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 Karla,system-ui,sans-serif;padding-inline:16px;padding-block:28px 56px}
 .wrap{max-width:1040px;margin:0 auto;display:grid;gap:40px}
 header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px}
+nav{display:flex;gap:18px;font:500 13px/1.4 Karla,sans-serif;letter-spacing:.08em;text-transform:uppercase}
+nav a{color:var(--ink-soft);text-decoration:none;border-bottom:2px solid transparent;padding-bottom:2px}
+nav a[aria-current="page"]{color:var(--ink);border-color:var(--ochre)}
+nav a:hover{color:var(--ink)}
+.headside{display:grid;gap:6px;justify-items:end}
+@media (max-width:760px){.headside{justify-items:start}}
 h1{font:400 clamp(30px,5vw,46px)/1.05 "Young Serif",Georgia,serif;margin:0;letter-spacing:-.01em}
 h1 span{color:var(--cobalt)}
 .tag{font:500 13px/1.4 Karla,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
@@ -105,7 +111,10 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
 <div class="wrap">
   <header>
     <h1>Barnyard <span>Breakroom</span></h1>
-    <div class="tag">A new animal story, painted each morning</div>
+    <div class="headside">
+      <nav aria-label="Site"><a href="./" aria-current="page">Daily story</a><a href="pecks.html">Hen Pecks</a></nav>
+      <div class="tag">A new animal story, painted each morning</div>
+    </div>
   </header>
 
   <article class="spread" id="spread" aria-live="polite">

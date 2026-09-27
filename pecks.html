@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Hen Pecks: a daily animal-expression puzzle from Barnyard Breakroom. Five pecks, one hint, one phrase to crack.">
+<title>Hen Pecks · Barnyard Breakroom</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Karla:wght@400;500;700&family=Caveat:wght@500;700&display=swap">
+<style>
+:root{
+  --paper:#EEF2EC; --sheet:#FCFBF7; --ink:#27352F; --ink-soft:#5B6A63;
+  --cobalt:#3A68AE; --ochre:#D39A2F; --rule:#D5DDD6; --shadow:rgba(39,53,47,.14);
+  --plate:#FBF7EE; --tile:#FFFFFF; --tile-line:#B9C5BD; --hit:#F3D9A4; --hit-ink:#5A3F0B;
+  --good:#6E9E6A; --bad:#C0584A; --miss:#DCE2DD;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#161D1B; --sheet:#1F2826; --ink:#E7ECE6; --ink-soft:#A3B1AA;
+    --cobalt:#8DB0EA; --ochre:#E8B85A; --rule:#34403C; --shadow:rgba(0,0,0,.45);
+    --plate:#F4EFE3; --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD;
+    --good:#86B882; --bad:#E07B6C; --miss:#2B3532; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#161D1B; --sheet:#1F2826; --ink:#E7ECE6; --ink-soft:#A3B1AA;
+  --cobalt:#8DB0EA; --ochre:#E8B85A; --rule:#34403C; --shadow:rgba(0,0,0,.45);
+  --plate:#F4EFE3; --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD;
+  --good:#86B882; --bad:#E07B6C; --miss:#2B3532; color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 Karla,system-ui,sans-serif;padding-inline:16px;padding-block:28px 56px}
+.wrap{max-width:760px;margin:0 auto;display:grid;gap:28px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px}
+h1{font:400 clamp(30px,5vw,46px)/1.05 "Young Serif",Georgia,serif;margin:0;letter-spacing:-.01em}
+h1 a{color:inherit;text-decoration:none}
+h1 span{color:var(--cobalt)}
+nav{display:flex;gap:18px;font:500 13px/1.4 Karla,sans-serif;letter-spacing:.08em;text-transform:uppercase}
+nav a{color:var(--ink-soft);text-decoration:none;border-bottom:2px solid transparent;padding-bottom:2px}
+nav a[aria-current="page"]{color:var(--ink);border-color:var(--ochre)}
+nav a:hover{color:var(--ink)}
+
+.sheet{background:var(--sheet);border-radius:6px;box-shadow:0 1px 0 var(--rule),0 18px 40px -22px var(--shadow);padding:28px;display:grid;gap:22px}
+@media (max-width:560px){.sheet{padding:18px 14px;gap:18px}}
+.titlebar{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 16px}
+.titlebar h2{font:400 clamp(24px,3.4vw,30px)/1.15 "Young Serif",Georgia,serif;margin:0}
+.titlebar small{color:var(--ink-soft);font-size:14px}
+details.how{font-size:15px;color:var(--ink-soft);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:8px 0}
+details.how summary{cursor:pointer;color:var(--ink);font-weight:700;list-style:none}
+details.how summary::-webkit-details-marker{display:none}
+details.how summary::before{content:"+ ";color:var(--ochre)}
+details.how[open] summary::before{content:"– "}
+details.how ol{margin:8px 0 4px;padding-left:20px}
+details.how li{margin:2px 0}
+
+/* Board */
+.board{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 22px;padding:6px 0}
+.word{display:flex;gap:5px}
+.tile{--s:clamp(26px,7.4vw,42px);width:var(--s);height:calc(var(--s)*1.15);border:2px solid var(--tile-line);border-radius:6px;background:var(--tile);display:grid;place-items:center;font:400 calc(var(--s)*.58)/1 "Young Serif",Georgia,serif;color:var(--ink);text-transform:uppercase;user-select:none;position:relative}
+.tile.punct{border-color:transparent;background:transparent;width:auto;min-width:10px}
+.tile.shown{background:var(--hit);border-color:var(--ochre);color:var(--hit-ink)}
+.tile.locked{background:var(--good);border-color:var(--good);color:#fff}
+.tile.slot{cursor:pointer;border-style:dashed}
+.tile.slot.filled{border-style:solid;color:var(--cobalt)}
+.tile.slot.active{border-color:var(--cobalt);box-shadow:0 0 0 3px color-mix(in srgb,var(--cobalt) 30%,transparent)}
+.tile.pop{animation:pop .5s cubic-bezier(.3,1.6,.5,1) both}
+.tile.shake{animation:shake .45s ease both;border-color:var(--bad)}
+.tile.dance{animation:dance .9s ease both}
+@keyframes pop{0%{transform:rotateX(90deg)}100%{transform:none}}
+@keyframes shake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+@keyframes dance{0%{transform:none}30%{transform:translateY(-16px) rotate(-6deg)}55%{transform:translateY(2px)}75%{transform:translateY(-5px) rotate(3deg)}100%{transform:none}}
+
+/* Pecks tracker */
+.status{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 18px}
+.pecks{display:flex;gap:8px;align-items:center}
+.pecks .lbl{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-right:4px}
+.egg{width:22px;height:28px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;border:2px solid var(--tile-line);background:var(--tile);display:grid;place-items:center;font:700 10px/1 Karla,sans-serif;color:var(--hit-ink)}
+.egg.hit{background:var(--hit);border-color:var(--ochre)}
+.egg.miss{background:var(--miss);border-color:var(--tile-line);color:var(--ink-soft)}
+.msg{font-size:15px;color:var(--ink-soft);min-height:1.5em;text-align:right;flex:1 1 200px}
+.msg.warn{color:var(--bad)}
+
+.hint{background:var(--plate);color:#3F4A44;border-radius:4px;padding:12px 16px;transform:rotate(-.4deg);box-shadow:0 2px 10px var(--shadow)}
+.hint b{font:700 13px/1 Karla,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#9A6A12;display:block;margin-bottom:4px}
+.hint span{font:700 22px/1.25 Caveat,cursive}
+
+/* Keys */
+.pad{display:grid;gap:14px}
+.pad h3{font:700 12px/1 Karla,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 8px}
+.row{display:grid;gap:8px}
+.vowels{grid-template-columns:repeat(6,1fr)}
+.pairs{grid-template-columns:repeat(5,1fr)}
+.key{font:400 20px/1 "Young Serif",Georgia,serif;letter-spacing:.06em;padding:13px 0;border-radius:8px;border:1.5px solid var(--tile-line);background:var(--tile);color:var(--ink);cursor:pointer;touch-action:manipulation}
+.key:hover:not([disabled]){border-color:var(--cobalt);color:var(--cobalt)}
+.key:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
+.key.hit{background:var(--hit);border-color:var(--ochre);color:var(--hit-ink)}
+.key.miss{background:var(--miss);color:var(--ink-soft);text-decoration:line-through;text-decoration-thickness:2px}
+.key[disabled]{cursor:default}
+.kb{display:grid;gap:7px}
+.kb .krow{display:flex;justify-content:center;gap:5px}
+.kb .key{flex:1 1 0;max-width:46px;font-size:17px;padding:14px 0;min-width:0}
+.kb .key.wide{max-width:76px;flex:1.6 1 0;font:700 13px/1 Karla,sans-serif;letter-spacing:.04em}
+.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.btn{font:700 15px/1 Karla,sans-serif;padding:11px 18px;border-radius:999px;border:1.5px solid var(--cobalt);color:var(--cobalt);background:transparent;text-decoration:none;cursor:pointer;display:inline-flex;gap:8px;align-items:center}
+.btn.solid{background:var(--cobalt);color:var(--sheet)}
+.btn:hover{filter:brightness(1.08)}
+.btn:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
+
+/* Result */
+.result{display:grid;grid-template-columns:150px 1fr;gap:22px;align-items:start;border-top:1px solid var(--rule);padding-top:22px}
+@media (max-width:560px){.result{grid-template-columns:1fr;justify-items:center;text-align:center}}
+.result .hen{width:150px;background:var(--plate);border-radius:4px;padding:8px;box-shadow:0 2px 10px var(--shadow);transform:rotate(-1.2deg)}
+.result .hen svg{display:block;width:100%;height:auto}
+.result.won .hen svg .body{animation:hop 1.1s ease-in-out 3}
+@keyframes hop{0%,100%{transform:none}35%{transform:translateY(-14px)}60%{transform:translateY(0)}75%{transform:translateY(-4px)}}
+.result h3{font:400 26px/1.15 "Young Serif",Georgia,serif;margin:0 0 4px}
+.result .verdict{font:700 24px/1.1 Caveat,cursive;color:var(--ochre);margin:0 0 10px}
+.result p{margin:0 0 10px;max-width:60ch}
+.result .meaning{font-weight:700}
+.stats{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--ink-soft);margin:6px 0 14px}
+@media (max-width:560px){.stats,.result .actions{justify-content:center}}
+.stats b{color:var(--ink);font-size:18px;font-family:"Young Serif",Georgia,serif;font-weight:400;margin-right:4px}
+.result .actions{justify-content:flex-start}
+.next{font-size:14px;color:var(--ink-soft);margin-top:12px}
+
+canvas#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:10}
+footer{font-size:13px;color:var(--ink-soft);display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 24px;border-top:1px solid var(--rule);padding-top:16px}
+footer p{margin:0}
+footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.tile.pop,.tile.dance,.tile.shake,.result.won .hen svg .body{animation:none}.hint,.result .hen{transform:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="wc" x="-15%" y="-15%" width="130%" height="130%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="0.6"/>
+    </filter>
+  </defs>
+</svg>
+<canvas id="confetti" hidden></canvas>
+
+<div class="wrap">
+  <header>
+    <h1><a href="./">Barnyard <span>Breakroom</span></a></h1>
+    <nav aria-label="Site"><a href="./">Daily story</a><a href="pecks.html" aria-current="page">Hen Pecks</a></nav>
+  </header>
+
+  <main class="sheet">
+    <div class="titlebar">
+      <h2>Hen Pecks</h2>
+      <small id="puzzleNo"></small>
+    </div>
+
+    <details class="how" id="how">
+      <summary>How to play</summary>
+      <ol>
+        <li>Today's answer is an animal expression. Each blank is one letter.</li>
+        <li>You get <b>5 pecks</b>. A peck is either one vowel (A E I O U Y) or one consonant pair, like <b>BC</b> or <b>TZ</b>. Every matching letter shows up.</li>
+        <li>After your 5th peck you get a hint. Type the letters that are still missing.</li>
+        <li>You have 3 tries. On a wrong try, the letters you got right stay put.</li>
+      </ol>
+    </details>
+
+    <div class="board" id="board" role="group" aria-label="Today's phrase"></div>
+
+    <div class="status">
+      <div class="pecks" id="eggs"><span class="lbl">Pecks</span></div>
+      <div class="msg" id="msg" role="status" aria-live="polite"></div>
+    </div>
+
+    <div class="hint" id="hint" hidden><b>Hint</b><span id="hintText"></span></div>
+
+    <section class="pad" id="peckPad" aria-label="Choose a peck">
+      <div>
+        <h3>Vowels</h3>
+        <div class="row vowels" id="vowels"></div>
+      </div>
+      <div>
+        <h3>Consonant pairs</h3>
+        <div class="row pairs" id="pairs"></div>
+      </div>
+    </section>
+
+    <section class="pad" id="solvePad" aria-label="Fill in the missing letters" hidden>
+      <div class="kb" id="kb"></div>
+    </section>
+
+    <section class="result" id="result" hidden aria-live="polite">
+      <div class="hen" aria-hidden="true">
+        <svg viewBox="0 0 160 140">
+          <ellipse cx="80" cy="128" rx="52" ry="7" fill="#9BB58F" opacity=".5" filter="url(#wc)"/>
+          <g class="body" style="transform-origin:80px 120px">
+            <path d="M40 92 C34 60 58 44 84 50 C94 30 118 26 124 44 C130 60 120 70 118 80 C126 96 110 120 80 120 C58 120 44 108 40 92 Z" fill="#FFFFFF" stroke="#C9B89A" stroke-width="2" filter="url(#wc)"/>
+            <path d="M40 90 C30 84 24 70 30 62 C38 70 42 74 48 76 Z" fill="#F4F0E6" stroke="#C9B89A" stroke-width="2" filter="url(#wc)"/>
+            <path d="M112 30 C114 20 122 22 120 30 C126 22 132 28 126 34 Z" fill="#D9534F" filter="url(#wc)"/>
+            <path d="M128 48 L142 52 L128 56 Z" fill="#E8A93A" filter="url(#wc)"/>
+            <path d="M124 58 C130 60 130 70 124 70 C120 66 120 60 124 58 Z" fill="#D9534F" filter="url(#wc)"/>
+            <circle cx="116" cy="44" r="3.4" fill="#2C2A28"/>
+            <circle cx="117.2" cy="42.8" r="1" fill="#fff"/>
+            <ellipse cx="108" cy="54" rx="6" ry="3.4" fill="#F4A6A0" opacity=".7"/>
+            <path d="M62 80 C72 92 92 94 102 84" fill="none" stroke="#C9B89A" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M72 118 L70 132 M70 132 L64 134 M70 132 L74 135 M90 118 L92 132 M92 132 L86 134 M92 132 L97 135" stroke="#E8A93A" stroke-width="3" stroke-linecap="round" fill="none"/>
+          </g>
+        </svg>
+      </div>
+      <div>
+        <p class="verdict" id="verdict"></p>
+        <h3 id="answer"></h3>
+        <p class="meaning" id="meaning"></p>
+        <p id="blurb"></p>
+        <div class="stats" id="stats"></div>
+        <div class="actions">
+          <button class="btn solid" id="share" type="button">Copy my result</button>
+        </div>
+        <p class="next" id="next"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>A new expression every morning. Everyone gets the same one each day.</p>
+    <p class="credit">Created by Mayuka</p>
+  </footer>
+</div>
+
+<script>
+/* ---------- Puzzles ----------
+   One per day, in order, starting on START_DATE. Add more to the end any time.
+   p: the phrase (capitals; apostrophes and hyphens are shown for free)
+   hint: shown after the 5th peck
+   meaning + blurb: shown when the round ends */
+const START_DATE = "2026-09-27";
+const PUZZLES = [
+  {p:"WHEN PIGS FLY", hint:"A cheeky way to say “that will never happen.”", meaning:"Said of something that will never happen.", blurb:"Flying-pig sayings go back centuries; Scottish proverbs from the 1600s joked about pigs flying “with their tails forward.” Lewis Carroll gave it a nod in Alice’s Adventures in Wonderland, when the Duchess tells Alice she has “just about as much right” to think “as pigs have to fly.”"},
+  {p:"HOLD YOUR HORSES", hint:"What you’d tell someone who is rushing ahead.", meaning:"Slow down and be patient.", blurb:"It started as literal advice to wagon drivers and riders to rein in their animals. By the 1840s American newspapers were printing it (often as “hold your hosses”) as a general call to calm down."},
+  {p:"LET THE CAT OUT OF THE BAG", hint:"Spill a secret, maybe by accident.", meaning:"To reveal a secret.", blurb:"A popular story links it to market tricksters who sold a “piglet” in a sack that turned out to hold a cat. Nobody has proven that tale, but the phrase has been in print since at least the 1760s."},
+  {p:"THE EARLY BIRD CATCHES THE WORM", hint:"A proverb for people who set an alarm.", meaning:"Those who start early get the best chances.", blurb:"This one shows up in John Ray’s 1670 collection of English proverbs. Birds really are busiest at dawn, when worms are still near the surface of cool, damp soil."},
+  {p:"RAINING CATS AND DOGS", hint:"Grab an umbrella, it’s pouring.", meaning:"Raining very heavily.", blurb:"No one knows for sure where it comes from. A 1650s play has it “rain dogs and polecats,” and Jonathan Swift used the modern version in 1738. Theories range from Norse storm myths to flooded city streets."},
+  {p:"BUSY AS A BEE", hint:"Always buzzing from one job to the next.", meaning:"Very busy and hard-working.", blurb:"Geoffrey Chaucer compared people to busy bees in The Canterbury Tales in the late 1300s. Fair enough: a honeybee colony may visit millions of flowers to make a single pound of honey."},
+  {p:"THE LION'S SHARE", hint:"Not half. Much more than half.", meaning:"The largest part of something.", blurb:"It comes from Aesop’s fables. In one, a lion hunts with other animals, then claims every portion of the catch for himself. Over time it softened to mean simply “the biggest piece.”"},
+  {p:"BARKING UP THE WRONG TREE", hint:"Looking for answers in the wrong place.", meaning:"Pursuing a mistaken idea or the wrong person.", blurb:"It comes from American hunting in the early 1800s. A dog would chase a raccoon up a tree and bark at the trunk, sometimes not noticing the raccoon had slipped away through the branches."},
+  {p:"A LITTLE BIRD TOLD ME", hint:"How to share news without naming your source.", meaning:"I heard it from someone I won’t name.", blurb:"The idea is very old. The Book of Ecclesiastes warns that “a bird of the air shall carry the voice,” so be careful what you say, even in private."},
+  {p:"STRAIGHT FROM THE HORSE'S MOUTH", hint:"Information from the most reliable source.", meaning:"Directly from the person who knows best.", blurb:"Horse buyers can tell a horse’s age by looking at its teeth, whatever the seller claims. The phrase later picked up a racing meaning too: a tip that seemed to come from the horse itself."},
+  {p:"DON'T COUNT YOUR CHICKENS", hint:"Wait until the eggs actually hatch.", meaning:"Don’t rely on something good before it happens.", blurb:"The full proverb ends “before they hatch.” It was already in print in the 1570s and echoes an Aesop story about a milkmaid who daydreams about her profits, then spills her milk."},
+  {p:"THE ELEPHANT IN THE ROOM", hint:"Everyone sees it. Nobody mentions it.", meaning:"An obvious problem that people avoid talking about.", blurb:"It became common in the mid-1900s. Many trace the image to an 1814 fable by Ivan Krylov about a museum visitor who notices every tiny insect but misses the elephant."},
+  {p:"GET YOUR DUCKS IN A ROW", hint:"Get organized before you start.", meaning:"Get everything in order.", blurb:"The origin is unclear. Some say it comes from ducklings walking in a line behind their mother. Others point to the pins in duckpin bowling, which had to be reset in a neat row."},
+  {p:"LIKE WATER OFF A DUCK'S BACK", hint:"Criticism that doesn’t stick.", meaning:"Having no effect on someone.", blurb:"Ducks spread oil from a gland near their tails over their feathers. Water beads up and rolls right off, which made a perfect image for insults that don’t bother you."},
+  {p:"PUT THE CART BEFORE THE HORSE", hint:"Doing things in the wrong order.", meaning:"To reverse the proper order of things.", blurb:"This picture of backward thinking is ancient. Versions appear in Latin writing, and it was a well-known English proverb by the 1500s."},
+  {p:"THE BEE'S KNEES", hint:"Flapper slang for the very best.", meaning:"Excellent; the height of quality.", blurb:"It took off in 1920s America alongside other silly animal phrases like “the cat’s pajamas” and “the snake’s hips.” Bees do carry pollen on their legs, but the phrase was mostly about fun sounds."},
+  {p:"TAKE THE BULL BY THE HORNS", hint:"Face a hard problem head-on.", meaning:"To deal with a difficult situation directly.", blurb:"The image comes from farm work and bull-wrestling, where grabbing the horns was the boldest way to control an animal. It has been used figuratively since at least the 1700s."},
+  {p:"SMELL A RAT", hint:"Something seems fishy.", meaning:"To suspect a trick or that something is wrong.", blurb:"Picture a cat or terrier catching the scent of a hidden rat. English writers were using it to mean “suspect something” by the 1500s."},
+  {p:"GO THE WHOLE HOG", hint:"No half measures.", meaning:"To do something completely.", blurb:"It became popular in 1800s America, including in politics. One common theory is that butchers charged less if you bought the whole hog instead of choice cuts, but nobody knows for sure."},
+  {p:"A PIG IN A POKE", hint:"A purchase you didn’t look at first.", meaning:"Something bought without being inspected.", blurb:"A “poke” is an old word for a sack. Medieval buyers were warned to check the bag before paying, since it might not hold a piglet at all. It’s a cousin of “let the cat out of the bag.”"},
+  {p:"NIGHT OWL", hint:"Someone who does their best work after dark.", meaning:"A person who likes to stay up late.", blurb:"Owls hunt at night, and people have borrowed the name for late risers for centuries. Their opposite, fittingly, is the “early bird.”"},
+  {p:"SLY AS A FOX", hint:"Clever in a sneaky way.", meaning:"Crafty and cunning.", blurb:"Foxes have been tricksters in stories for thousands of years, from Aesop to the medieval tales of Reynard the Fox, who outwits nearly every animal in the kingdom."},
+  {p:"CURIOSITY KILLED THE CAT", hint:"A warning to stop asking so many questions.", meaning:"Being too nosy can get you into trouble.", blurb:"The original was “care killed the cat,” where care meant worry. Shakespeare and Ben Jonson both used it in the 1590s. The curious version took over around 1900. Some people add a happy ending: “but satisfaction brought it back.”"},
+  {p:"TILL THE COWS COME HOME", hint:"For a very, very long time.", meaning:"For an indefinitely long time.", blurb:"Cows wander back to the barn at their own slow pace, usually when it’s time for milking. The phrase has been around since the late 1500s."},
+  {p:"MONKEY BUSINESS", hint:"Silly or sneaky behaviour.", meaning:"Mischief, or dishonest goings-on.", blurb:"It appeared in American slang in the 1880s, inspired by monkeys’ playful antics. The Marx Brothers made it a movie title in 1931."},
+  {p:"A FISH OUT OF WATER", hint:"Someone totally out of their element.", meaning:"A person in an unfamiliar, uncomfortable situation.", blurb:"Chaucer used the idea in The Canterbury Tales, describing a monk outside his cloister as like a fish without water. Six hundred years later it still works."},
+  {p:"THE WORLD IS YOUR OYSTER", hint:"Anything is possible for you.", meaning:"You are free to do whatever you want.", blurb:"It comes from Shakespeare’s The Merry Wives of Windsor, where Pistol says “Why, then the world’s mine oyster, which I with sword will open.” The idea: pry it open and find the pearl."},
+  {p:"HAPPY AS A CLAM", hint:"Perfectly content.", meaning:"Very happy.", blurb:"The full version is “happy as a clam at high tide,” from 1800s New England. At high tide, clams are under deep water and safe from people digging them up."},
+  {p:"EVERY DOG HAS ITS DAY", hint:"Everyone gets their moment eventually.", meaning:"Everyone has a time of success.", blurb:"The saying is very old; versions appear in ancient Greek writing. Shakespeare used it in Hamlet: “The cat will mew, and dog will have his day.”"},
+  {p:"A HORSE OF A DIFFERENT COLOR", hint:"That’s another matter entirely.", meaning:"A completely different situation.", blurb:"Shakespeare wrote “a horse of that colour” in Twelfth Night. The 1939 film The Wizard of Oz had fun with it, with a horse in the Emerald City that keeps changing color."},
+  {p:"DARK HORSE", hint:"The surprise contender.", meaning:"A little-known competitor who unexpectedly succeeds.", blurb:"It comes from horse racing. Benjamin Disraeli’s 1831 novel The Young Duke describes a dark horse no one had noticed galloping past the favorites to win."},
+  {p:"WILD GOOSE CHASE", hint:"A search that goes nowhere.", meaning:"A hopeless or pointless pursuit.", blurb:"Shakespeare used it in Romeo and Juliet. Back then it named a horse race where riders had to follow the leader’s every turn, like geese flying in formation."},
+  {p:"AS THE CROW FLIES", hint:"Measured in a straight line.", meaning:"The shortest, most direct distance.", blurb:"Crows were thought to fly straight to where they were going, ignoring the twists of roads and rivers. It has been used for distances since the 1700s."},
+  {p:"BIRDS OF A FEATHER", hint:"Similar people tend to stick together.", meaning:"People with similar interests or character.", blurb:"The full proverb is “birds of a feather flock together.” It appears in English by the mid-1500s and is based on how flocks are usually made of one species."},
+  {p:"RULE THE ROOST", hint:"Be the one in charge at home.", meaning:"To be the boss.", blurb:"The older form, from the 1400s, was “rule the roast,” possibly about the head of a household presiding over dinner. Over time people pictured a rooster on his perch instead."},
+  {p:"NEST EGG", hint:"Money set aside for later.", meaning:"Savings kept for the future.", blurb:"Farmers used to leave a real or fake egg in a nest to encourage hens to lay more there. Savings work the same way: a little set aside tends to attract more."},
+  {p:"MAKE A BEELINE", hint:"Head straight for it.", meaning:"To go directly toward something.", blurb:"Foraging bees fly in a fairly direct path back to their hive. Americans turned that into a phrase for hurrying straight somewhere in the early 1800s."},
+  {p:"OPEN A CAN OF WORMS", hint:"Start something messier than expected.", meaning:"To create a complicated new problem.", blurb:"It comes from fishing bait sold in cans. Once opened, the wriggling worms were hard to get back in. The phrase spread in America in the 1950s."},
+  {p:"A WOLF IN SHEEP'S CLOTHING", hint:"Friendly on the outside only.", meaning:"Someone dangerous who pretends to be harmless.", blurb:"The image appears in the Sermon on the Mount in the Gospel of Matthew, a warning about false prophets. Later fables added a wolf who wears a fleece to sneak into the flock."},
+  {p:"THE BLACK SHEEP OF THE FAMILY", hint:"The relative who doesn’t fit in.", meaning:"A family member seen as an embarrassment or outsider.", blurb:"Black wool couldn’t be dyed, so shepherds once found black sheep less valuable. By the 1700s the phrase described the odd one out in a family."},
+  {p:"STUBBORN AS A MULE", hint:"Won’t budge, no matter what.", meaning:"Extremely stubborn.", blurb:"Mules have a reputation for refusing to move, but experts say they are cautious rather than difficult: a mule won’t walk into something it thinks is unsafe."},
+  {p:"SNUG AS A BUG IN A RUG", hint:"Cozy and comfortable.", meaning:"Warm and comfortable.", blurb:"The rhyme was popular in the 1700s. Benjamin Franklin used it in a 1772 letter, in a playful epitaph for a pet squirrel."},
+  {p:"COPYCAT", hint:"Someone who imitates others.", meaning:"A person who copies someone else.", blurb:"This one dates to the late 1800s in America. Kittens learn by watching and copying their mothers, which may be where the idea came from."},
+  {p:"TOP DOG", hint:"The one who’s winning.", meaning:"The leader or most powerful person.", blurb:"It comes from dog fights: the dog on top was winning, and the one below was the “underdog.” Both terms became common in the late 1800s."},
+  {p:"PUPPY LOVE", hint:"A young, sweet crush.", meaning:"Short-lived young romance.", blurb:"The phrase dates back to the 1800s, comparing a young crush to the eager, bouncy affection of a puppy. Paul Anka’s 1960 song made it famous again."},
+  {p:"EAT LIKE A HORSE", hint:"Always has room for seconds.", meaning:"To eat a lot.", blurb:"A working horse can eat around 2 percent of its body weight in feed every day. That’s about 10 kilograms of hay for an average horse."},
+  {p:"CHICKEN OUT", hint:"Back down at the last moment.", meaning:"To decide not to do something out of fear.", blurb:"“Chicken” has meant coward since the 1600s, since hens flap and scatter at any fright. The verb version came along in 1930s American slang."},
+  {p:"SITTING DUCK", hint:"An easy target.", meaning:"Someone who is exposed and easy to attack or trick.", blurb:"Hunters found a duck resting on the water far easier to hit than one in flight. The phrase became common during the Second World War."},
+  {p:"GOOSEBUMPS", hint:"What cold or a spooky story does to your skin.", meaning:"Little bumps on the skin from cold or strong emotion.", blurb:"When a goose is plucked, its skin shows bumps where the feathers were. Our own bumps come from tiny muscles pulling each hair upright, a leftover from when our ancestors were furrier."},
+  {p:"MEMORY LIKE AN ELEPHANT", hint:"Never forgets a thing.", meaning:"An excellent memory.", blurb:"Here the saying is backed by science. Elephant matriarchs remember water holes across huge distances and can recognize old companions after years apart."},
+  {p:"BUTTERFLIES IN MY STOMACH", hint:"That nervous fluttery feeling.", meaning:"Feeling nervous or excited.", blurb:"This image appeared in the early 1900s. The fluttery feeling is real: stress sends blood away from your stomach and gets your nerves firing."},
+  {p:"LOOK WHAT THE CAT DRAGGED IN", hint:"A teasing hello to someone who looks rough.", meaning:"A joking greeting to someone who arrives looking scruffy or late.", blurb:"Cats often bring home “gifts” of prey that look rather worse for wear. By the 1900s people used the phrase to tease a messy-looking arrival."},
+  {p:"TALK TURKEY", hint:"Get down to business.", meaning:"To speak frankly, especially about a deal.", blurb:"It is American and dates to at least the 1820s. One old story involves a lopsided trade of a turkey and a buzzard, but the real origin is uncertain."},
+  {p:"LIVING HIGH ON THE HOG", hint:"Enjoying the good life.", meaning:"Living in luxury.", blurb:"The best cuts of pork, like loin and ribs, come from high on the pig’s back. The cheaper cuts are lower down. The phrase took off in America in the early 1900s."},
+  {p:"MAD AS A WET HEN", hint:"Really, really annoyed.", meaning:"Very angry.", blurb:"Farmers used to dunk broody hens in cold water to stop them sitting on eggs. The hens were not pleased. The saying was common in 1800s America."},
+  {p:"COUNT SHEEP", hint:"A classic trick for falling asleep.", meaning:"To try to fall asleep by counting.", blurb:"Shepherds had to count their flocks every evening, which might explain the image. Oddly, a 2002 Oxford study found that imagining a calm scene helps people sleep faster than counting."},
+  {p:"KILL TWO BIRDS WITH ONE STONE", hint:"Finish two tasks with one effort.", meaning:"To achieve two things with a single action.", blurb:"It has been in English since at least the 1600s, and many languages have their own version. Some prefer gentler takes like “feed two birds with one scone.”"},
+  {p:"THE CAT'S PAJAMAS", hint:"More 1920s slang for “the best.”", meaning:"Something excellent.", blurb:"Pajamas were still new and fashionable in the 1920s, so saying a cat had some meant something special. It’s a flapper-era cousin of “the bee’s knees.”"},
+  {p:"CRY WOLF", hint:"Raise a false alarm.", meaning:"To call for help when you don’t need it.", blurb:"From Aesop’s fable about a shepherd boy who kept shouting “Wolf!” for fun. When a real wolf finally came, nobody believed him."},
+  {p:"EAGER BEAVER", hint:"Someone keen to get started.", meaning:"A very enthusiastic, hard-working person.", blurb:"It became popular during the Second World War, often for new recruits eager to impress. Beavers really do work hard: a family can build a dam in days."}
+];
+
+/* Consonant pairs, as drawn on the notepad: BC DF across the top, then columns. */
+const VOWELS = ["A","E","I","O","U","Y"];
+const PAIRS  = ["BC","DF","GL","HM","JN","KP","QV","RW","SX","TZ"];
+const MAX_PECKS = 5, MAX_TRIES = 3, STORE = "henpecks:v1";
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- Date helpers (local time) ---------- */
+const pad2 = n => String(n).padStart(2,"0");
+const todayKey = () => { const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; };
+const dayNumber = key => { const [y,m,d] = key.split("-").map(Number); return Math.round(Date.UTC(y,m-1,d) / 864e5); };
+const TODAY = todayKey();
+const DAY_INDEX = Math.max(0, dayNumber(TODAY) - dayNumber(START_DATE));
+const PUZZLE = PUZZLES[DAY_INDEX % PUZZLES.length];
+const CHARS = [...PUZZLE.p];
+const isLetter = c => /[A-Z]/.test(c);
+const LETTER_POS = CHARS.map((c,i) => isLetter(c) ? i : -1).filter(i => i >= 0);
+
+/* ---------- Storage (best effort) ---------- */
+function load(){ try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch { return {}; } }
+function save(){ try { localStorage.setItem(STORE, JSON.stringify(db)); } catch {} }
+const db = load();
+db.days = db.days || {};
+db.stats = db.stats || {played:0, wins:0, streak:0, best:0, last:null};
+const S = db.days[TODAY] && db.days[TODAY].p === PUZZLE.p ? db.days[TODAY]
+        : (db.days[TODAY] = {p:PUZZLE.p, pecks:[], phase:"peck", tries:0, locked:[], hitsPerPeck:[]});
+// keep storage small: only the last 10 days
+for (const k of Object.keys(db.days).sort().slice(0,-10)) delete db.days[k];
+
+let entry = {};          // pos -> typed letter (solve phase)
+let active = null;       // selected blank position
+
+/* ---------- Derived state ---------- */
+const guessed = () => new Set(S.pecks.flatMap(k => [...k]));
+const isShown = i => guessed().has(CHARS[i]) || S.locked.includes(i) || S.phase === "lost" || S.phase === "won";
+const blanks = () => LETTER_POS.filter(i => !isShown(i));
+
+/* ---------- Rendering ---------- */
+const $ = id => document.getElementById(id);
+const tiles = {};
+
+function buildBoard(){
+  const board = $("board"); board.textContent = "";
+  let word = null;
+  CHARS.forEach((c,i) => {
+    if (c === " "){ word = null; return; }
+    if (!word){ word = document.createElement("div"); word.className = "word"; board.appendChild(word); }
+    const t = document.createElement("div");
+    t.className = "tile" + (isLetter(c) ? "" : " punct");
+    if (!isLetter(c)) t.textContent = c;
+    t.dataset.i = i;
+    t.addEventListener("click", () => { if (S.phase === "solve" && !isShown(i)){ active = i; renderBoard(); } });
+    word.appendChild(t); tiles[i] = t;
+  });
+}
+
+function renderBoard(fresh = []){
+  const g = guessed();
+  for (const i of LETTER_POS){
+    const t = tiles[i], c = CHARS[i];
+    t.classList.remove("slot","filled","active","locked","shown");
+    if (S.locked.includes(i)) { t.textContent = c; t.classList.add("locked"); }
+    else if (g.has(c) || S.phase === "won" || S.phase === "lost") { t.textContent = c; t.classList.add("shown"); }
+    else if (S.phase === "solve") {
+      t.textContent = entry[i] || "";
+      t.classList.add("slot");
+      if (entry[i]) t.classList.add("filled");
+      if (i === active) t.classList.add("active");
+    } else t.textContent = "";
+    t.setAttribute("aria-label", t.textContent ? `Letter ${t.textContent}` : "Blank");
+    if (fresh.includes(i) && !reduced){ t.classList.remove("pop"); void t.offsetWidth; t.classList.add("pop"); }
+  }
+}
+
+function renderEggs(){
+  const box = $("eggs");
+  box.querySelectorAll(".egg").forEach(e => e.remove());
+  for (let n = 0; n < MAX_PECKS; n++){
+    const e = document.createElement("span"); e.className = "egg";
+    const k = S.pecks[n];
+    if (k){ e.classList.add(S.hitsPerPeck[n] ? "hit" : "miss"); e.textContent = k; e.title = `${k}: ${S.hitsPerPeck[n]} letter${S.hitsPerPeck[n]===1?"":"s"}`; }
+    box.appendChild(e);
+  }
+}
+
+function buildPad(){
+  const mk = (k, parent) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "key"; b.textContent = k; b.dataset.k = k;
+    b.setAttribute("aria-label", k.length === 1 ? `Vowel ${k}` : `Consonants ${k[0]} and ${k[1]}`);
+    b.addEventListener("click", () => peck(k)); parent.appendChild(b);
+  };
+  VOWELS.forEach(k => mk(k, $("vowels")));
+  PAIRS.forEach(k => mk(k, $("pairs")));
+  const rows = ["QWERTYUIOP","ASDFGHJKL","+ZXCVBNM-"];
+  for (const r of rows){
+    const row = document.createElement("div"); row.className = "krow";
+    for (const ch of r){
+      const b = document.createElement("button"); b.type = "button"; b.className = "key";
+      if (ch === "+"){ b.textContent = "Enter"; b.classList.add("wide"); b.onclick = submit; }
+      else if (ch === "-"){ b.textContent = "⌫"; b.classList.add("wide"); b.setAttribute("aria-label","Backspace"); b.onclick = back; }
+      else { b.textContent = ch; b.onclick = () => type(ch); }
+      row.appendChild(b);
+    }
+    $("kb").appendChild(row);
+  }
+}
+
+function renderPad(){
+  const used = new Set(S.pecks);
+  document.querySelectorAll("#peckPad .key").forEach(b => {
+    const k = b.dataset.k, n = S.pecks.indexOf(k);
+    b.classList.toggle("hit", used.has(k) && S.hitsPerPeck[n] > 0);
+    b.classList.toggle("miss", used.has(k) && !S.hitsPerPeck[n]);
+    b.disabled = used.has(k) || S.phase !== "peck";
+  });
+  $("peckPad").hidden = S.phase !== "peck";
+  $("solvePad").hidden = S.phase !== "solve";
+  $("hint").hidden = S.phase === "peck";
+  $("hintText").textContent = PUZZLE.hint;
+}
+
+function say(text, warn = false){ const m = $("msg"); m.textContent = text; m.classList.toggle("warn", warn); }
+
+function renderAll(){
+  renderBoard(); renderEggs(); renderPad();
+  if (S.phase === "peck"){
+    const left = MAX_PECKS - S.pecks.length;
+    say(S.pecks.length ? `${left} peck${left===1?"":"s"} left` : "Pick a vowel or a consonant pair");
+  } else if (S.phase === "solve"){
+    const left = MAX_TRIES - S.tries;
+    say(`Fill the blanks · ${left} ${left===1?"try":"tries"} left`);
+  } else say("");
+  if (S.phase === "won" || S.phase === "lost") showResult(false);
+}
+
+/* ---------- Peck phase ---------- */
+function peck(k){
+  if (S.phase !== "peck" || S.pecks.includes(k)) return;
+  const before = new Set(LETTER_POS.filter(isShown));
+  S.pecks.push(k);
+  const hits = CHARS.filter(c => k.includes(c)).length;
+  S.hitsPerPeck.push(hits);
+  const fresh = LETTER_POS.filter(i => isShown(i) && !before.has(i));
+  if (!blanks().length){ return finish(true, fresh); }
+  if (S.pecks.length >= MAX_PECKS) startSolve();
+  save(); renderAll(); renderBoard(fresh);
+  if (S.phase === "peck") say(hits ? `${hits} letter${hits===1?"":"s"}! ${MAX_PECKS - S.pecks.length} left` : `No ${k.split("").join(" or ")}. ${MAX_PECKS - S.pecks.length} left`, !hits);
+  else say(`Out of pecks. Here’s your hint!`);
+}
+
+function startSolve(){
+  S.phase = "solve";
+  active = blanks()[0] ?? null;
+  setTimeout(() => $("hint").scrollIntoView({block:"nearest", behavior: reduced ? "auto" : "smooth"}), 50);
+}
+
+/* ---------- Solve phase ---------- */
+function type(ch){
+  if (S.phase !== "solve" || active == null) return;
+  entry[active] = ch;
+  const bl = blanks(), at = bl.indexOf(active);
+  const nextEmpty = bl.slice(at + 1).find(i => !entry[i]) ?? bl.find(i => !entry[i]);
+  active = nextEmpty ?? active;
+  renderBoard();
+}
+function back(){
+  if (S.phase !== "solve") return;
+  const bl = blanks();
+  if (active != null && entry[active]) { delete entry[active]; }
+  else {
+    const at = bl.indexOf(active), prev = bl[at - 1];
+    if (prev != null){ active = prev; delete entry[prev]; }
+  }
+  renderBoard();
+}
+function submit(){
+  if (S.phase !== "solve") return;
+  const bl = blanks();
+  const missing = bl.filter(i => !entry[i]);
+  if (missing.length){ say(`${missing.length} blank${missing.length===1?"":"s"} still empty`, true); active = missing[0]; renderBoard(); return; }
+  const wrong = bl.filter(i => entry[i] !== CHARS[i]);
+  if (!wrong.length){ S.locked.push(...bl); return finish(true, []); }
+  S.locked.push(...bl.filter(i => entry[i] === CHARS[i]));
+  S.tries++;
+  if (S.tries >= MAX_TRIES){ return finish(false, []); }
+  save();
+  if (!reduced) wrong.forEach(i => { const t = tiles[i]; t.classList.remove("shake"); void t.offsetWidth; t.classList.add("shake"); });
+  setTimeout(() => {
+    wrong.forEach(i => { delete entry[i]; tiles[i].classList.remove("shake"); });
+    active = wrong[0];
+    renderAll();
+    const left = MAX_TRIES - S.tries;
+    say(`Not quite. ${wrong.length} letter${wrong.length===1?"":"s"} wrong · ${left} ${left===1?"try":"tries"} left`, true);
+  }, reduced ? 0 : 480);
+}
+
+/* ---------- End of round ---------- */
+function finish(won, fresh){
+  S.phase = won ? "won" : "lost";
+  S.solvedOnTry = won ? S.tries + 1 : null;
+  const st = db.stats;
+  if (!S.counted){
+    S.counted = true;
+    st.played++;
+    const yesterday = (() => { const d = new Date(); d.setDate(d.getDate()-1); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; })();
+    if (won){ st.wins++; st.streak = st.last === yesterday ? st.streak + 1 : 1; st.best = Math.max(st.best, st.streak); st.last = TODAY; }
+    else { st.streak = 0; }
+  }
+  save();
+  renderBoard(fresh.length ? fresh : []); renderEggs(); renderPad(); say("");
+  showResult(true);
+}
+
+function showResult(animate){
+  const won = S.phase === "won";
+  const r = $("result"); r.hidden = false;
+  r.classList.toggle("won", won && animate);
+  const pecksOnly = won && S.pecks.length < MAX_PECKS;
+  $("verdict").textContent = won
+    ? (pecksOnly ? "Cracked it with pecks alone!" : ["Egg-cellent!","Nicely pecked!","Phew, got it!"][Math.min(S.solvedOnTry-1,2)])
+    : "The phrase got away this time";
+  $("answer").textContent = PUZZLE.p.charAt(0) + PUZZLE.p.slice(1).toLowerCase();
+  $("meaning").textContent = PUZZLE.meaning;
+  $("blurb").textContent = PUZZLE.blurb;
+  const st = db.stats, stats = $("stats"); stats.textContent = "";
+  for (const [n,l] of [[st.played,"played"],[st.played ? Math.round(100*st.wins/st.played)+"%" : "0%","won"],[st.streak,"streak"],[st.best,"best streak"]]){
+    const s = document.createElement("span"); const b = document.createElement("b"); b.textContent = n; s.append(b, l); stats.appendChild(s);
+  }
+  tickNext();
+  if (animate){
+    setTimeout(() => r.scrollIntoView({block:"start", behavior: reduced ? "auto" : "smooth"}), won ? 900 : 200);
+    if (won) celebrate();
+  }
+}
+
+function shareText(){
+  const eggs = S.pecks.map((k,n) => S.hitsPerPeck[n] ? "🟨" : "⬜").join("");
+  const end = S.phase === "won" ? (S.solvedOnTry ? `Cracked on try ${S.solvedOnTry}/${MAX_TRIES} 🐔` : "Cracked with pecks alone 🐔") : "The phrase got away 🥚";
+  return `Hen Pecks #${DAY_INDEX + 1}\n${eggs}\n${end}\n${location.origin}${location.pathname}`;
+}
+$("share").addEventListener("click", async () => {
+  const text = shareText();
+  try { await navigator.clipboard.writeText(text); $("share").textContent = "Copied!"; }
+  catch { $("share").textContent = "Couldn’t copy"; }
+  setTimeout(() => $("share").textContent = "Copy my result", 1800);
+});
+
+let nextTimer;
+function tickNext(){
+  clearInterval(nextTimer);
+  const upd = () => {
+    const now = new Date(), mid = new Date(now); mid.setHours(24,0,0,0);
+    const s = Math.max(0, Math.floor((mid - now)/1000));
+    if (todayKey() !== TODAY){ $("next").textContent = "A new phrase is ready. Refresh the page to play."; return; }
+    $("next").textContent = `Next phrase in ${Math.floor(s/3600)}h ${pad2(Math.floor(s%3600/60))}m ${pad2(s%60)}s`;
+  };
+  upd(); nextTimer = setInterval(upd, 1000);
+}
+
+/* ---------- Win animation: tile dance + watercolor confetti ---------- */
+function celebrate(){
+  if (reduced) return;
+  LETTER_POS.forEach((i,n) => { const t = tiles[i]; t.classList.remove("pop","dance"); t.style.animationDelay = (n*45)+"ms"; void t.offsetWidth; t.classList.add("dance"); });
+  setTimeout(() => LETTER_POS.forEach(i => { tiles[i].classList.remove("dance"); tiles[i].style.animationDelay = ""; }), 900 + LETTER_POS.length*45);
+
+  const cv = $("confetti"), ctx = cv.getContext("2d"), dpr = Math.min(2, devicePixelRatio || 1);
+  cv.hidden = false; cv.width = innerWidth*dpr; cv.height = innerHeight*dpr; ctx.scale(dpr,dpr);
+  const colors = ["#D39A2F","#3A68AE","#E88B8B","#7FB37A","#F3D9A4","#9CC3E6"];
+  const parts = Array.from({length:140}, () => ({
+    x: innerWidth/2 + (Math.random()-.5)*innerWidth*.3, y: innerHeight*.45,
+    vx: (Math.random()-.5)*14, vy: -Math.random()*14 - 5,
+    r: 4 + Math.random()*7, c: colors[Math.random()*colors.length|0],
+    rot: Math.random()*6, vr: (Math.random()-.5)*.3, shape: Math.random() < .35 ? "feather" : "blob", a: .85
+  }));
+  const t0 = performance.now();
+  (function frame(t){
+    const el = t - t0;
+    ctx.clearRect(0,0,innerWidth,innerHeight);
+    for (const p of parts){
+      p.vy += .32; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+      if (el > 1800) p.a = Math.max(0, p.a - .02);
+      ctx.save(); ctx.globalAlpha = p.a; ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillStyle = p.c;
+      ctx.beginPath();
+      if (p.shape === "feather") ctx.ellipse(0,0,p.r*.45,p.r*1.5,0,0,Math.PI*2);
+      else ctx.ellipse(0,0,p.r,p.r*.8,0,0,Math.PI*2);
+      ctx.fill(); ctx.restore();
+    }
+    if (el < 3200) requestAnimationFrame(frame); else { ctx.clearRect(0,0,innerWidth,innerHeight); cv.hidden = true; }
+  })(t0);
+}
+
+/* ---------- Keyboard ---------- */
+document.addEventListener("keydown", e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (e.target.closest && e.target.closest("summary")) return;
+  const k = e.key.toUpperCase();
+  if (S.phase === "peck" && /^[A-Z]$/.test(k)){
+    const key = VOWELS.includes(k) ? k : PAIRS.find(p => p.includes(k));
+    if (key && !S.pecks.includes(key)) { e.preventDefault(); peck(key); }
+  } else if (S.phase === "solve"){
+    if (/^[A-Z]$/.test(k)){ e.preventDefault(); type(k); }
+    else if (e.key === "Backspace"){ e.preventDefault(); back(); }
+    else if (e.key === "Enter"){ e.preventDefault(); submit(); }
+    else if (e.key === "ArrowLeft" || e.key === "ArrowRight"){
+      const bl = blanks(), at = bl.indexOf(active);
+      const n = bl[at + (e.key === "ArrowLeft" ? -1 : 1)]; if (n != null){ active = n; renderBoard(); }
+    }
+  }
+});
+
+/* ---------- Start ---------- */
+$("puzzleNo").textContent = `No. ${DAY_INDEX + 1} · ${new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}`;
+try { if (!localStorage.getItem(STORE + ":seen")) { $("how").open = true; localStorage.setItem(STORE + ":seen","1"); } } catch { $("how").open = true; }
+save();
+buildBoard(); buildPad();
+if (S.phase === "solve") active = blanks()[0] ?? null;
+renderAll();
+</script>
+</body>
+</html>
