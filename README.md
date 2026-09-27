@@ -4,6 +4,7 @@ The newest National Geographic animal story each morning, painted as a cute stor
 
 - `index.html` is the whole site. It reads `stories.json` and draws each painting as SVG with shared watercolor filters.
 - `stories.json` holds every story, newest first.
+- `pecks.html` is **Hen Pecks**, a daily animal-expression puzzle. Seven pecks (one vowel or one consonant pair each), then a hint and three tries to fill in the rest. Puzzles live in the `PUZZLES` list at the top of its script, one per day from `START_DATE`; add more to the end.
 - `scripts/update.mjs` asks Claude (Anthropic API, with its web fetch tool) for the top story on nationalgeographic.com/animals, gets a painting, and adds it to `stories.json`.
 - `.github/workflows/daily.yml` runs the update every morning, commits the new story, and deploys the site to GitHub Pages.
 
