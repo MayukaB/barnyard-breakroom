@@ -130,6 +130,7 @@ details.how li{margin:2px 0}
 @media (max-width:560px){.result{grid-template-columns:1fr;justify-items:center;text-align:center}}
 .result .hen{width:190px;background:var(--plate);border-radius:4px;padding:8px;box-shadow:0 2px 10px var(--shadow);transform:rotate(-1.2deg)}
 .result .hen svg{display:block;width:100%;height:auto}
+.result .artnote{font:700 17px/1.2 Caveat,cursive;color:#5A5048;text-align:center;margin:6px 2px 2px;text-wrap:balance}
 .result.won .hen svg{animation:popin .8s cubic-bezier(.3,1.6,.5,1) both}
 .result.lost .hen svg{animation:droop 1.4s ease both}
 @keyframes popin{0%{transform:scale(.4) rotate(-8deg);opacity:0}100%{transform:none;opacity:1}}
@@ -239,6 +240,7 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
             <path d="M72 118 L70 132 M70 132 L64 134 M70 132 L74 135 M90 118 L92 132 M92 132 L86 134 M92 132 L97 135" stroke="#E8A93A" stroke-width="3" stroke-linecap="round" fill="none"/>
           </g>
         </svg>
+        <p class="artnote" id="artNote" hidden>Win a round to see a picture made just for that phrase!</p>
       </div>
       <div>
         <p class="verdict" id="verdict"></p>
@@ -611,6 +613,7 @@ function showResult(animate){
   r.classList.toggle("lost", !won && animate);
   try {
     const art = window.PECKS_ART && (won ? PECKS_ART.win(PUZZLE.p) : PECKS_ART.lose());
+    $("artNote").hidden = won;
     if (art) { $("art").innerHTML = art; $("art").setAttribute("aria-label", won ? "Illustration of " + PUZZLE.p.toLowerCase() : "A sad hen in the rain"); $("art").setAttribute("role", "img"); $("art").parentNode.removeAttribute("aria-hidden"); }
   } catch {}
   const pecksOnly = won && S.pecks.length < MAX_PECKS;
