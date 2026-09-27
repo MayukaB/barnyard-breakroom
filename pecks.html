@@ -126,12 +126,14 @@ details.how li{margin:2px 0}
 .btn:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
 
 /* Result */
-.result{display:grid;grid-template-columns:150px 1fr;gap:22px;align-items:start;border-top:1px solid var(--rule);padding-top:22px}
+.result{display:grid;grid-template-columns:190px 1fr;gap:22px;align-items:start;border-top:1px solid var(--rule);padding-top:22px}
 @media (max-width:560px){.result{grid-template-columns:1fr;justify-items:center;text-align:center}}
-.result .hen{width:150px;background:var(--plate);border-radius:4px;padding:8px;box-shadow:0 2px 10px var(--shadow);transform:rotate(-1.2deg)}
+.result .hen{width:190px;background:var(--plate);border-radius:4px;padding:8px;box-shadow:0 2px 10px var(--shadow);transform:rotate(-1.2deg)}
 .result .hen svg{display:block;width:100%;height:auto}
-.result.won .hen svg .body{animation:hop 1.1s ease-in-out 3}
-@keyframes hop{0%,100%{transform:none}35%{transform:translateY(-14px)}60%{transform:translateY(0)}75%{transform:translateY(-4px)}}
+.result.won .hen svg{animation:popin .8s cubic-bezier(.3,1.6,.5,1) both}
+.result.lost .hen svg{animation:droop 1.4s ease both}
+@keyframes popin{0%{transform:scale(.4) rotate(-8deg);opacity:0}100%{transform:none;opacity:1}}
+@keyframes droop{0%{opacity:0;transform:translateY(-10px)}60%{opacity:1;transform:translateY(3px)}100%{transform:none}}
 .result h3{font:400 26px/1.15 "Young Serif",Georgia,serif;margin:0 0 4px}
 .result .verdict{font:700 24px/1.1 Caveat,cursive;color:var(--ochre);margin:0 0 10px}
 .result p{margin:0 0 10px;max-width:60ch}
@@ -140,6 +142,7 @@ details.how li{margin:2px 0}
 @media (max-width:560px){.stats,.result .actions{justify-content:center}}
 .stats b{color:var(--ink);font-size:18px;font-family:"Young Serif",Georgia,serif;font-weight:400;margin-right:4px}
 .result .actions{justify-content:flex-start}
+@media (max-width:560px){.result .actions{justify-content:center}}
 .next{font-size:14px;color:var(--ink-soft);margin-top:12px}
 
 canvas#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:10}
@@ -147,7 +150,7 @@ footer{font-size:13px;color:var(--ink-soft);display:flex;flex-wrap:wrap;justify-
 footer p{margin:0}
 footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-@media (prefers-reduced-motion:reduce){.tile.pop,.tile.dance,.tile.shake,.result.won .hen svg .body{animation:none}.hint,.result .hen{transform:none}}
+@media (prefers-reduced-motion:reduce){.tile.pop,.tile.dance,.tile.shake,.result.won .hen svg,.result.lost .hen svg{animation:none}.hint,.result .hen{transform:none}}
 </style>
 </head>
 <body>
@@ -157,6 +160,14 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
       <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/>
       <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G" result="d"/>
       <feGaussianBlur in="d" stdDeviation="0.6"/>
+    </filter><filter id="wc2" x="-15%" y="-15%" width="130%" height="130%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.2" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="0.4"/>
+    </filter><filter id="wc3" x="-15%" y="-15%" width="130%" height="130%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="0.28"/>
     </filter>
   </defs>
 </svg>
@@ -180,7 +191,7 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
     <details class="how" id="how">
       <summary>How to play</summary>
       <ol>
-        <li>Today's answer is an animal expression. Each blank is one letter.</li>
+        <li>Today's answer is an animal-related expression. Each blank is one letter.</li>
         <li>You get <b>7 pecks</b>. A peck is either one vowel (A E I O U Y) or one consonant pair, like <b>BC</b> or <b>TZ</b>. Every matching letter shows up.</li>
         <li>After your 7th peck you get a hint. Type the letters that are still missing.</li>
         <li>You have 3 tries. On a wrong try, the letters you got right stay put.</li>
@@ -213,7 +224,7 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
 
     <section class="result" id="result" hidden aria-live="polite">
       <div class="hen" aria-hidden="true">
-        <svg viewBox="0 0 160 140">
+        <svg viewBox="0 0 160 140" id="art">
           <ellipse cx="80" cy="128" rx="52" ry="7" fill="#9BB58F" opacity=".5" filter="url(#wc)"/>
           <g class="body" style="transform-origin:80px 120px">
             <path d="M40 92 C34 60 58 44 84 50 C94 30 118 26 124 44 C130 60 120 70 118 80 C126 96 110 120 80 120 C58 120 44 108 40 92 Z" fill="#FFFFFF" stroke="#C9B89A" stroke-width="2" filter="url(#wc)"/>
@@ -250,6 +261,7 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
   </footer>
 </div>
 
+<script src="pecks-art.js"></script>
 <script>
 /* ---------- Puzzles ----------
    One per day, in order, starting on START_DATE. Add more to the end any time.
@@ -596,6 +608,11 @@ function showResult(animate){
   const won = S.phase === "won";
   const r = $("result"); r.hidden = false;
   r.classList.toggle("won", won && animate);
+  r.classList.toggle("lost", !won && animate);
+  try {
+    const art = window.PECKS_ART && (won ? PECKS_ART.win(PUZZLE.p) : PECKS_ART.lose());
+    if (art) { $("art").innerHTML = art; $("art").setAttribute("aria-label", won ? "Illustration of " + PUZZLE.p.toLowerCase() : "A sad hen in the rain"); $("art").setAttribute("role", "img"); $("art").parentNode.removeAttribute("aria-hidden"); }
+  } catch {}
   const pecksOnly = won && S.pecks.length < MAX_PECKS;
   $("verdict").textContent = won
     ? (pecksOnly ? "Cracked it with pecks alone!" : ["Egg-cellent!","Nicely pecked!","Phew, got it!"][Math.min(S.solvedOnTry-1,2)])
