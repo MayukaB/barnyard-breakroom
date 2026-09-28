@@ -735,7 +735,7 @@ function showResult(animate){
     $("artNote").hidden = won;
     if (art) { $("art").innerHTML = art; $("art").setAttribute("aria-label", won ? "Illustration of " + PUZZLE.p.toLowerCase() : "A sad hen in the rain"); $("art").setAttribute("role", "img"); $("art").parentNode.removeAttribute("aria-hidden"); }
   } catch {}
-  const pecksOnly = won && S.pecks.length < MAX_PECKS;
+  const pecksOnly = won && wonByPecks();
   $("verdict").textContent = won
     ? (pecksOnly ? "Cracked it with pecks alone!" : ["Egg-cellent!","Nicely pecked!","Phew, got it!"][Math.min(S.solvedOnTry-1,2)])
     : "The phrase got away this time";
@@ -778,9 +778,11 @@ function renderDist(animate){
   }
 }
 
+// Older saved games have no outcome, so fall back to how they were stored.
+function wonByPecks(){ return S.outcome ? S.outcome === "pecks" : S.pecks.length < MAX_PECKS && !S.tries; }
 function shareText(){
   const eggs = S.pecks.map((k,n) => S.hitsPerPeck[n] ? "🟨" : "⬜").join("");
-  const end = S.phase === "won" ? (S.solvedOnTry ? `Cracked on try ${S.solvedOnTry}/${MAX_TRIES} 🐔` : "Cracked with pecks alone 🐔") : "The phrase got away 🥚";
+  const end = S.phase === "won" ? (wonByPecks() ? "Cracked with pecks alone 🐔" : `Cracked on try ${S.solvedOnTry}/${MAX_TRIES} 🐔`) : "The phrase got away 🥚";
   const hard = S.phase === "won" && S.hard && !S.hintUsed ? " · Hard mode 🌶️" : "";
   return `Hen Pecks #${DAY_INDEX + 1}${hard}\n${eggs}\n${end}\n${location.origin}${location.pathname}`;
 }
