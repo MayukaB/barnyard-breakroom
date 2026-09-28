@@ -240,7 +240,7 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
     </details>
 
     <div class="modes">
-      <label class="switch-hard" for="hard"><input type="checkbox" id="hard" role="switch"> Hard mode <small id="hardNote">hint hidden</small></label>
+      <label class="switch-hard" for="hard"><input type="checkbox" id="hard" role="switch"> Hard mode <small id="hardNote">hint shown</small></label>
     </div>
 
     <div class="board" id="board" role="group" aria-label="Today's phrase"></div>
@@ -603,7 +603,7 @@ function renderPad(){
   const hard = $("hard");
   hard.checked = S.phase === "peck" ? !!db.settings.hard : !!S.hard;
   hard.disabled = S.phase !== "peck";
-  $("hardNote").textContent = S.phase === "peck" ? "hint hidden" : (S.hard ? (S.hintUsed ? "you peeked" : "on for today") : "off for today");
+  $("hardNote").textContent = S.phase === "peck" ? (db.settings.hard ? "hint hidden" : "hint shown") : (S.hard ? (S.hintUsed ? "you peeked" : "on for today") : "off for today");
 }
 
 function say(text, warn = false, spoken = ""){
