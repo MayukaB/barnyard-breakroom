@@ -31,6 +31,7 @@
   --plate:#FBF7EE; --tile:#FFFFFF; --tile-line:#B9C5BD; --hit:#F3D9A4; --hit-ink:#5A3F0B;
   --good:#6E9E6A; --bad:#C0584A; --miss:#DCE2DD;
   --bar:#3A68AE; --bar-today:#C07E14; --track:#E8EDE9;
+  --dialog:#FCFBF7; --scrim:rgba(39,53,47,.45);
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
@@ -38,14 +39,14 @@
     --paper:#161D1B; --sheet:#1F2826; --ink:#E7ECE6; --ink-soft:#A3B1AA;
     --cobalt:#8DB0EA; --ochre:#E8B85A; --rule:#34403C; --shadow:rgba(0,0,0,.45);
     --plate:#F4EFE3; --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD;
-    --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; color-scheme:dark;
+    --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --dialog:#27332F; --scrim:rgba(0,0,0,.66); color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --paper:#161D1B; --sheet:#1F2826; --ink:#E7ECE6; --ink-soft:#A3B1AA;
   --cobalt:#8DB0EA; --ochre:#E8B85A; --rule:#34403C; --shadow:rgba(0,0,0,.45);
   --plate:#F4EFE3; --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD;
-  --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; color-scheme:dark;
+  --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --dialog:#27332F; --scrim:rgba(0,0,0,.66); color-scheme:dark;
 }
 *{box-sizing:border-box}
 html{scrollbar-gutter:stable}
@@ -200,22 +201,38 @@ details.how li{margin:2px 0}
 .acct-btn:focus-visible,.linkish:focus-visible,.acct-x:focus-visible,dialog.acct input:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
 .acct-note{font-size:14px;color:var(--ink-soft);margin:-4px 0 14px !important}
 .linkish{font:inherit;color:var(--cobalt);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
-dialog.acct{border:0;border-radius:8px;background:var(--sheet);color:var(--ink);width:min(420px,calc(100vw - 32px));box-sizing:border-box;padding:26px 24px 20px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5)}
-dialog.acct::backdrop{background:rgba(22,29,27,.5)}
-dialog.acct h3{font:400 24px/1.15 "Young Serif",Georgia,serif;margin:0 0 8px;padding-right:28px}
-dialog.acct p{margin:0 0 12px;font-size:15px}
-dialog.acct .fine{font-size:13px;color:var(--ink-soft);margin:12px 0 0}
-dialog.acct label{display:block;font:700 12px/1 Karla,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 6px}
-dialog.acct .row{display:flex;flex-wrap:wrap;gap:8px}
-dialog.acct input{flex:1 1 180px;min-width:0;font:16px/1.2 Karla,sans-serif;color:var(--ink);background:var(--tile);border:1.5px solid var(--tile-line);border-radius:999px;padding:10px 14px}
-dialog.acct .btn{justify-content:center}
+dialog.acct{border:1px solid var(--rule);border-radius:18px;background:var(--dialog);color:var(--ink);width:min(460px,calc(100vw - 24px));max-width:none;max-height:calc(100dvh - 24px);overflow:auto;padding:34px 32px 28px;box-shadow:0 30px 80px -24px rgba(0,0,0,.6);text-align:center}
+dialog.acct[open]{animation:acctIn .22s cubic-bezier(.2,.9,.3,1.1)}
+@keyframes acctIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+dialog.acct::backdrop{background:var(--scrim);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.acct-hero{display:block;width:96px;height:78px;margin:0 auto 12px}
+dialog.acct h3{font:400 clamp(26px,5vw,30px)/1.15 "Young Serif",Georgia,serif;margin:0 0 10px}
+dialog.acct .lede{font-size:16px;line-height:1.55;color:var(--ink-soft);max-width:34ch;margin:0 auto 24px}
+dialog.acct .lede b{color:var(--ink);font-weight:700}
+dialog.acct .gsi{display:flex;justify-content:center;min-height:44px}
+dialog.acct .btn.wide{width:100%;justify-content:center;padding:14px 18px;font-size:16px;min-height:48px}
+dialog.acct .btn.google{background:#fff;color:#1f1f1f;border:1px solid #dadce0;font-weight:500;gap:12px}
+dialog.acct .btn.google svg{width:20px;height:20px}
 dialog.acct .btn[disabled]{opacity:.55;cursor:default;filter:none}
-dialog.acct .google{width:100%;margin-bottom:4px}
-dialog.acct .or{text-align:center;font-size:13px;color:var(--ink-soft);margin:4px 0 8px}
-.acct-x{position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;border:0;background:none;color:var(--ink-soft);font:400 26px/1 Karla,sans-serif;cursor:pointer}
-.acct-x:hover{background:var(--track)}
-.acct-msg{min-height:1.4em;margin:10px 0 0 !important;font-size:14px !important;color:var(--ink-soft)}
+dialog.acct .or{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--ink-soft);margin:20px 0 16px}
+dialog.acct .or::before,dialog.acct .or::after{content:"";flex:1;height:1px;background:var(--rule)}
+dialog.acct input{display:block;width:100%;height:50px;font:16px/1.2 Karla,sans-serif;color:var(--ink);background:var(--tile);border:1.5px solid var(--tile-line);border-radius:999px;padding:0 20px;margin:0 0 10px}
+dialog.acct input::placeholder{color:var(--ink-soft);opacity:.8}
+dialog.acct input:focus{outline:none;border-color:var(--cobalt);box-shadow:0 0 0 4px color-mix(in srgb,var(--cobalt) 25%,transparent)}
+dialog.acct .fine{font-size:13px;line-height:1.5;color:var(--ink-soft);max-width:38ch;margin:18px auto 0}
+.acct-x{position:absolute;top:12px;right:12px;width:40px;height:40px;border-radius:50%;border:0;background:none;color:var(--ink-soft);font:400 28px/1 Karla,sans-serif;cursor:pointer}
+.acct-x:hover{background:var(--track);color:var(--ink)}
+.acct-msg{margin:16px 0 0;font-size:14px;line-height:1.45;color:var(--ink);background:var(--track);border-radius:10px;padding:10px 14px}
+.acct-msg:empty{display:none}
 .acct-msg.warn{color:var(--bad)}
+/* Phones: a sheet that slides up from the bottom */
+@media (max-width:520px){
+  dialog.acct{inset:auto 0 0 0;width:auto;max-height:92dvh;margin:0;border-radius:22px 22px 0 0;border-bottom:0;padding:30px 20px calc(24px + env(safe-area-inset-bottom))}
+  dialog.acct[open]{animation:acctUp .26s cubic-bezier(.2,.9,.3,1)}
+  @keyframes acctUp{from{transform:translateY(100%)}to{transform:none}}
+  .acct-hero{width:80px;height:64px}
+}
+@media (prefers-reduced-motion:reduce){dialog.acct[open]{animation:none}}
 
 canvas#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:10}
 footer{font-size:13px;color:var(--ink-soft);display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 24px;border-top:1px solid var(--rule);padding-top:16px}
@@ -342,23 +359,35 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
   <dialog class="acct" id="acct" aria-labelledby="acctTitle">
     <button class="acct-x" id="acctClose" type="button" aria-label="Close">×</button>
     <div id="acctOut">
-      <h3 id="acctTitle">Keep your stats</h3>
-      <p>Right now your streak and stats live in this browser only. Sign in and they’re saved to an account, so they follow you to any device. No password needed.</p>
-      <button class="btn google" id="gBtn" type="button" hidden>Continue with Google</button>
-      <p class="or" id="orLine" hidden>or</p>
+      <svg class="acct-hero" viewBox="0 0 120 96" aria-hidden="true">
+        <path d="M30 40c-10 0-17-7-15-15 2-9 12-12 19-8 3-10 15-15 25-10 8-8 23-5 26 6 10-1 17 8 13 16-2 7-9 11-16 11Z" fill="var(--cobalt)" opacity=".22" filter="url(#wc)"/>
+        <ellipse cx="60" cy="80" rx="40" ry="11" fill="#9B7A4E" opacity=".9" filter="url(#wc)"/>
+        <path d="M24 76c10 7 62 7 72 0M28 82c12 5 52 5 64 0" stroke="#6E5433" stroke-width="2" fill="none" stroke-linecap="round" opacity=".7"/>
+        <path d="M60 30c11 0 19 16 19 30 0 11-8 18-19 18s-19-7-19-18c0-14 8-30 19-30Z" fill="#FBF3E0" stroke="#D39A2F" stroke-width="2" filter="url(#wc2)"/>
+        <ellipse cx="53" cy="46" rx="4" ry="7" fill="#fff" opacity=".8"/>
+      </svg>
+      <h3 id="acctTitle">Keep your streak</h3>
+      <p class="lede">Right now your stats live in this browser only. Sign in to save them and pick up your streak on <b>any device</b>. No password needed.</p>
+      <div class="gsi" id="gsiBtn" hidden></div>
+      <button class="btn google wide" id="gBtn" type="button" hidden><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.7 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.2-13.4-9.9l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>Continue with Google</button>
+      <p class="or" id="orLine" hidden>or use your email</p>
       <form id="emailForm">
-        <label for="email">Email</label>
-        <div class="row">
-          <input type="email" id="email" required autocomplete="email" placeholder="you@example.com">
-          <button class="btn solid" id="emailBtn" type="submit">Email me a link</button>
-        </div>
+        <label for="email" class="sr">Email address</label>
+        <input type="email" id="email" required autocomplete="email" placeholder="Your email address">
+        <button class="btn solid wide" id="emailBtn" type="submit">Email me a sign-in link</button>
       </form>
-      <p class="fine">Your email is only used to sign you in. Games you’ve already played on this device are added to your account.</p>
+      <p class="fine">We only use your email to sign you in. Games you’ve already played here are added to your account.</p>
     </div>
     <div id="acctIn" hidden>
+      <svg class="acct-hero" viewBox="0 0 120 96" aria-hidden="true">
+        <ellipse cx="60" cy="80" rx="40" ry="11" fill="#9B7A4E" opacity=".9" filter="url(#wc)"/>
+        <path d="M24 76c10 7 62 7 72 0M28 82c12 5 52 5 64 0" stroke="#6E5433" stroke-width="2" fill="none" stroke-linecap="round" opacity=".7"/>
+        <path d="M60 30c11 0 19 16 19 30 0 11-8 18-19 18s-19-7-19-18c0-14 8-30 19-30Z" fill="#F3D9A4" stroke="#D39A2F" stroke-width="2" filter="url(#wc2)"/>
+        <path d="m51 55 6 6 12-13" fill="none" stroke="#6E9E6A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
       <h3>Your stats are saved</h3>
-      <p>Signed in as <b id="acctEmail"></b>. Sign in with the same email on any device to pick up your streak there.</p>
-      <button class="btn" id="signOut" type="button">Sign out</button>
+      <p class="lede">Signed in as <b id="acctEmail"></b>. Sign in with the same account on any device to pick up your streak there.</p>
+      <button class="btn wide" id="signOut" type="button">Sign out</button>
       <p class="fine">Signing out keeps the games you played here on this device.</p>
     </div>
     <p class="acct-msg" id="acctMsg" role="status" aria-live="polite"></p>
@@ -902,9 +931,13 @@ function tickNext(){
    Fill in url and anonKey from Supabase → Project Settings → API. The anon key is meant to be
    public: row-level security in supabase/schema.sql keeps each player to their own row.
    Leave url empty and the game works exactly as before, with no sign-in button.
-   Set google to true once Google is switched on under Authentication → Providers. */
-const CLOUD = { url: "", anonKey: "", google: false };
+   Set google to true once Google is switched on under Authentication → Providers.
+   googleClientId: the OAuth client ID from Google Cloud. With it, the page shows Google's own
+   "Sign in with Google" button, so Google names barnyardbreakroom.com rather than the Supabase
+   address. Without it, the plain button sends players through Supabase's Google sign-in instead. */
+const CLOUD = { url: "https://tgqwamamqcbrwpheldpi.supabase.co", anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncXdhbWFtcWNicndwaGVsZHBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODc4ODcsImV4cCI6MjEwNjE2Mzg4N30.aNfjzKbuOArjBqcpLZkjRVjoUTrkJZqWFzfefs8vPE8", google: true, googleClientId: "818572636423-k4772kddhhhvq4b07l94peeegtu4hqkp.apps.googleusercontent.com" };
 const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+const GOOGLE_GSI = "https://accounts.google.com/gsi/client";
 let sb = null, user = null, syncChain = Promise.resolve();
 
 function acctMsg(text, warn = false){ const m = $("acctMsg"); m.textContent = text; m.classList.toggle("warn", warn); }
@@ -915,7 +948,9 @@ function renderAcct(){
   $("acctTick").hidden = !inAcct;
   $("acctOut").hidden = inAcct; $("acctIn").hidden = !inAcct;
   $("acctEmail").textContent = (db.cloud && db.cloud.email) || "";
-  $("gBtn").hidden = $("orLine").hidden = !CLOUD.google;
+  $("orLine").hidden = !CLOUD.google;
+  $("gsiBtn").hidden = !(CLOUD.google && gsiReady);
+  $("gBtn").hidden = !CLOUD.google || gsiReady || gsiLoading;
   for (const b of [$("gBtn"), $("emailBtn"), $("signOut")]) b.disabled = !sb;
   const note = $("acctNote"); note.hidden = false; note.textContent = "";
   if (inAcct) note.textContent = "Saved to your account, so these follow you to any device.";
@@ -926,7 +961,50 @@ function renderAcct(){
   }
 }
 function refreshStats(){ if (!$("result").hidden) renderStats(false); }
-function openAcct(){ if (!$("acct").open) $("acct").showModal(); }
+function openAcct(){ if (!$("acct").open) $("acct").showModal(); drawGsiButton(); }
+
+/* Google's own sign-in button (Google Identity Services). Google hands back a signed ID token
+   and Supabase checks it (signInWithIdToken), so players never pass through the supabase.co
+   address. A one-time random value (nonce) ties the token to this page: Google gets its SHA-256
+   hash, Supabase gets the original and checks they match. */
+let gsiReady = false, gsiLoading = false, gsiDrawn = false, gsiNonce = "";
+async function sha256hex(text){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+function initGsi(){
+  if (!CLOUD.google || !CLOUD.googleClientId || !window.crypto || !crypto.subtle) return;
+  gsiLoading = true;
+  const s = document.createElement("script");
+  s.src = GOOGLE_GSI; s.async = true;
+  s.onload = async () => {
+    try {
+      gsiNonce = [...crypto.getRandomValues(new Uint8Array(24))].map(b => b.toString(16).padStart(2, "0")).join("");
+      google.accounts.id.initialize({
+        client_id: CLOUD.googleClientId,
+        nonce: await sha256hex(gsiNonce),
+        callback: onGoogleCredential
+      });
+      gsiReady = true;
+    } catch {}
+    gsiLoading = false; renderAcct(); drawGsiButton();
+  };
+  s.onerror = () => { gsiLoading = false; renderAcct(); };   // fall back to the plain button
+  document.head.appendChild(s);
+}
+function drawGsiButton(){
+  // Google sizes its button when drawn, so wait until the dialog is open and the box has a width.
+  if (!gsiReady || gsiDrawn || !$("acct").open || $("acctOut").hidden) return;
+  const box = $("gsiBtn"), w = Math.max(200, Math.min(400, Math.floor(box.getBoundingClientRect().width)));
+  google.accounts.id.renderButton(box, { type: "standard", theme: "outline", size: "large", shape: "pill", text: "continue_with", logo_alignment: "center", width: w });
+  gsiDrawn = true;
+}
+async function onGoogleCredential(res){
+  if (!sb){ acctMsg("Sign-in is still loading. Try again in a moment.", true); return; }
+  acctMsg("Signing you in…");
+  const { error } = await sb.auth.signInWithIdToken({ provider: "google", token: res.credential, nonce: gsiNonce });
+  if (error) acctMsg("Google sign-in didn’t work. Try again, or use the email link.", true);
+}
 
 // Sends this device's games and gets back the merged copy. Calls run one at a time.
 function cloudSync(opts = {}){
@@ -956,6 +1034,7 @@ async function doSync({first = false} = {}){
 function initCloud(){
   if (!CLOUD.url || !CLOUD.anonKey) return;
   $("acctBtn").hidden = false;
+  initGsi();
   // A sign-in link that failed (expired, already used) comes back with the reason in the address.
   const h = new URLSearchParams(location.hash.slice(1));
   const linkError = h.get("error_description");
