@@ -497,5 +497,6 @@ window.PECKS_ART = {
       A("hen", 70, 122, 1.7, { mood: "sad", rot: 6 });
   },
   _scenes: S,
+  kit: { A, P, BG, G, shadow },
 };
 })();
