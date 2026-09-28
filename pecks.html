@@ -136,7 +136,13 @@ details.how li{margin:2px 0}
 .pad h3{font:700 12px/1 Karla,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 8px}
 .row{display:grid;gap:8px}
 .vowels{grid-template-columns:repeat(6,1fr)}
-.pairs{grid-template-columns:repeat(5,1fr)}
+/* Consonant pairs laid out like the alphabet: B C D F across the top, then
+   G H J K / L M N P and Q R S T / V W X Z, each pair read top to bottom. */
+.pairs{grid-template-columns:repeat(4,1fr)}
+.pairs .key{display:flex;align-items:center;justify-content:center;gap:0}
+.pairs .key.across{grid-column:span 2;gap:26px;padding:12px 0}
+.pairs .key.down{flex-direction:column;gap:6px;padding:10px 0}
+.pairs .key span{display:block;line-height:1}
 .key{font:400 20px/1 "Young Serif",Georgia,serif;letter-spacing:.06em;padding:13px 0;border-radius:8px;border:1.5px solid var(--tile-line);background:var(--tile);color:var(--ink);cursor:pointer;touch-action:manipulation}
 .key:hover:not([disabled]){border-color:var(--cobalt);color:var(--cobalt)}
 .key:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
@@ -240,7 +246,7 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
     </details>
 
     <div class="modes">
-      <label class="switch-hard" for="hard"><input type="checkbox" id="hard" role="switch"> Hard mode <small id="hardNote">hint hidden</small></label>
+      <label class="switch-hard" for="hard"><input type="checkbox" id="hard" role="switch"> Hard mode <small id="hardNote">hint shown</small></label>
     </div>
 
     <div class="board" id="board" role="group" aria-label="Today's phrase"></div>
@@ -475,6 +481,9 @@ if (!db.stats.dist){
     if (k in db.stats.dist) db.stats.dist[k]++;
   }
 }
+// A streak only survives if the last win was today or yesterday.
+{ const y = new Date(); y.setDate(y.getDate() - 1); const yk = `${y.getFullYear()}-${pad2(y.getMonth()+1)}-${pad2(y.getDate())}`;
+  if (db.stats.last && db.stats.last !== TODAY && db.stats.last !== yk) db.stats.streak = 0; }
 const S = db.days[TODAY] && db.days[TODAY].p === PUZZLE.p ? db.days[TODAY]
         : (db.days[TODAY] = {p:PUZZLE.p, pecks:[], phase:"peck", tries:0, locked:[], hitsPerPeck:[]});
 // keep storage small: only the last 10 days
@@ -482,6 +491,7 @@ for (const k of Object.keys(db.days).sort().slice(0,-10)) delete db.days[k];
 
 let entry = {};          // pos -> typed letter (solve phase)
 let active = null;       // selected blank position
+let busy = false;        // true while a wrong try is shaking, so input waits
 
 /* ---------- Derived state ---------- */
 const guessed = () => new Set(S.pecks.flatMap(k => [...k]));
@@ -503,7 +513,7 @@ function buildBoard(){
     t.setAttribute("role", "img");
     if (!isLetter(c)){ t.textContent = c; t.setAttribute("aria-label", PUNCT_NAME[c] || c); }
     t.dataset.i = i;
-    t.addEventListener("click", () => { if (S.phase === "solve" && !isShown(i)){ active = i; renderBoard(); } });
+    t.addEventListener("click", () => { if (S.phase === "solve" && !busy && !isShown(i)){ active = i; renderBoard(); } });
     word.appendChild(t); tiles[i] = t;
   });
   const words = [...board.querySelectorAll(".word")];
@@ -562,7 +572,9 @@ function renderEggs(){
 
 function buildPad(){
   const mk = (k, parent) => {
-    const b = document.createElement("button"); b.type = "button"; b.className = "key"; b.textContent = k; b.dataset.k = k;
+    const b = document.createElement("button"); b.type = "button"; b.className = "key"; b.dataset.k = k;
+    if (k.length === 1) b.textContent = k;
+    else { b.classList.add(k === "BC" || k === "DF" ? "across" : "down"); for (const ch of k){ const sp = document.createElement("span"); sp.textContent = ch; sp.setAttribute("aria-hidden", "true"); b.appendChild(sp); } }
     b.setAttribute("aria-label", k.length === 1 ? `Vowel ${k}` : `Consonants ${k[0]} and ${k[1]}`);
     b.addEventListener("click", () => peck(k)); parent.appendChild(b);
   };
@@ -603,7 +615,7 @@ function renderPad(){
   const hard = $("hard");
   hard.checked = S.phase === "peck" ? !!db.settings.hard : !!S.hard;
   hard.disabled = S.phase !== "peck";
-  $("hardNote").textContent = S.phase === "peck" ? "hint hidden" : (S.hard ? (S.hintUsed ? "you peeked" : "on for today") : "off for today");
+  $("hardNote").textContent = S.phase === "peck" ? (db.settings.hard ? "hint hidden" : "hint shown") : (S.hard ? (S.hintUsed ? "you peeked" : "on for today") : "off for today");
 }
 
 function say(text, warn = false, spoken = ""){
@@ -653,7 +665,7 @@ function startSolve(){
 
 /* ---------- Solve phase ---------- */
 function type(ch){
-  if (S.phase !== "solve" || active == null) return;
+  if (S.phase !== "solve" || active == null || busy) return;
   entry[active] = ch;
   const bl = blanks(), at = bl.indexOf(active);
   const nextEmpty = bl.slice(at + 1).find(i => !entry[i]) ?? bl.find(i => !entry[i]);
@@ -663,7 +675,7 @@ function type(ch){
   speak(left ? `${ch}. ${left} blank${left === 1 ? "" : "s"} left.` : `${ch}. All blanks filled. Press Enter to check.`);
 }
 function back(){
-  if (S.phase !== "solve") return;
+  if (S.phase !== "solve" || busy) return;
   const bl = blanks();
   if (active != null && entry[active]) { delete entry[active]; }
   else {
@@ -673,7 +685,7 @@ function back(){
   renderBoard();
 }
 function submit(){
-  if (S.phase !== "solve") return;
+  if (S.phase !== "solve" || busy) return;
   const bl = blanks();
   const missing = bl.filter(i => !entry[i]);
   if (missing.length){ say(`${missing.length} blank${missing.length===1?"":"s"} still empty`, true); active = missing[0]; renderBoard(); return; }
@@ -683,8 +695,10 @@ function submit(){
   S.tries++;
   if (S.tries >= MAX_TRIES){ return finish(false, []); }
   save();
+  busy = true;
   if (!reduced) wrong.forEach(i => { const t = tiles[i]; t.classList.remove("shake"); void t.offsetWidth; t.classList.add("shake"); });
   setTimeout(() => {
+    busy = false;
     wrong.forEach(i => { delete entry[i]; tiles[i].classList.remove("shake"); });
     active = wrong[0];
     renderAll();
@@ -724,7 +738,7 @@ function showResult(animate){
     $("artNote").hidden = won;
     if (art) { $("art").innerHTML = art; $("art").setAttribute("aria-label", won ? "Illustration of " + PUZZLE.p.toLowerCase() : "A sad hen in the rain"); $("art").setAttribute("role", "img"); $("art").parentNode.removeAttribute("aria-hidden"); }
   } catch {}
-  const pecksOnly = won && S.pecks.length < MAX_PECKS;
+  const pecksOnly = won && wonByPecks();
   $("verdict").textContent = won
     ? (pecksOnly ? "Cracked it with pecks alone!" : ["Egg-cellent!","Nicely pecked!","Phew, got it!"][Math.min(S.solvedOnTry-1,2)])
     : "The phrase got away this time";
@@ -767,16 +781,26 @@ function renderDist(animate){
   }
 }
 
+// Older saved games have no outcome, so fall back to how they were stored.
+function wonByPecks(){ return S.outcome ? S.outcome === "pecks" : S.pecks.length < MAX_PECKS && !S.tries; }
 function shareText(){
   const eggs = S.pecks.map((k,n) => S.hitsPerPeck[n] ? "🟨" : "⬜").join("");
-  const end = S.phase === "won" ? (S.solvedOnTry ? `Cracked on try ${S.solvedOnTry}/${MAX_TRIES} 🐔` : "Cracked with pecks alone 🐔") : "The phrase got away 🥚";
+  const end = S.phase === "won" ? (wonByPecks() ? "Cracked with pecks alone 🐔" : `Cracked on try ${S.solvedOnTry}/${MAX_TRIES} 🐔`) : "The phrase got away 🥚";
   const hard = S.phase === "won" && S.hard && !S.hintUsed ? " · Hard mode 🌶️" : "";
   return `Hen Pecks #${DAY_INDEX + 1}${hard}\n${eggs}\n${end}\n${location.origin}${location.pathname}`;
 }
 $("share").addEventListener("click", async () => {
   const text = shareText();
-  try { await navigator.clipboard.writeText(text); $("share").textContent = "Copied!"; }
-  catch { $("share").textContent = "Couldn’t copy"; }
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; }
+  catch {
+    // Older browsers and some in-app browsers block the clipboard API; try the old way.
+    const ta = document.createElement("textarea"); ta.value = text; ta.setAttribute("readonly", "");
+    ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
+    try { ok = document.execCommand("copy"); } catch {}
+    ta.remove();
+  }
+  $("share").textContent = ok ? "Copied!" : "Couldn’t copy";
   setTimeout(() => $("share").textContent = "Copy my result", 1800);
 });
 
@@ -833,6 +857,9 @@ document.addEventListener("keydown", e => {
     const key = VOWELS.includes(k) ? k : PAIRS.find(p => p.includes(k));
     if (key && !S.pecks.includes(key)) { e.preventDefault(); peck(key); }
   } else if (S.phase === "solve"){
+    // Enter or Space on a focused button (a letter key, Backspace, "Show the hint") should press that button.
+    const onButton = e.target.closest && e.target.closest("button, a, input");
+    if (onButton && (e.key === "Enter" || e.key === " ")) return;
     if (/^[A-Z]$/.test(k)){ e.preventDefault(); type(k); }
     else if (e.key === "Backspace"){ e.preventDefault(); back(); }
     else if (e.key === "Enter"){ e.preventDefault(); submit(); }
