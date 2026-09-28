@@ -113,6 +113,20 @@ details.how li{margin:2px 0}
 .hint{background:var(--plate);color:#3F4A44;border-radius:4px;padding:12px 16px;transform:rotate(-.4deg);box-shadow:0 2px 10px var(--shadow)}
 .hint b{font:700 13px/1 Karla,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#9A6A12;display:block;margin-bottom:4px}
 .hint span{font:700 22px/1.25 Caveat,cursive}
+.hint .peek{font:700 14px/1 Karla,sans-serif;color:#3A68AE;background:transparent;border:1.5px solid #3A68AE;border-radius:999px;padding:8px 14px;cursor:pointer;margin-top:4px}
+.hint .peek:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
+.hint .hidden-note{font:500 15px/1.4 Karla,sans-serif;color:#5B6A63;display:block;margin-bottom:8px}
+.modes{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:-10px}
+.switch-hard{display:inline-flex;align-items:center;gap:10px;cursor:pointer;font:700 14px/1.2 Karla,sans-serif;color:var(--ink)}
+.switch-hard small{font-weight:400;color:var(--ink-soft)}
+.switch-hard input{appearance:none;-webkit-appearance:none;width:40px;height:22px;border-radius:999px;background:var(--tile-line);position:relative;cursor:pointer;margin:0;transition:background .2s;flex:none}
+.switch-hard input::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.switch-hard input:checked{background:var(--bad)}
+.switch-hard input:checked::after{transform:translateX(18px)}
+.switch-hard input:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
+.switch-hard input:disabled{opacity:.55;cursor:default}
+.badge{display:inline-block;font:700 12px/1 Karla,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:var(--bad);border-radius:999px;padding:6px 10px;margin:0 0 10px}
+@media (max-width:560px){.modes{justify-content:flex-start;margin-top:-4px}}
 
 /* Keys */
 .pad{display:grid;gap:14px}
@@ -206,9 +220,14 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
         <li>Today's answer is an animal-related expression. Each blank is one letter.</li>
         <li>You get <b>7 pecks</b>. A peck is either one vowel (A E I O U Y) or one consonant pair, like <b>BC</b> or <b>TZ</b>. Every matching letter shows up.</li>
         <li>After your 7th peck you get a hint. Type the letters that are still missing.</li>
+        <li><b>Hard mode</b> keeps the hint hidden. You can still peek if you get stuck, but only a win without peeking counts as a hard-mode win. Switch it on or off before your 7th peck.</li>
         <li>You have 3 tries. On a wrong try, the letters you got right stay put.</li>
       </ol>
     </details>
+
+    <div class="modes">
+      <label class="switch-hard" for="hard"><input type="checkbox" id="hard" role="switch"> Hard mode <small id="hardNote">hint hidden</small></label>
+    </div>
 
     <div class="board" id="board" role="group" aria-label="Today's phrase"></div>
 
@@ -217,7 +236,7 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
       <div class="msg" id="msg" role="status" aria-live="polite"></div>
     </div>
 
-    <div class="hint" id="hint" hidden><b>Hint</b><span id="hintText"></span></div>
+    <div class="hint" id="hint" hidden><b>Hint</b><span id="hintText"></span><span class="hidden-note" id="hintHidden" hidden>Hard mode is on, so the hint is hidden.</span><button class="peek" id="peek" type="button" hidden>Show the hint anyway</button></div>
 
     <section class="pad" id="peckPad" aria-label="Choose a peck">
       <div>
@@ -255,6 +274,7 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
       </div>
       <div>
         <p class="verdict" id="verdict"></p>
+        <p class="badge" id="hardBadge" hidden>Hard mode · no hint</p>
         <h3 id="answer"></h3>
         <p class="meaning" id="meaning"></p>
         <p id="blurb"></p>
@@ -428,6 +448,7 @@ function save(){ try { localStorage.setItem(STORE, JSON.stringify(db)); } catch 
 const db = load();
 db.days = db.days || {};
 db.stats = db.stats || {played:0, wins:0, streak:0, best:0, last:null};
+db.settings = db.settings || {hard:false};
 const S = db.days[TODAY] && db.days[TODAY].p === PUZZLE.p ? db.days[TODAY]
         : (db.days[TODAY] = {p:PUZZLE.p, pecks:[], phase:"peck", tries:0, locked:[], hitsPerPeck:[]});
 // keep storage small: only the last 10 days
@@ -522,7 +543,14 @@ function renderPad(){
   $("peckPad").hidden = S.phase !== "peck";
   $("solvePad").hidden = S.phase !== "solve";
   $("hint").hidden = S.phase === "peck";
-  $("hintText").textContent = PUZZLE.hint;
+  const hideHint = S.phase === "solve" && S.hard && !S.hintUsed;
+  $("hintText").textContent = hideHint ? "" : PUZZLE.hint;
+  $("hintHidden").hidden = !hideHint;
+  $("peek").hidden = !hideHint;
+  const hard = $("hard");
+  hard.checked = S.phase === "peck" ? !!db.settings.hard : !!S.hard;
+  hard.disabled = S.phase !== "peck";
+  $("hardNote").textContent = S.phase === "peck" ? "hint hidden" : (S.hard ? (S.hintUsed ? "you peeked" : "on for today") : "off for today");
 }
 
 function say(text, warn = false){ const m = $("msg"); m.textContent = text; m.classList.toggle("warn", warn); }
@@ -551,11 +579,13 @@ function peck(k){
   if (S.pecks.length >= MAX_PECKS) startSolve();
   save(); renderAll(); renderBoard(fresh);
   if (S.phase === "peck") say(hits ? `${hits} letter${hits===1?"":"s"}! ${MAX_PECKS - S.pecks.length} left` : `No ${k.split("").join(" or ")}. ${MAX_PECKS - S.pecks.length} left`, !hits);
-  else say(`Out of pecks. Here’s your hint!`);
+  else say(S.hard ? "Out of pecks. Hard mode: no hint unless you ask." : "Out of pecks. Here’s your hint!");
 }
 
 function startSolve(){
   S.phase = "solve";
+  S.hard = !!db.settings.hard;
+  S.hintUsed = false;
   active = blanks()[0] ?? null;
   setTimeout(() => $("hint").scrollIntoView({block:"nearest", behavior: reduced ? "auto" : "smooth"}), 50);
 }
@@ -602,6 +632,7 @@ function submit(){
 
 /* ---------- End of round ---------- */
 function finish(won, fresh){
+  if (S.hard === undefined) S.hard = !!db.settings.hard;
   S.phase = won ? "won" : "lost";
   S.solvedOnTry = won ? S.tries + 1 : null;
   const st = db.stats;
@@ -631,6 +662,7 @@ function showResult(animate){
   $("verdict").textContent = won
     ? (pecksOnly ? "Cracked it with pecks alone!" : ["Egg-cellent!","Nicely pecked!","Phew, got it!"][Math.min(S.solvedOnTry-1,2)])
     : "The phrase got away this time";
+  $("hardBadge").hidden = !(won && S.hard && !S.hintUsed);
   $("answer").textContent = PUZZLE.p.charAt(0) + PUZZLE.p.slice(1).toLowerCase();
   $("meaning").textContent = PUZZLE.meaning;
   $("blurb").textContent = PUZZLE.blurb;
@@ -648,7 +680,8 @@ function showResult(animate){
 function shareText(){
   const eggs = S.pecks.map((k,n) => S.hitsPerPeck[n] ? "🟨" : "⬜").join("");
   const end = S.phase === "won" ? (S.solvedOnTry ? `Cracked on try ${S.solvedOnTry}/${MAX_TRIES} 🐔` : "Cracked with pecks alone 🐔") : "The phrase got away 🥚";
-  return `Hen Pecks #${DAY_INDEX + 1}\n${eggs}\n${end}\n${location.origin}${location.pathname}`;
+  const hard = S.phase === "won" && S.hard && !S.hintUsed ? " · Hard mode 🌶️" : "";
+  return `Hen Pecks #${DAY_INDEX + 1}${hard}\n${eggs}\n${end}\n${location.origin}${location.pathname}`;
 }
 $("share").addEventListener("click", async () => {
   const text = shareText();
@@ -724,6 +757,15 @@ document.addEventListener("keydown", e => {
 $("puzzleNo").textContent = `No. ${DAY_INDEX + 1} · ${new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}`;
 try { if (!localStorage.getItem(STORE + ":seen")) { $("how").open = true; localStorage.setItem(STORE + ":seen","1"); } } catch { $("how").open = true; }
 save();
+$("hard").addEventListener("change", e => {
+  if (S.phase !== "peck") return;
+  db.settings.hard = e.target.checked; save(); renderPad();
+  say(e.target.checked ? "Hard mode on: the hint will stay hidden." : "Hard mode off: you’ll get the hint.");
+});
+$("peek").addEventListener("click", () => {
+  S.hintUsed = true; save(); renderPad();
+  say("Hint revealed. This one won’t count as a hard-mode win.");
+});
 buildBoard(); buildPad();
 if (S.phase === "solve") active = blanks()[0] ?? null;
 renderAll();
