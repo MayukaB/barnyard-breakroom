@@ -791,8 +791,16 @@ function shareText(){
 }
 $("share").addEventListener("click", async () => {
   const text = shareText();
-  try { await navigator.clipboard.writeText(text); $("share").textContent = "Copied!"; }
-  catch { $("share").textContent = "Couldn’t copy"; }
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; }
+  catch {
+    // Older browsers and some in-app browsers block the clipboard API; try the old way.
+    const ta = document.createElement("textarea"); ta.value = text; ta.setAttribute("readonly", "");
+    ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select();
+    try { ok = document.execCommand("copy"); } catch {}
+    ta.remove();
+  }
+  $("share").textContent = ok ? "Copied!" : "Couldn’t copy";
   setTimeout(() => $("share").textContent = "Copy my result", 1800);
 });
 
