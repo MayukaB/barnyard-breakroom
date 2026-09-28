@@ -210,6 +210,9 @@ dialog.acct h3{font:400 clamp(26px,5vw,30px)/1.15 "Young Serif",Georgia,serif;ma
 dialog.acct .lede{font-size:16px;line-height:1.55;color:var(--ink-soft);max-width:34ch;margin:0 auto 24px}
 dialog.acct .lede b{color:var(--ink);font-weight:700}
 dialog.acct .gsi{display:flex;justify-content:center;min-height:44px}
+/* Google draws its button in a frame. In dark mode the frame would inherit the dark color scheme and
+   the browser paints it with an opaque white background, so keep the frame itself in light mode. */
+dialog.acct .gsi iframe{color-scheme:light}
 dialog.acct .btn.wide{width:100%;justify-content:center;padding:14px 18px;font-size:16px;min-height:48px}
 dialog.acct .btn.google{background:#fff;color:#1f1f1f;border:1px solid #dadce0;font-weight:500;gap:12px}
 dialog.acct .btn.google svg{width:20px;height:20px}
