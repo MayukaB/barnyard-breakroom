@@ -61,3 +61,23 @@ jobs:
           path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  alert:
+    # Opens an issue (which emails you) if today's run broke or stories stopped arriving.
+    needs: [update, deploy]
+    if: always() && github.event_name != 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Open or close the alert issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPDATE: ${{ needs.update.result }}
+          DEPLOY: ${{ needs.deploy.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: bash scripts/alert.sh
