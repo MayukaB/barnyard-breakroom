@@ -28,6 +28,7 @@
   --cobalt:#3A68AE; --ochre:#D39A2F; --rule:#D5DDD6; --shadow:rgba(39,53,47,.14);
   --plate:#FBF7EE; --tile:#FFFFFF; --tile-line:#B9C5BD; --hit:#F3D9A4; --hit-ink:#5A3F0B;
   --good:#6E9E6A; --bad:#C0584A; --miss:#DCE2DD;
+  --bar:#3A68AE; --bar-today:#C07E14; --track:#E8EDE9;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
@@ -35,14 +36,14 @@
     --paper:#161D1B; --sheet:#1F2826; --ink:#E7ECE6; --ink-soft:#A3B1AA;
     --cobalt:#8DB0EA; --ochre:#E8B85A; --rule:#34403C; --shadow:rgba(0,0,0,.45);
     --plate:#F4EFE3; --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD;
-    --good:#86B882; --bad:#E07B6C; --miss:#2B3532; color-scheme:dark;
+    --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --paper:#161D1B; --sheet:#1F2826; --ink:#E7ECE6; --ink-soft:#A3B1AA;
   --cobalt:#8DB0EA; --ochre:#E8B85A; --rule:#34403C; --shadow:rgba(0,0,0,.45);
   --plate:#F4EFE3; --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD;
-  --good:#86B882; --bad:#E07B6C; --miss:#2B3532; color-scheme:dark;
+  --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; color-scheme:dark;
 }
 *{box-sizing:border-box}
 html{scrollbar-gutter:stable}
@@ -166,6 +167,17 @@ details.how li{margin:2px 0}
 .result .meaning{font-weight:700}
 .stats{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px;color:var(--ink-soft);margin:6px 0 14px}
 @media (max-width:560px){.stats,.result .actions{justify-content:center}}
+.dist{margin:0 0 14px;padding:0;list-style:none;display:grid;gap:6px;max-width:380px}
+.dist-title{font:700 12px/1 Karla,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:4px 0 8px}
+.dist li{display:grid;grid-template-columns:92px 1fr;align-items:center;gap:10px;font-size:14px;color:var(--ink-soft)}
+.dist .track{background:var(--track);border-radius:4px;height:22px;position:relative}
+.dist .bar{height:100%;min-width:2px;border-radius:0 4px 4px 0;background:var(--bar);transition:width .6s cubic-bezier(.3,1,.5,1)}
+.dist li.today .bar{background:var(--bar-today)}
+.dist li.today .lbl{color:var(--ink);font-weight:700}
+.dist .val{position:absolute;top:50%;transform:translateY(-50%);font:700 13px/1 Karla,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dist .dtag{font-weight:400;color:var(--ink-soft)}
+@media (max-width:560px){.dist,.dist-title{margin-inline:auto;text-align:left}.dist-title{text-align:center}}
+@media (prefers-reduced-motion:reduce){.dist .bar{transition:none}}
 .stats b{color:var(--ink);font-size:18px;font-family:"Young Serif",Georgia,serif;font-weight:400;margin-right:4px}
 .result .actions{justify-content:flex-start}
 @media (max-width:560px){.result .actions{justify-content:center}}
@@ -279,6 +291,8 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
         <p class="meaning" id="meaning"></p>
         <p id="blurb"></p>
         <div class="stats" id="stats"></div>
+        <p class="dist-title" id="distTitle">How your games ended</p>
+        <ol class="dist" id="dist" aria-labelledby="distTitle"></ol>
         <div class="actions">
           <button class="btn solid" id="share" type="button">Copy my result</button>
           <a class="btn" href="./">Read today’s story →</a>
@@ -449,6 +463,15 @@ const db = load();
 db.days = db.days || {};
 db.stats = db.stats || {played:0, wins:0, streak:0, best:0, last:null};
 db.settings = db.settings || {hard:false};
+if (!db.stats.dist){
+  // First visit since the chart was added: rebuild from the games still saved on this device.
+  db.stats.dist = {pecks:0, t1:0, t2:0, t3:0, miss:0};
+  for (const d of Object.values(db.days)){
+    if (!d.counted) continue;
+    const k = d.phase === "lost" ? "miss" : (d.pecks.length < MAX_PECKS && !d.tries ? "pecks" : "t" + (d.solvedOnTry || 1));
+    if (k in db.stats.dist) db.stats.dist[k]++;
+  }
+}
 const S = db.days[TODAY] && db.days[TODAY].p === PUZZLE.p ? db.days[TODAY]
         : (db.days[TODAY] = {p:PUZZLE.p, pecks:[], phase:"peck", tries:0, locked:[], hitsPerPeck:[]});
 // keep storage small: only the last 10 days
@@ -633,12 +656,15 @@ function submit(){
 /* ---------- End of round ---------- */
 function finish(won, fresh){
   if (S.hard === undefined) S.hard = !!db.settings.hard;
+  const byPecks = S.phase === "peck";
   S.phase = won ? "won" : "lost";
+  S.outcome = !won ? "miss" : byPecks ? "pecks" : "t" + (S.tries + 1);
   S.solvedOnTry = won ? S.tries + 1 : null;
   const st = db.stats;
   if (!S.counted){
     S.counted = true;
     st.played++;
+    st.dist[S.outcome] = (st.dist[S.outcome] || 0) + 1;
     const yesterday = (() => { const d = new Date(); d.setDate(d.getDate()-1); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; })();
     if (won){ st.wins++; st.streak = st.last === yesterday ? st.streak + 1 : 1; st.best = Math.max(st.best, st.streak); st.last = TODAY; }
     else { st.streak = 0; }
@@ -670,10 +696,35 @@ function showResult(animate){
   for (const [n,l] of [[st.played,"played"],[st.played ? Math.round(100*st.wins/st.played)+"%" : "0%","won"],[st.streak,"streak"],[st.best,"best streak"]]){
     const s = document.createElement("span"); const b = document.createElement("b"); b.textContent = n; s.append(b, l); stats.appendChild(s);
   }
+  renderDist(animate);
   tickNext();
   if (animate){
     setTimeout(() => r.scrollIntoView({block:"start", behavior: reduced ? "auto" : "smooth"}), won ? 900 : 200);
     if (won) celebrate();
+  }
+}
+
+const DIST_ROWS = [["pecks","Pecks alone"],["t1","1st try"],["t2","2nd try"],["t3","3rd try"],["miss","Missed"]];
+function renderDist(animate){
+  const dist = db.stats.dist, list = $("dist"); list.textContent = "";
+  const max = Math.max(1, ...DIST_ROWS.map(([k]) => dist[k] || 0));
+  const todayKey = S.outcome || (S.phase === "lost" ? "miss" : null);
+  for (const [k, label] of DIST_ROWS){
+    const n = dist[k] || 0, pct = n / max * 100, isToday = k === todayKey;
+    const li = document.createElement("li"); if (isToday) li.className = "today";
+    const games = `${n} game${n === 1 ? "" : "s"}`;
+    li.title = `${label}: ${games}${isToday ? " (includes today)" : ""}`;
+    const lbl = document.createElement("span"); lbl.className = "lbl"; lbl.textContent = label;
+    const track = document.createElement("span"); track.className = "track"; track.setAttribute("aria-hidden", "true");
+    const bar = document.createElement("span"); bar.className = "bar"; bar.style.display = "block"; bar.style.width = animate && !reduced ? "0%" : pct + "%";
+    const val = document.createElement("span"); val.className = "val";
+    val.textContent = n; if (isToday){ const t = document.createElement("span"); t.className = "dtag"; t.textContent = " · today"; val.appendChild(t); }
+    // Value sits just past the bar end; inside the track, clear of the bar.
+    val.style.left = `calc(${pct}% + 6px)`; if (pct > 70){ val.style.left = "auto"; val.style.right = `calc(${100 - pct}% + 6px)`; val.style.color = "var(--sheet)"; if (val.lastChild && val.lastChild.className === "dtag") val.lastChild.style.color = "var(--sheet)"; }
+    track.append(bar, val);
+    const sr = document.createElement("span"); sr.className = "sr"; sr.textContent = `: ${games}${isToday ? ", including today" : ""}`;
+    li.append(lbl, sr, track); list.appendChild(li);
+    if (animate && !reduced) requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = pct + "%"; }));
   }
 }
 
