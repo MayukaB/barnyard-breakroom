@@ -1,0 +1,525 @@
+From 4146f0a825f71954f2bcb7a0453ec867f2950600 Mon Sep 17 00:00:00 2001
+From: Mayuka <mayuka.bulath@gmail.com>
+Date: Mon, 28 Sep 2026 07:29:26 -0400
+Subject: [PATCH] Hen Pecks: sign in to keep stats across devices (Supabase)
+
+Stats lived only in the browser, so a new phone or cleared storage lost
+the streak. Players can now sign in with an email link (and Google, once
+it's set up) and their stats are saved to an account.
+
+- Finished games are now logged by day, and the stats are worked out from
+  the log. Merging two devices unions the logs, so a day can never be
+  counted twice. Totals from before this change become a one-time "base"
+  that each device adds to the account once (tracked by a device id).
+- supabase/schema.sql: pecks_players table with row-level security, and
+  a pecks_sync function that merges and returns the player's row.
+- Until CLOUD is filled in there's no sign-in button and nothing changes.
+  Signing out keeps this device's own games.
+- README: setup steps for the database, keys, redirects, email and Google.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_017QL7EKQWXeAFtV78PqzSUW
+---
+ README.md           |  11 ++
+ pecks.html          | 238 ++++++++++++++++++++++++++++++++++++++++----
+ supabase/schema.sql | 123 +++++++++++++++++++++++
+ 3 files changed, 351 insertions(+), 21 deletions(-)
+ create mode 100644 supabase/schema.sql
+
+diff --git a/README.md b/README.md
+index d09c855..3270391 100644
+--- a/README.md
++++ b/README.md
+@@ -5,6 +5,7 @@ The newest National Geographic animal story each morning, painted as a cute stor
+ - `index.html` is the whole site. It reads `stories.json` and draws each painting as SVG with shared watercolor filters.
+ - `stories.json` holds every story, newest first.
+ - `pecks.html` is **Hen Pecks**, a daily animal-expression puzzle. Seven pecks (one vowel or one consonant pair each), then a hint and three tries to fill in the rest. Players can switch on hard mode, which hides the hint unless they choose to peek. Puzzles live in the `PUZZLES` list at the top of its script, one per day from `START_DATE`; add more to the end.
++- Hen Pecks stats are saved in the browser. Players can also sign in (Supabase: email link, optionally Google) so their stats follow them to any device. `supabase/schema.sql` sets up the database; see **Hen Pecks accounts** below. Until `CLOUD` in `pecks.html` is filled in, there's no sign-in button and nothing changes.
+ - `scripts/check-pecks.mjs` checks the phrase list: duplicates, stray characters, missing hints, meanings or origin notes, hints that give away a word of the answer, and phrases without a picture. `.github/workflows/checks.yml` runs it on every push that touches the game. Run it yourself with `node scripts/check-pecks.mjs` after adding phrases.
+ - `og-story.png` and `og-pecks.png` are the link preview images (what shows up when someone shares a link). Their source is `scripts/og-cards.html`. The preview tags point at barnyardbreakroom.com, so update them if the domain changes.
+ - `pecks-art.js` draws the Hen Pecks pictures: a small kit of watercolor animals and props, one scene per phrase (shown on a win) and a sad hen (shown on a loss). A new phrase without a scene falls back to the happy hen.
+@@ -21,6 +22,16 @@ The newest National Geographic animal story each morning, painted as a cute stor
+ 
+ Each run is one API call with a couple of page fetches. On days when the top story hasn't changed, nothing gets committed.
+ 
++## Hen Pecks accounts (Supabase)
++
++1. **Database:** in your Supabase project, open SQL Editor → New query, paste all of `supabase/schema.sql`, and run it. It creates the `pecks_players` table (each player can only read and change their own row) and the `pecks_sync` function the game calls.
++2. **Keys:** Project Settings → API. Copy the Project URL and the `anon` public key into `CLOUD` near the bottom of the script in `pecks.html`. The anon key is safe to publish; never put the `service_role` key in the site.
++3. **Redirects:** Authentication → URL Configuration. Set Site URL to `https://barnyardbreakroom.com/pecks.html` and add `https://barnyardbreakroom.com/pecks.html` and `http://localhost:3000/pecks.html` (for `npx serve`) to Redirect URLs.
++4. **Emails:** Supabase's built-in email sender only allows a few emails an hour and is meant for testing. Before sharing widely, add your own sender under Authentication → Emails → SMTP Settings (Resend, Postmark and Brevo all have free tiers). You can reword the "Magic Link" email under Authentication → Emails → Templates.
++5. **Google (optional):** create an OAuth client in Google Cloud Console (APIs & Services → Credentials, type "Web application", authorized redirect URI is the callback URL Supabase shows under Authentication → Providers → Google). Paste its client ID and secret into that Supabase page, switch Google on, then set `google: true` in `CLOUD`.
++
++Free Supabase projects pause after about a week without any requests. If that happens, sign-in stops working (the game itself keeps going) until you restore the project from the dashboard.
++
+ ## Run locally
+ 
+ ```sh
+diff --git a/pecks.html b/pecks.html
+index 4cbe6a9..75e480c 100644
+--- a/pecks.html
++++ b/pecks.html
+@@ -121,7 +121,7 @@ details.how li{margin:2px 0}
+ .hint .peek{font:700 14px/1 Karla,sans-serif;color:#3A68AE;background:transparent;border:1.5px solid #3A68AE;border-radius:999px;padding:8px 14px;cursor:pointer;margin-top:4px}
+ .hint .peek:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
+ .hint .hidden-note{font:500 15px/1.4 Karla,sans-serif;color:#5B6A63;display:block;margin-bottom:8px}
+-.modes{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:-10px}
++.modes{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:10px 16px;margin-top:-10px}
+ .switch-hard{display:inline-flex;align-items:center;gap:10px;cursor:pointer;font:700 14px/1.2 Karla,sans-serif;color:var(--ink)}
+ .switch-hard small{font-weight:400;color:var(--ink-soft)}
+ .switch-hard input{appearance:none;-webkit-appearance:none;width:40px;height:22px;border-radius:999px;background:var(--tile-line);position:relative;cursor:pointer;margin:0;transition:background .2s;flex:none}
+@@ -193,6 +193,30 @@ details.how li{margin:2px 0}
+ @media (max-width:560px){.result .actions{justify-content:center}}
+ .next{font-size:14px;color:var(--ink-soft);margin-top:12px}
+ 
++/* Account (sign in to keep stats) */
++.acct-btn{margin-right:auto;display:inline-flex;align-items:center;gap:7px;font:700 14px/1.2 Karla,sans-serif;color:var(--cobalt);background:none;border:0;padding:4px 0;cursor:pointer}
++.acct-btn svg{width:18px;height:18px;flex:none}
++.acct-btn:hover{text-decoration:underline}
++.acct-btn:focus-visible,.linkish:focus-visible,.acct-x:focus-visible,dialog.acct input:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
++.acct-note{font-size:14px;color:var(--ink-soft);margin:-4px 0 14px !important}
++.linkish{font:inherit;color:var(--cobalt);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
++dialog.acct{border:0;border-radius:8px;background:var(--sheet);color:var(--ink);width:min(420px,calc(100vw - 32px));box-sizing:border-box;padding:26px 24px 20px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5)}
++dialog.acct::backdrop{background:rgba(22,29,27,.5)}
++dialog.acct h3{font:400 24px/1.15 "Young Serif",Georgia,serif;margin:0 0 8px;padding-right:28px}
++dialog.acct p{margin:0 0 12px;font-size:15px}
++dialog.acct .fine{font-size:13px;color:var(--ink-soft);margin:12px 0 0}
++dialog.acct label{display:block;font:700 12px/1 Karla,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 6px}
++dialog.acct .row{display:flex;flex-wrap:wrap;gap:8px}
++dialog.acct input{flex:1 1 180px;min-width:0;font:16px/1.2 Karla,sans-serif;color:var(--ink);background:var(--tile);border:1.5px solid var(--tile-line);border-radius:999px;padding:10px 14px}
++dialog.acct .btn{justify-content:center}
++dialog.acct .btn[disabled]{opacity:.55;cursor:default;filter:none}
++dialog.acct .google{width:100%;margin-bottom:4px}
++dialog.acct .or{text-align:center;font-size:13px;color:var(--ink-soft);margin:4px 0 8px}
++.acct-x{position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;border:0;background:none;color:var(--ink-soft);font:400 26px/1 Karla,sans-serif;cursor:pointer}
++.acct-x:hover{background:var(--track)}
++.acct-msg{min-height:1.4em;margin:10px 0 0 !important;font-size:14px !important;color:var(--ink-soft)}
++.acct-msg.warn{color:var(--bad)}
++
+ canvas#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:10}
+ footer{font-size:13px;color:var(--ink-soft);display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 24px;border-top:1px solid var(--rule);padding-top:16px}
+ footer p{margin:0}
+@@ -248,6 +272,7 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
+     </details>
+ 
+     <div class="modes">
++      <button class="acct-btn" id="acctBtn" type="button" hidden aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18.5h10.2a4.3 4.3 0 0 0 .6-8.6A6 6 0 0 0 6.3 11a3.8 3.8 0 0 0 .7 7.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path id="acctTick" d="m9.2 14 2 2 3.8-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" hidden/></svg><span id="acctBtnText">Sign in to save stats</span></button>
+       <label class="switch-hard" for="hard"><input type="checkbox" id="hard" role="switch"> Hard mode <small id="hardNote">hint shown</small></label>
+     </div>
+ 
+@@ -304,6 +329,7 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
+         <div class="stats" id="stats"></div>
+         <p class="dist-title" id="distTitle">How your games ended</p>
+         <ol class="dist" id="dist" aria-labelledby="distTitle"></ol>
++        <p class="acct-note" id="acctNote" hidden></p>
+         <div class="actions">
+           <button class="btn solid" id="share" type="button">Copy my result</button>
+           <a class="btn" href="./">Read today’s story →</a>
+@@ -313,6 +339,31 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
+     </section>
+   </main>
+ 
++  <dialog class="acct" id="acct" aria-labelledby="acctTitle">
++    <button class="acct-x" id="acctClose" type="button" aria-label="Close">×</button>
++    <div id="acctOut">
++      <h3 id="acctTitle">Keep your stats</h3>
++      <p>Right now your streak and stats live in this browser only. Sign in and they’re saved to an account, so they follow you to any device. No password needed.</p>
++      <button class="btn google" id="gBtn" type="button" hidden>Continue with Google</button>
++      <p class="or" id="orLine" hidden>or</p>
++      <form id="emailForm">
++        <label for="email">Email</label>
++        <div class="row">
++          <input type="email" id="email" required autocomplete="email" placeholder="you@example.com">
++          <button class="btn solid" id="emailBtn" type="submit">Email me a link</button>
++        </div>
++      </form>
++      <p class="fine">Your email is only used to sign you in. Games you’ve already played on this device are added to your account.</p>
++    </div>
++    <div id="acctIn" hidden>
++      <h3>Your stats are saved</h3>
++      <p>Signed in as <b id="acctEmail"></b>. Sign in with the same email on any device to pick up your streak there.</p>
++      <button class="btn" id="signOut" type="button">Sign out</button>
++      <p class="fine">Signing out keeps the games you played here on this device.</p>
++    </div>
++    <p class="acct-msg" id="acctMsg" role="status" aria-live="polite"></p>
++  </dialog>
++
+   <footer>
+     <p>A new expression every morning. Everyone gets the same one each day.</p>
+     <p class="credit">Created by Mayuka</p>
+@@ -483,9 +534,38 @@ if (!db.stats.dist){
+     if (k in db.stats.dist) db.stats.dist[k]++;
+   }
+ }
+-// A streak only survives if the last win was today or yesterday.
+-{ const y = new Date(); y.setDate(y.getDate() - 1); const yk = `${y.getFullYear()}-${pad2(y.getMonth()+1)}-${pad2(y.getDate())}`;
+-  if (db.stats.last && db.stats.last !== TODAY && db.stats.last !== yk) db.stats.streak = 0; }
++/* ---------- Stats ----------
++   Each finished game is logged by day (db.log = {"2026-09-28":"t2", ...}) and the stats are
++   worked out from the log. Logs from two devices can then be merged without counting a day twice.
++   db.base holds the totals from before games were logged by day. db.cloud is the signed-in
++   player's saved copy, if any. */
++if (!db.log){
++  // Streak only survives if the last win was today or yesterday.
++  const st = db.stats, alive = st.last === TODAY || st.last === prevDay(TODAY);
++  db.base = {played:st.played, wins:st.wins, best:st.best, streak: alive ? st.streak : 0, last:st.last, dist:{...st.dist}};
++  db.log = {};
++}
++if (!db.device) db.device = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now());
++function prevDay(key){ const [y,m,d] = key.split("-").map(Number); return new Date(Date.UTC(y,m-1,d-1)).toISOString().slice(0,10); }
++function computeStats(base, log){
++  base = base || {};
++  const st = {played: base.played || 0, wins: base.wins || 0, best: base.best || 0, dist: {pecks:0, t1:0, t2:0, t3:0, miss:0}};
++  for (const k in st.dist) st.dist[k] = (base.dist && base.dist[k]) || 0;
++  let streak = base.streak || 0, last = base.last || null;
++  for (const day of Object.keys(log).sort()){
++    const o = log[day];
++    if (!(o in st.dist)) continue;
++    st.played++; st.dist[o]++;
++    if (o !== "miss") st.wins++;
++    if (last && day <= last) continue;           // older than the saved totals: counted, but can't move the streak
++    if (o === "miss") streak = 0;
++    else { streak = last === prevDay(day) ? streak + 1 : 1; last = day; st.best = Math.max(st.best, streak); }
++  }
++  st.streak = last === TODAY || last === prevDay(TODAY) ? streak : 0;
++  return st;
++}
++const stats = () => db.cloud ? computeStats(db.cloud.base, {...db.log, ...db.cloud.log}) : computeStats(db.base, db.log);
++
+ const S = db.days[TODAY] && db.days[TODAY].p === PUZZLE.p ? db.days[TODAY]
+         : (db.days[TODAY] = {p:PUZZLE.p, pecks:[], phase:"peck", tries:0, locked:[], hitsPerPeck:[]});
+ // keep storage small: only the last 10 days
+@@ -716,16 +796,11 @@ function finish(won, fresh){
+   S.phase = won ? "won" : "lost";
+   S.outcome = !won ? "miss" : byPecks ? "pecks" : "t" + (S.tries + 1);
+   S.solvedOnTry = won ? S.tries + 1 : null;
+-  const st = db.stats;
+   if (!S.counted){
+     S.counted = true;
+-    st.played++;
+-    st.dist[S.outcome] = (st.dist[S.outcome] || 0) + 1;
+-    const yesterday = (() => { const d = new Date(); d.setDate(d.getDate()-1); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; })();
+-    if (won){ st.wins++; st.streak = st.last === yesterday ? st.streak + 1 : 1; st.best = Math.max(st.best, st.streak); st.last = TODAY; }
+-    else { st.streak = 0; }
++    if (!db.log[TODAY]) db.log[TODAY] = S.outcome;
+   }
+-  save();
++  save(); cloudSync();
+   renderBoard(fresh.length ? fresh : []); renderEggs(); renderPad(); say("");
+   showResult(true);
+ }
+@@ -748,11 +823,7 @@ function showResult(animate){
+   $("answer").textContent = PUZZLE.p.charAt(0) + PUZZLE.p.slice(1).toLowerCase();
+   $("meaning").textContent = PUZZLE.meaning;
+   $("blurb").textContent = PUZZLE.blurb;
+-  const st = db.stats, stats = $("stats"); stats.textContent = "";
+-  for (const [n,l] of [[st.played,"played"],[st.played ? Math.round(100*st.wins/st.played)+"%" : "0%","won"],[st.streak,"streak"],[st.best,"best streak"]]){
+-    const s = document.createElement("span"); const b = document.createElement("b"); b.textContent = n; s.append(b, " " + l); stats.appendChild(s);
+-  }
+-  renderDist(animate);
++  renderStats(animate);
+   tickNext();
+   if (animate){
+     setTimeout(() => { r.scrollIntoView({block:"start", behavior: reduced ? "auto" : "smooth"}); $("verdict").focus({preventScroll: true}); }, won ? 900 : 200);
+@@ -760,9 +831,17 @@ function showResult(animate){
+   }
+ }
+ 
++function renderStats(animate){
++  const st = stats(), box = $("stats"); box.textContent = "";
++  for (const [n,l] of [[st.played,"played"],[st.played ? Math.round(100*st.wins/st.played)+"%" : "0%","won"],[st.streak,"streak"],[st.best,"best streak"]]){
++    const s = document.createElement("span"); const b = document.createElement("b"); b.textContent = n; s.append(b, " " + l); box.appendChild(s);
++  }
++  renderDist(st.dist, animate);
++}
++
+ const DIST_ROWS = [["pecks","Pecks alone"],["t1","1st try"],["t2","2nd try"],["t3","3rd try"],["miss","Missed"]];
+-function renderDist(animate){
+-  const dist = db.stats.dist, list = $("dist"); list.textContent = "";
++function renderDist(dist, animate){
++  const list = $("dist"); list.textContent = "";
+   const max = Math.max(1, ...DIST_ROWS.map(([k]) => dist[k] || 0));
+   const todayKey = S.outcome || (S.phase === "lost" ? "miss" : null);
+   for (const [k, label] of DIST_ROWS){
+@@ -819,6 +898,123 @@ function tickNext(){
+   upd(); nextTimer = setInterval(upd, 1000);
+ }
+ 
++/* ---------- Accounts: sign in to keep stats (Supabase) ----------
++   Fill in url and anonKey from Supabase → Project Settings → API. The anon key is meant to be
++   public: row-level security in supabase/schema.sql keeps each player to their own row.
++   Leave url empty and the game works exactly as before, with no sign-in button.
++   Set google to true once Google is switched on under Authentication → Providers. */
++const CLOUD = { url: "", anonKey: "", google: false };
++const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
++let sb = null, user = null, syncChain = Promise.resolve();
++
++function acctMsg(text, warn = false){ const m = $("acctMsg"); m.textContent = text; m.classList.toggle("warn", warn); }
++function renderAcct(){
++  if (!CLOUD.url || !CLOUD.anonKey) return;
++  const inAcct = !!db.cloud;
++  $("acctBtnText").textContent = inAcct ? "Stats saved to your account" : "Sign in to save stats";
++  $("acctTick").hidden = !inAcct;
++  $("acctOut").hidden = inAcct; $("acctIn").hidden = !inAcct;
++  $("acctEmail").textContent = (db.cloud && db.cloud.email) || "";
++  $("gBtn").hidden = $("orLine").hidden = !CLOUD.google;
++  for (const b of [$("gBtn"), $("emailBtn"), $("signOut")]) b.disabled = !sb;
++  const note = $("acctNote"); note.hidden = false; note.textContent = "";
++  if (inAcct) note.textContent = "Saved to your account, so these follow you to any device.";
++  else {
++    const b = document.createElement("button"); b.type = "button"; b.className = "linkish"; b.textContent = "Sign in to keep them";
++    b.addEventListener("click", openAcct);
++    note.append("These stats are saved in this browser only. ", b, ".");
++  }
++}
++function refreshStats(){ if (!$("result").hidden) renderStats(false); }
++function openAcct(){ if (!$("acct").open) $("acct").showModal(); }
++
++// Sends this device's games and gets back the merged copy. Calls run one at a time.
++function cloudSync(opts = {}){
++  syncChain = syncChain.then(() => doSync(opts)).catch(() => {});
++  return syncChain;
++}
++async function doSync({first = false} = {}){
++  if (!sb || !user) return;
++  const uid = user.id, email = user.email;
++  const { data, error } = await sb.rpc("pecks_sync", {
++    p_log: db.log,
++    p_base: db.base && db.base.played ? db.base : null,
++    p_device: db.device,
++    p_settings: db.settings,
++    p_overwrite_settings: !first
++  });
++  if (!user || user.id !== uid) return;          // signed out while this was on its way
++  if (error || !data){
++    if (first) acctMsg("Signed in, but your stats couldn’t be saved just now. They’re safe here and will be saved next time.", true);
++    return;
++  }
++  db.cloud = { uid, email, base: data.base || {}, log: data.log || {} };
++  if (data.settings && typeof data.settings.hard === "boolean") db.settings.hard = data.settings.hard;
++  save(); renderAcct(); refreshStats(); renderPad();
++}
++
++function initCloud(){
++  if (!CLOUD.url || !CLOUD.anonKey) return;
++  $("acctBtn").hidden = false;
++  // A sign-in link that failed (expired, already used) comes back with the reason in the address.
++  const h = new URLSearchParams(location.hash.slice(1));
++  const linkError = h.get("error_description");
++  if (linkError) history.replaceState(null, "", location.pathname + location.search);
++  renderAcct();
++  const s = document.createElement("script");
++  s.src = SUPABASE_JS; s.async = true;
++  s.onload = () => {
++    try { sb = window.supabase.createClient(CLOUD.url, CLOUD.anonKey); } catch { return; }
++    sb.auth.onAuthStateChange((event, session) => {
++      const u = session ? session.user : null;
++      const changed = (u && u.id) !== (user && user.id);
++      user = u;
++      if (!changed && !!u === !!db.cloud) { renderAcct(); return; }
++      // Don't wait on Supabase inside this callback (it can deadlock); do the work just after.
++      setTimeout(() => {
++        if (!u){ if (db.cloud){ delete db.cloud; save(); refreshStats(); } renderAcct(); return; }
++        const first = !db.cloud || db.cloud.uid !== u.id;
++        if (first && db.cloud){ delete db.cloud; save(); refreshStats(); }   // a different player signed in here
++        renderAcct();
++        cloudSync({first}).then(() => { if (first && db.cloud) acctMsg("You’re signed in. Your stats are saved to your account."); });
++      }, 0);
++    });
++    renderAcct();
++    if (linkError){ openAcct(); acctMsg("That sign-in link didn’t work. It may have expired or already been used. Ask for a new one below.", true); }
++  };
++  s.onerror = () => acctMsg("Sign-in couldn’t load right now. Your stats are still saved in this browser.", true);
++  document.head.appendChild(s);
++
++  $("acctBtn").addEventListener("click", openAcct);
++  $("acctClose").addEventListener("click", () => $("acct").close());
++  $("acct").addEventListener("click", e => { if (e.target === $("acct")) $("acct").close(); });   // click on the backdrop
++  $("acct").addEventListener("close", () => acctMsg(""));
++  const redirectTo = location.origin + location.pathname;
++  $("emailForm").addEventListener("submit", async e => {
++    e.preventDefault();
++    if (!sb) return;
++    const email = $("email").value.trim();
++    $("emailBtn").disabled = true; acctMsg("Sending…");
++    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
++    $("emailBtn").disabled = false;
++    if (!error) acctMsg(`Check ${email} for a sign-in link. It opens Hen Pecks signed in.`);
++    else acctMsg(error.status === 429 ? "Too many sign-in emails just now. Try again in a few minutes." : "Couldn’t send the link. Check the email address and try again.", true);
++  });
++  $("gBtn").addEventListener("click", async () => {
++    if (!sb) return;
++    const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
++    if (error) acctMsg("Couldn’t start Google sign-in. Try the email link instead.", true);
++  });
++  $("signOut").addEventListener("click", async () => {
++    if (!sb) return;
++    $("signOut").disabled = true;
++    await sb.auth.signOut().catch(() => {});
++    user = null;
++    if (db.cloud){ delete db.cloud; save(); }
++    renderAcct(); refreshStats(); acctMsg("Signed out.");
++  });
++}
++
+ /* ---------- Win animation: tile dance + watercolor confetti ---------- */
+ function celebrate(){
+   if (reduced) return;
+@@ -854,7 +1050,7 @@ function celebrate(){
+ /* ---------- Keyboard ---------- */
+ document.addEventListener("keydown", e => {
+   if (e.ctrlKey || e.metaKey || e.altKey) return;
+-  if (e.target.closest && e.target.closest("summary")) return;
++  if (e.target.closest && e.target.closest("summary, dialog")) return;
+   const k = e.key.toUpperCase();
+   if (S.phase === "peck" && /^[A-Z]$/.test(k)){
+     const key = VOWELS.includes(k) ? k : PAIRS.find(p => p.includes(k));
+@@ -879,14 +1075,14 @@ try { if (!localStorage.getItem(STORE + ":seen")) { $("how").open = true; localS
+ save();
+ $("hard").addEventListener("change", e => {
+   if (S.phase !== "peck") return;
+-  db.settings.hard = e.target.checked; save(); renderPad();
++  db.settings.hard = e.target.checked; save(); renderPad(); cloudSync();
+   say(e.target.checked ? "Hard mode on: the hint will stay hidden." : "Hard mode off: you’ll get the hint.");
+ });
+ $("peek").addEventListener("click", () => {
+   S.hintUsed = true; save(); renderPad();
+   say("Hint revealed. This one won’t count as a hard-mode win.");
+ });
+-buildBoard(); buildPad();
++buildBoard(); buildPad(); initCloud();
+ if (S.phase === "solve") active = blanks()[0] ?? null;
+ renderAll();
+ </script>
+diff --git a/supabase/schema.sql b/supabase/schema.sql
+new file mode 100644
+index 0000000..eb9d08f
+--- /dev/null
++++ b/supabase/schema.sql
+@@ -0,0 +1,123 @@
++-- Hen Pecks accounts: saves each signed-in player's stats so they follow them to any device.
++-- Run this once in Supabase → SQL Editor → New query. It is safe to run again after changes.
++
++-- One row per player.
++--   log:     one finished game per day, {"2026-09-28": "t2", ...}. Stats are worked out from this,
++--            so merging two devices can never count the same day twice.
++--   base:    totals from before games were logged by day (played, wins, best, streak, last, dist).
++--   devices: devices whose old totals were already added to base, so a retry can't add them twice.
++create table if not exists public.pecks_players (
++  user_id    uuid primary key default auth.uid() references auth.users (id) on delete cascade,
++  log        jsonb  not null default '{}'::jsonb,
++  base       jsonb  not null default '{}'::jsonb,
++  devices    text[] not null default '{}',
++  settings   jsonb  not null default '{}'::jsonb,
++  created_at timestamptz not null default now(),
++  updated_at timestamptz not null default now()
++);
++
++-- Row-level security: a player can only ever see or change their own row.
++alter table public.pecks_players enable row level security;
++
++drop policy if exists "Players read their own row" on public.pecks_players;
++create policy "Players read their own row" on public.pecks_players
++  for select to authenticated using ((select auth.uid()) = user_id);
++
++drop policy if exists "Players create their own row" on public.pecks_players;
++create policy "Players create their own row" on public.pecks_players
++  for insert to authenticated with check ((select auth.uid()) = user_id);
++
++drop policy if exists "Players update their own row" on public.pecks_players;
++create policy "Players update their own row" on public.pecks_players
++  for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
++
++revoke all on public.pecks_players from anon;
++grant select, insert, update on public.pecks_players to authenticated;
++
++-- Adds one device's old totals to another's.
++create or replace function public.pecks_add_base(a jsonb, b jsonb)
++returns jsonb
++language sql immutable
++set search_path = ''
++as $$
++  select jsonb_build_object(
++    'played', coalesce((a->>'played')::int, 0) + coalesce((b->>'played')::int, 0),
++    'wins',   coalesce((a->>'wins')::int, 0)   + coalesce((b->>'wins')::int, 0),
++    'best',   greatest(coalesce((a->>'best')::int, 0), coalesce((b->>'best')::int, 0)),
++    -- The streak that is still going is the one whose last win is newer.
++    'streak', case
++                when coalesce(b->>'last', '') > coalesce(a->>'last', '') then coalesce((b->>'streak')::int, 0)
++                when coalesce(b->>'last', '') < coalesce(a->>'last', '') then coalesce((a->>'streak')::int, 0)
++                else greatest(coalesce((a->>'streak')::int, 0), coalesce((b->>'streak')::int, 0))
++              end,
++    'last',   nullif(greatest(coalesce(a->>'last', ''), coalesce(b->>'last', '')), ''),
++    'dist',   (select coalesce(jsonb_object_agg(k, n), '{}'::jsonb)
++                 from (select k, sum(v::int) as n
++                         from (select key as k, value as v from jsonb_each_text(coalesce(a->'dist', '{}'::jsonb))
++                               union all
++                               select key, value from jsonb_each_text(coalesce(b->'dist', '{}'::jsonb))) x
++                        group by k) y)
++  )
++$$;
++
++-- The one call the game makes. Merges this device's games into the player's row and returns the row.
++--   p_log:      this device's games by day. Days already saved keep their saved result.
++--   p_base:     this device's totals from before day-by-day logging (sent until the device is recorded).
++--   p_device:   a random id for this browser.
++--   p_settings: hard mode etc. With p_overwrite_settings false (first sign-in) the saved settings win.
++create or replace function public.pecks_sync(
++  p_log jsonb default '{}'::jsonb,
++  p_base jsonb default null,
++  p_device text default null,
++  p_settings jsonb default null,
++  p_overwrite_settings boolean default false
++)
++returns public.pecks_players
++language plpgsql
++security invoker
++set search_path = ''
++as $$
++declare
++  uid uuid := auth.uid();
++  clean jsonb;
++  add_base boolean;
++  r public.pecks_players;
++begin
++  if uid is null then
++    raise exception 'Sign in first' using errcode = '28000';
++  end if;
++  if jsonb_typeof(coalesce(p_log, '{}'::jsonb)) <> 'object' then
++    raise exception 'p_log must be an object' using errcode = '22023';
++  end if;
++
++  -- Keep only well-formed days and known outcomes.
++  select coalesce(jsonb_object_agg(e.key, e.value), '{}'::jsonb) into clean
++    from jsonb_each(coalesce(p_log, '{}'::jsonb)) e
++   where e.key ~ '^\d{4}-\d{2}-\d{2}$'
++     and e.value #>> '{}' in ('pecks', 't1', 't2', 't3', 'miss');
++
++  insert into public.pecks_players (user_id) values (uid) on conflict (user_id) do nothing;
++
++  select p_base is not null and p_device is not null and not (p_device = any (p.devices))
++    into add_base
++    from public.pecks_players p where p.user_id = uid;
++
++  update public.pecks_players p set
++    log        = clean || p.log,   -- right side wins, so days already saved keep their result
++    base       = case when add_base then public.pecks_add_base(p.base, p_base) else p.base end,
++    devices    = case when add_base then p.devices || p_device else p.devices end,
++    settings   = case
++                   when p_settings is null then p.settings
++                   when p_overwrite_settings then p.settings || p_settings
++                   else p_settings || p.settings
++                 end,
++    updated_at = now()
++  where p.user_id = uid
++  returning p.* into r;
++
++  return r;
++end
++$$;
++
++revoke all on function public.pecks_sync(jsonb, jsonb, text, jsonb, boolean) from public, anon;
++grant execute on function public.pecks_sync(jsonb, jsonb, text, jsonb, boolean) to authenticated;
+-- 
+2.43.0
+
