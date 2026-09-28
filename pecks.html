@@ -488,6 +488,7 @@ for (const k of Object.keys(db.days).sort().slice(0,-10)) delete db.days[k];
 
 let entry = {};          // pos -> typed letter (solve phase)
 let active = null;       // selected blank position
+let busy = false;        // true while a wrong try is shaking, so input waits
 
 /* ---------- Derived state ---------- */
 const guessed = () => new Set(S.pecks.flatMap(k => [...k]));
@@ -509,7 +510,7 @@ function buildBoard(){
     t.setAttribute("role", "img");
     if (!isLetter(c)){ t.textContent = c; t.setAttribute("aria-label", PUNCT_NAME[c] || c); }
     t.dataset.i = i;
-    t.addEventListener("click", () => { if (S.phase === "solve" && !isShown(i)){ active = i; renderBoard(); } });
+    t.addEventListener("click", () => { if (S.phase === "solve" && !busy && !isShown(i)){ active = i; renderBoard(); } });
     word.appendChild(t); tiles[i] = t;
   });
   const words = [...board.querySelectorAll(".word")];
@@ -661,7 +662,7 @@ function startSolve(){
 
 /* ---------- Solve phase ---------- */
 function type(ch){
-  if (S.phase !== "solve" || active == null) return;
+  if (S.phase !== "solve" || active == null || busy) return;
   entry[active] = ch;
   const bl = blanks(), at = bl.indexOf(active);
   const nextEmpty = bl.slice(at + 1).find(i => !entry[i]) ?? bl.find(i => !entry[i]);
@@ -671,7 +672,7 @@ function type(ch){
   speak(left ? `${ch}. ${left} blank${left === 1 ? "" : "s"} left.` : `${ch}. All blanks filled. Press Enter to check.`);
 }
 function back(){
-  if (S.phase !== "solve") return;
+  if (S.phase !== "solve" || busy) return;
   const bl = blanks();
   if (active != null && entry[active]) { delete entry[active]; }
   else {
@@ -681,7 +682,7 @@ function back(){
   renderBoard();
 }
 function submit(){
-  if (S.phase !== "solve") return;
+  if (S.phase !== "solve" || busy) return;
   const bl = blanks();
   const missing = bl.filter(i => !entry[i]);
   if (missing.length){ say(`${missing.length} blank${missing.length===1?"":"s"} still empty`, true); active = missing[0]; renderBoard(); return; }
@@ -691,8 +692,10 @@ function submit(){
   S.tries++;
   if (S.tries >= MAX_TRIES){ return finish(false, []); }
   save();
+  busy = true;
   if (!reduced) wrong.forEach(i => { const t = tiles[i]; t.classList.remove("shake"); void t.offsetWidth; t.classList.add("shake"); });
   setTimeout(() => {
+    busy = false;
     wrong.forEach(i => { delete entry[i]; tiles[i].classList.remove("shake"); });
     active = wrong[0];
     renderAll();
