@@ -844,6 +844,9 @@ document.addEventListener("keydown", e => {
     const key = VOWELS.includes(k) ? k : PAIRS.find(p => p.includes(k));
     if (key && !S.pecks.includes(key)) { e.preventDefault(); peck(key); }
   } else if (S.phase === "solve"){
+    // Enter or Space on a focused button (a letter key, Backspace, "Show the hint") should press that button.
+    const onButton = e.target.closest && e.target.closest("button, a, input");
+    if (onButton && (e.key === "Enter" || e.key === " ")) return;
     if (/^[A-Z]$/.test(k)){ e.preventDefault(); type(k); }
     else if (e.key === "Backspace"){ e.preventDefault(); back(); }
     else if (e.key === "Enter"){ e.preventDefault(); submit(); }
