@@ -111,6 +111,8 @@ details.how li{margin:2px 0}
 .msg{font-size:15px;color:var(--ink-soft);min-height:1.5em;text-align:right;flex:1 1 200px}
 .msg.warn{color:var(--bad)}
 
+/* Focus moves here so screen readers read it; it isn't a control, so no ring. */
+.hint:focus,.verdict:focus{outline:none}
 .hint{background:var(--plate);color:#3F4A44;border-radius:4px;padding:12px 16px;transform:rotate(-.4deg);box-shadow:0 2px 10px var(--shadow)}
 .hint b{font:700 13px/1 Karla,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#9A6A12;display:block;margin-bottom:4px}
 .hint span{font:700 22px/1.25 Caveat,cursive}
@@ -178,7 +180,7 @@ details.how li{margin:2px 0}
 .dist .dtag{font-weight:400;color:var(--ink-soft)}
 @media (max-width:560px){.dist,.dist-title{margin-inline:auto;text-align:left}.dist-title{text-align:center}}
 @media (prefers-reduced-motion:reduce){.dist .bar{transition:none}}
-.stats b{color:var(--ink);font-size:18px;font-family:"Young Serif",Georgia,serif;font-weight:400;margin-right:4px}
+.stats b{color:var(--ink);font-size:18px;font-family:"Young Serif",Georgia,serif;font-weight:400;margin-right:1px}
 .result .actions{justify-content:flex-start}
 @media (max-width:560px){.result .actions{justify-content:center}}
 .next{font-size:14px;color:var(--ink-soft);margin-top:12px}
@@ -209,7 +211,7 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
     </filter>
   </defs>
 </svg>
-<canvas id="confetti" hidden></canvas>
+<canvas id="confetti" hidden aria-hidden="true"></canvas>
 
 <div class="wrap">
   <header>
@@ -242,13 +244,14 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
     </div>
 
     <div class="board" id="board" role="group" aria-label="Today's phrase"></div>
+    <p class="sr" id="srType" aria-live="polite" aria-atomic="true"></p>
 
     <div class="status">
-      <div class="pecks" id="eggs"><span class="lbl">Pecks</span></div>
+      <div class="pecks" id="eggs" role="img"><span class="lbl" aria-hidden="true">Pecks</span></div>
       <div class="msg" id="msg" role="status" aria-live="polite"></div>
     </div>
 
-    <div class="hint" id="hint" hidden><b>Hint</b><span id="hintText"></span><span class="hidden-note" id="hintHidden" hidden>Hard mode is on, so the hint is hidden.</span><button class="peek" id="peek" type="button" hidden>Show the hint anyway</button></div>
+    <div class="hint" id="hint" hidden tabindex="-1"><b>Hint</b><span id="hintText"></span><span class="hidden-note" id="hintHidden" hidden>Hard mode is on, so the hint is hidden.</span><button class="peek" id="peek" type="button" hidden>Show the hint anyway</button></div>
 
     <section class="pad" id="peckPad" aria-label="Choose a peck">
       <div>
@@ -262,10 +265,10 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
     </section>
 
     <section class="pad" id="solvePad" aria-label="Fill in the missing letters" hidden>
-      <div class="kb" id="kb"></div>
+      <div class="kb" id="kb" role="group" aria-label="Letter keys"></div>
     </section>
 
-    <section class="result" id="result" hidden aria-live="polite">
+    <section class="result" id="result" hidden aria-labelledby="verdict">
       <div class="hen" aria-hidden="true">
         <svg viewBox="0 0 160 140" id="art">
           <ellipse cx="80" cy="128" rx="52" ry="7" fill="#9BB58F" opacity=".5" filter="url(#wc)"/>
@@ -285,7 +288,7 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
         <p class="artnote" id="artNote" hidden>Win a round to see a picture made just for that phrase!</p>
       </div>
       <div>
-        <p class="verdict" id="verdict"></p>
+        <p class="verdict" id="verdict" tabindex="-1"></p>
         <p class="badge" id="hardBadge" hidden>Hard mode · no hint</p>
         <h3 id="answer"></h3>
         <p class="meaning" id="meaning"></p>
@@ -494,14 +497,32 @@ function buildBoard(){
   let word = null;
   CHARS.forEach((c,i) => {
     if (c === " "){ word = null; return; }
-    if (!word){ word = document.createElement("div"); word.className = "word"; board.appendChild(word); }
+    if (!word){ word = document.createElement("div"); word.className = "word"; word.setAttribute("role", "group"); board.appendChild(word); }
     const t = document.createElement("div");
     t.className = "tile" + (isLetter(c) ? "" : " punct");
-    if (!isLetter(c)) t.textContent = c;
+    t.setAttribute("role", "img");
+    if (!isLetter(c)){ t.textContent = c; t.setAttribute("aria-label", PUNCT_NAME[c] || c); }
     t.dataset.i = i;
     t.addEventListener("click", () => { if (S.phase === "solve" && !isShown(i)){ active = i; renderBoard(); } });
     word.appendChild(t); tiles[i] = t;
   });
+  const words = [...board.querySelectorAll(".word")];
+  words.forEach((w, n) => {
+    const count = w.querySelectorAll(".tile:not(.punct)").length;
+    w.setAttribute("aria-label", `Word ${n + 1} of ${words.length}, ${count} letter${count === 1 ? "" : "s"}`);
+  });
+  board.setAttribute("aria-label", `Today's phrase, ${words.length} word${words.length === 1 ? "" : "s"}`);
+}
+const PUNCT_NAME = {"'": "apostrophe", "-": "hyphen"};
+// A spoken version of the board, e.g. "Word 1: blank, O, blank. Word 2: …"
+function boardSpeech(){
+  const words = []; let cur = [];
+  CHARS.forEach((c, i) => {
+    if (c === " "){ if (cur.length) words.push(cur); cur = []; return; }
+    cur.push(!isLetter(c) ? (PUNCT_NAME[c] || c) : isShown(i) ? c : (entry[i] ? `${entry[i]} typed` : "blank"));
+  });
+  if (cur.length) words.push(cur);
+  return words.map((w, n) => `Word ${n + 1}: ${w.join(", ")}`).join(". ") + ".";
 }
 
 function renderBoard(fresh = []){
@@ -517,7 +538,11 @@ function renderBoard(fresh = []){
       if (entry[i]) t.classList.add("filled");
       if (i === active) t.classList.add("active");
     } else t.textContent = "";
-    t.setAttribute("aria-label", t.textContent ? `Letter ${t.textContent}` : "Blank");
+    let label = t.textContent ? t.textContent : "blank";
+    if (t.classList.contains("locked")) label += ", correct";
+    else if (t.classList.contains("filled")) label = `${t.textContent}, typed`;
+    if (t.classList.contains("active")) label += ", selected";
+    t.setAttribute("aria-label", label);
     if (fresh.includes(i) && !reduced){ t.classList.remove("pop"); void t.offsetWidth; t.classList.add("pop"); }
   }
 }
@@ -529,8 +554,10 @@ function renderEggs(){
     const e = document.createElement("span"); e.className = "egg";
     const k = S.pecks[n];
     if (k){ e.classList.add(S.hitsPerPeck[n] ? "hit" : "miss"); e.textContent = k; e.title = `${k}: ${S.hitsPerPeck[n]} letter${S.hitsPerPeck[n]===1?"":"s"}`; }
+    e.setAttribute("aria-hidden", "true");
     box.appendChild(e);
   }
+  box.setAttribute("aria-label", `Pecks used: ${S.pecks.length} of ${MAX_PECKS}`);
 }
 
 function buildPad(){
@@ -562,6 +589,9 @@ function renderPad(){
     b.classList.toggle("hit", used.has(k) && S.hitsPerPeck[n] > 0);
     b.classList.toggle("miss", used.has(k) && !S.hitsPerPeck[n]);
     b.disabled = used.has(k) || S.phase !== "peck";
+    const name = k.length === 1 ? `Vowel ${k}` : `Consonants ${k[0]} and ${k[1]}`;
+    const hits = S.hitsPerPeck[n];
+    b.setAttribute("aria-label", used.has(k) ? `${name}, used, ${hits ? `found ${hits} letter${hits === 1 ? "" : "s"}` : "no letters"}` : name);
   });
   $("peckPad").hidden = S.phase !== "peck";
   $("solvePad").hidden = S.phase !== "solve";
@@ -576,7 +606,11 @@ function renderPad(){
   $("hardNote").textContent = S.phase === "peck" ? "hint hidden" : (S.hard ? (S.hintUsed ? "you peeked" : "on for today") : "off for today");
 }
 
-function say(text, warn = false){ const m = $("msg"); m.textContent = text; m.classList.toggle("warn", warn); }
+function say(text, warn = false, spoken = ""){
+  const m = $("msg"); m.textContent = text; m.classList.toggle("warn", warn);
+  if (spoken){ const sp = document.createElement("span"); sp.className = "sr"; sp.textContent = " " + spoken; m.appendChild(sp); }
+}
+const speak = text => { const r = $("srType"); r.textContent = ""; requestAnimationFrame(() => { r.textContent = text; }); };
 
 function renderAll(){
   renderBoard(); renderEggs(); renderPad();
@@ -601,8 +635,9 @@ function peck(k){
   if (!blanks().length){ return finish(true, fresh); }
   if (S.pecks.length >= MAX_PECKS) startSolve();
   save(); renderAll(); renderBoard(fresh);
-  if (S.phase === "peck") say(hits ? `${hits} letter${hits===1?"":"s"}! ${MAX_PECKS - S.pecks.length} left` : `No ${k.split("").join(" or ")}. ${MAX_PECKS - S.pecks.length} left`, !hits);
-  else say(S.hard ? "Out of pecks. Hard mode: no hint unless you ask." : "Out of pecks. Here’s your hint!");
+  if (S.phase === "peck") say(hits ? `${hits} letter${hits===1?"":"s"}! ${MAX_PECKS - S.pecks.length} left` : `No ${k.split("").join(" or ")}. ${MAX_PECKS - S.pecks.length} left`, !hits, boardSpeech());
+  else say(S.hard ? "Out of pecks. Hard mode: no hint unless you ask." : "Out of pecks. Here’s your hint!", false,
+           (S.hard ? "" : `Hint: ${PUZZLE.hint} `) + boardSpeech() + " Type the missing letters, then press Enter.");
 }
 
 function startSolve(){
@@ -610,7 +645,10 @@ function startSolve(){
   S.hard = !!db.settings.hard;
   S.hintUsed = false;
   active = blanks()[0] ?? null;
-  setTimeout(() => $("hint").scrollIntoView({block:"nearest", behavior: reduced ? "auto" : "smooth"}), 50);
+  setTimeout(() => {
+    $("hint").scrollIntoView({block:"nearest", behavior: reduced ? "auto" : "smooth"});
+    const f = document.activeElement; if (!f || f === document.body || (f.closest && f.closest("#peckPad"))) $("hint").focus({preventScroll: true});
+  }, 50);
 }
 
 /* ---------- Solve phase ---------- */
@@ -621,6 +659,8 @@ function type(ch){
   const nextEmpty = bl.slice(at + 1).find(i => !entry[i]) ?? bl.find(i => !entry[i]);
   active = nextEmpty ?? active;
   renderBoard();
+  const left = blanks().filter(i => !entry[i]).length;
+  speak(left ? `${ch}. ${left} blank${left === 1 ? "" : "s"} left.` : `${ch}. All blanks filled. Press Enter to check.`);
 }
 function back(){
   if (S.phase !== "solve") return;
@@ -649,7 +689,7 @@ function submit(){
     active = wrong[0];
     renderAll();
     const left = MAX_TRIES - S.tries;
-    say(`Not quite. ${wrong.length} letter${wrong.length===1?"":"s"} wrong · ${left} ${left===1?"try":"tries"} left`, true);
+    say(`Not quite. ${wrong.length} letter${wrong.length===1?"":"s"} wrong · ${left} ${left===1?"try":"tries"} left`, true, "Correct letters stay. " + boardSpeech());
   }, reduced ? 0 : 480);
 }
 
@@ -694,12 +734,12 @@ function showResult(animate){
   $("blurb").textContent = PUZZLE.blurb;
   const st = db.stats, stats = $("stats"); stats.textContent = "";
   for (const [n,l] of [[st.played,"played"],[st.played ? Math.round(100*st.wins/st.played)+"%" : "0%","won"],[st.streak,"streak"],[st.best,"best streak"]]){
-    const s = document.createElement("span"); const b = document.createElement("b"); b.textContent = n; s.append(b, l); stats.appendChild(s);
+    const s = document.createElement("span"); const b = document.createElement("b"); b.textContent = n; s.append(b, " " + l); stats.appendChild(s);
   }
   renderDist(animate);
   tickNext();
   if (animate){
-    setTimeout(() => r.scrollIntoView({block:"start", behavior: reduced ? "auto" : "smooth"}), won ? 900 : 200);
+    setTimeout(() => { r.scrollIntoView({block:"start", behavior: reduced ? "auto" : "smooth"}); $("verdict").focus({preventScroll: true}); }, won ? 900 : 200);
     if (won) celebrate();
   }
 }
@@ -713,7 +753,6 @@ function renderDist(animate){
     const n = dist[k] || 0, pct = n / max * 100, isToday = k === todayKey;
     const li = document.createElement("li"); if (isToday) li.className = "today";
     const games = `${n} game${n === 1 ? "" : "s"}`;
-    li.title = `${label}: ${games}${isToday ? " (includes today)" : ""}`;
     const lbl = document.createElement("span"); lbl.className = "lbl"; lbl.textContent = label;
     const track = document.createElement("span"); track.className = "track"; track.setAttribute("aria-hidden", "true");
     const bar = document.createElement("span"); bar.className = "bar"; bar.style.display = "block"; bar.style.width = animate && !reduced ? "0%" : pct + "%";
