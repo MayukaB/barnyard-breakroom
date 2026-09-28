@@ -1,0 +1,24 @@
+name: Check Hen Pecks
+
+# Runs on every push and pull request that touches the game, so a broken or
+# spoiling phrase never reaches the live site.
+on:
+  push:
+    paths: ["pecks.html", "pecks-art.js", "scripts/check-pecks.mjs", ".github/workflows/checks.yml"]
+  pull_request:
+    paths: ["pecks.html", "pecks-art.js", "scripts/check-pecks.mjs", ".github/workflows/checks.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  phrases:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Check the phrase list and pictures
+        run: node scripts/check-pecks.mjs
