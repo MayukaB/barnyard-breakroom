@@ -574,6 +574,24 @@ if (!db.log){
   db.base = {played:st.played, wins:st.wins, best:st.best, streak: alive ? st.streak : 0, last:st.last, dist:{...st.dist}};
   db.log = {};
 }
+// Games still kept day by day (the last 10 days) move out of the old totals and into the log, so
+// the same day played on two devices counts once when they're merged into an account.
+if (!db.logFromDays){
+  const b = db.base;
+  const outcomeOf = d => d.outcome || (d.phase === "lost" ? "miss" : (d.pecks.length < MAX_PECKS && !d.tries ? "pecks" : "t" + (d.solvedOnTry || 1)));
+  for (const [day, d] of Object.entries(db.days)){
+    if (!d || !d.counted || db.log[day] || (d.phase !== "won" && d.phase !== "lost")) continue;
+    const o = outcomeOf(d);
+    db.log[day] = o;
+    if (b.played > 0){
+      b.played--;
+      if (o !== "miss") b.wins = Math.max(0, (b.wins || 0) - 1);
+      if (b.dist && b.dist[o] > 0) b.dist[o]--;
+    }
+  }
+  if (!b.played) db.base = {played:0, wins:0, best:0, streak:0, last:null, dist:{pecks:0, t1:0, t2:0, t3:0, miss:0}};
+  db.logFromDays = true;
+}
 if (!db.device) db.device = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now());
 function prevDay(key){ const [y,m,d] = key.split("-").map(Number); return new Date(Date.UTC(y,m-1,d-1)).toISOString().slice(0,10); }
 function computeStats(base, log){
