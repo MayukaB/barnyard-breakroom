@@ -481,6 +481,9 @@ if (!db.stats.dist){
     if (k in db.stats.dist) db.stats.dist[k]++;
   }
 }
+// A streak only survives if the last win was today or yesterday.
+{ const y = new Date(); y.setDate(y.getDate() - 1); const yk = `${y.getFullYear()}-${pad2(y.getMonth()+1)}-${pad2(y.getDate())}`;
+  if (db.stats.last && db.stats.last !== TODAY && db.stats.last !== yk) db.stats.streak = 0; }
 const S = db.days[TODAY] && db.days[TODAY].p === PUZZLE.p ? db.days[TODAY]
         : (db.days[TODAY] = {p:PUZZLE.p, pecks:[], phase:"peck", tries:0, locked:[], hitsPerPeck:[]});
 // keep storage small: only the last 10 days
