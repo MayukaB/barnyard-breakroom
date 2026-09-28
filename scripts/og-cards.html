@@ -1,0 +1,58 @@
+<!doctype html><meta charset="utf-8">
+<!-- Source for og-story.png and og-pecks.png (1200x630). Serve the repo root (npx serve .), open /scripts/og-cards.html, and screenshot each .card. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Karla:wght@400;500;700&family=Caveat:wght@700&display=swap">
+<style>
+body{margin:0;background:#999}
+.card{width:1200px;height:630px;background:#EEF2EC;display:grid;grid-template-columns:560px 1fr;align-items:center;gap:56px;padding:0 72px;box-sizing:border-box;color:#27352F;font-family:Karla;position:relative;overflow:hidden}
+.card.flip{grid-template-columns:1fr 520px}
+.plate{background:#FBF7EE;padding:18px 18px 12px;border-radius:4px;box-shadow:0 18px 40px -18px rgba(39,53,47,.35);transform:rotate(-1.6deg)}
+.plate svg{display:block;width:100%;height:auto}
+.plate p{font:700 34px/1.1 Caveat;color:#4A5A52;text-align:center;margin:10px 0 2px}
+h1{font:400 76px/1.02 "Young Serif";margin:0 0 18px;letter-spacing:-.01em}
+h1 span{color:#3A68AE}
+.tag{font:500 18px/1.4 Karla;letter-spacing:.08em;white-space:nowrap;text-transform:uppercase;color:#5B6A63;margin:0 0 26px}
+.lede{font:400 30px/1.35 Karla;margin:0;max-width:22ch}
+.url{position:absolute;bottom:34px;left:72px;font:700 22px Karla;color:#D39A2F;letter-spacing:.02em}
+.flip .url{left:72px}
+.tiles{display:flex;gap:26px;margin:0 0 26px}
+.word{display:flex;gap:7px}
+.t{width:50px;height:58px;border:3px dashed #B9C5BD;border-radius:8px;background:#fff;display:grid;place-items:center;font:400 32px "Young Serif";color:#5A3F0B}
+.t.s{border:3px solid #D39A2F;background:#F3D9A4}
+.eggs{display:flex;gap:10px;margin:0 0 28px;align-items:center}
+.egg{width:28px;height:36px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;border:3px solid #B9C5BD;background:#fff}
+.egg.h{background:#F3D9A4;border-color:#D39A2F}.egg.m{background:#DCE2DD}
+</style>
+<svg width="0" height="0" style="position:absolute"><defs>
+<filter id="wc" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation="0.2"/></filter>
+<filter id="wc2" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation="0.15"/></filter>
+<filter id="wc3" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.3" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation="0.1"/></filter>
+</defs></svg>
+
+<div class="card" id="story">
+  <div class="plate"><svg viewBox="0 0 160 140" id="s1"></svg><p>Good morning from the barnyard!</p></div>
+  <div>
+    <p class="tag">A new animal story, painted each morning</p>
+    <h1>Barnyard <span>Breakroom</span></h1>
+    <p class="lede">Today’s animal news as a storybook watercolor, plus Hen Pecks, a daily phrase puzzle.</p>
+    <p class="url" style="position:static;margin:28px 0 0">barnyardbreakroom.com</p>
+  </div>
+</div>
+
+<div class="card flip" id="pecks">
+  <div>
+    <p class="tag">A daily puzzle from Barnyard Breakroom</p>
+    <h1>Hen Pecks</h1>
+    <div class="tiles"><div class="word"><div class="t"></div><div class="t s">O</div><div class="t"></div></div><div class="word"><div class="t s">A</div><div class="t"></div><div class="t s">D</div><div class="t"></div></div></div>
+    <div class="eggs"><div class="egg h"></div><div class="egg m"></div><div class="egg h"></div><div class="egg"></div><div class="egg"></div><div class="egg"></div><div class="egg"></div></div>
+    <p class="lede">Seven pecks, one hint, one animal-related expression to crack.</p>
+    <p class="url" style="position:static;margin:24px 0 0">barnyardbreakroom.com/pecks.html</p>
+  </div>
+  <div class="plate"><svg viewBox="0 0 160 140" id="s2"></svg><p>Can you crack today’s phrase?</p></div>
+  <div class="url" style="left:auto;right:72px;bottom:28px;display:none"></div>
+</div>
+<script src="../pecks-art.js"></script>
+<script>
+const {A,P,BG,shadow}=PECKS_ART.kit;
+document.getElementById('s1').innerHTML = BG.sky() + P("sun",134,26,1) + P("barn",118,112,1.2) + P("fence",30,120,.8) + shadow(66,123,20) + A("cow",66,122,1.05,{mood:"happy2"}) + A("pig",100,126,.8,{mood:"happy2"}) + A("hen",32,126,.9,{mood:"happy2"}) + P("book",140,128,.8);
+document.getElementById('s2').innerHTML = BG.meadow() + P("cloud",36,30,1) + P("nest",120,120,1.2,{eggs:["#FFF8EC","#FFF8EC"]}) + A("hen",66,122,1.6,{mood:"wink"}) + P("bubble",112,58,1,{t:"peck peck!",w:40});
+</script>
