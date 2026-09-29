@@ -162,9 +162,11 @@ function renderBoard(fresh = []){
   const g = guessed();
   for (const i of LETTER_POS){
     const t = tiles[i], c = CHARS[i];
-    t.classList.remove("slot","filled","active","locked","shown");
+    t.classList.remove("slot","filled","active","locked","shown","answer");
     if (S.locked.includes(i)) { t.textContent = c; t.classList.add("locked"); }
-    else if (g.has(c) || S.phase === "won" || S.phase === "lost") { t.textContent = c; t.classList.add("shown"); }
+    else if (g.has(c)) { t.textContent = c; t.classList.add("shown"); }
+    // Round over: fill in the rest of the answer as plain letters, so yellow still means "found by a peck".
+    else if (S.phase === "won" || S.phase === "lost") { t.textContent = c; t.classList.add("answer"); }
     else if (S.phase === "solve") {
       t.textContent = entry[i] || "";
       t.classList.add("slot");
