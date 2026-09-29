@@ -40,9 +40,11 @@ npm install                       # once: installs the test runner
 npx playwright install chromium   # once: the browser the tests drive
 npm test                          # plays Hen Pecks in a browser (desktop and phone sizes)
 npm run check                     # checks the phrase list and pictures
+npm run lint                      # ESLint: catches mistakes like undefined names
+npm run format                    # Prettier: formats the scripts, tests and config files
 ```
 
-`tests/pecks.spec.js` covers pecking, winning, losing, wrong tries, hard mode and peeking, reloading mid-game, the story page's Hen Pecks card and upgrading old saved data. The tests pin the date, so they always play the same puzzle, and they block the sign-in services so they run offline. `.github/workflows/checks.yml` runs both checks on every push and pull request that touches the site.
+`tests/pecks.spec.js` covers pecking, winning, losing, wrong tries, hard mode and peeking, reloading mid-game, the story page's Hen Pecks card and upgrading old saved data. The tests pin the date, so they always play the same puzzle, and they block the sign-in services so they run offline. `.github/workflows/checks.yml` runs the phrase check, the lint and formatting checks, a syntax check of the Node scripts, and the browser tests on every push and pull request that touches the site.
 
 ## Run locally
 

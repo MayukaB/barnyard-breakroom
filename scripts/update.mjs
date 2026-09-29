@@ -103,7 +103,10 @@ for (let round = 0; round < 5; round++) {
   messages.push({ role: "assistant", content: reply.content });
 }
 
-const text = reply.content.filter((b) => b.type === "text").map((b) => b.text).join("");
+const text = reply.content
+  .filter((b) => b.type === "text")
+  .map((b) => b.text)
+  .join("");
 const json = text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1);
 let story;
 try {
@@ -118,7 +121,10 @@ if (!story.new) {
   process.exit(0);
 }
 
-const id = String(story.id || "").toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 200);
+const id = String(story.id || "")
+  .toLowerCase()
+  .replace(/[^a-z0-9-]/g, "")
+  .slice(0, 200);
 const required = ["title", "url", "published", "animal", "summary", "caption", "alt", "scene"];
 const missing = required.filter((k) => typeof story[k] !== "string" || !story[k].trim());
 if (!id || missing.length) {
@@ -134,7 +140,9 @@ if (known.has(id)) {
 const MAX_SCENE_CHARS = 20000;
 const shapes = (story.scene.match(/<(g|path|circle|ellipse|rect|line|polyline|polygon)\b/g) || []).length;
 if (story.scene.length > MAX_SCENE_CHARS || shapes < 10 || shapes > 150) {
-  console.error(`Painting rejected: ${story.scene.length} characters, ${shapes} shapes (allowed: up to ${MAX_SCENE_CHARS} characters, 10-150 shapes).`);
+  console.error(
+    `Painting rejected: ${story.scene.length} characters, ${shapes} shapes (allowed: up to ${MAX_SCENE_CHARS} characters, 10-150 shapes).`,
+  );
   process.exit(1);
 }
 if (!/^https:\/\/(www\.)?nationalgeographic\.com\//.test(story.url)) {

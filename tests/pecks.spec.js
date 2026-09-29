@@ -13,9 +13,9 @@ const WRONG = "Q";
 let errors;
 test.beforeEach(async ({ page, context }) => {
   errors = [];
-  page.on("pageerror", e => errors.push(e.message));
+  page.on("pageerror", (e) => errors.push(e.message));
   // Keep tests offline and fast: no sign-in services, fonts or CDNs.
-  await context.route(/supabase|jsdelivr|accounts\.google|fonts\.(googleapis|gstatic)/, r => r.abort());
+  await context.route(/supabase|jsdelivr|accounts\.google|fonts\.(googleapis|gstatic)/, (r) => r.abort());
   await page.clock.setFixedTime(DAY);
 });
 test.afterEach(() => expect(errors, "no script errors on the page").toEqual([]));
@@ -29,19 +29,19 @@ async function peckAll(page, pecks = PECKS) {
 }
 // Type into every blank: the right letter, or `wrongAt` positions get a wrong one.
 async function fill(page, wrongAt = () => false) {
-  const slots = await page.locator(".tile.slot").evaluateAll(els => els.map(e => Number(e.dataset.i)));
+  const slots = await page.locator(".tile.slot").evaluateAll((els) => els.map((e) => Number(e.dataset.i)));
   for (const [n, i] of slots.entries()) await page.keyboard.press(wrongAt(n) ? WRONG : ANSWER[i]);
   return slots.length;
 }
-const submit = page => page.keyboard.press("Enter");
+const submit = (page) => page.keyboard.press("Enter");
 
 test("pecking reveals letters and counts down", async ({ page }) => {
   await open(page);
   await page.locator('#peckPad .key[data-k="E"]').click();
-  await expect(page.locator(".tile.shown")).toHaveCount(3);            // lEt thE thE
+  await expect(page.locator(".tile.shown")).toHaveCount(3); // lEt thE thE
   await expect(page.locator("#eggs")).toHaveAttribute("aria-label", "Pecks used: 1 of 7");
   await expect(page.locator('#peckPad .key[data-k="E"]')).toBeDisabled();
-  await page.keyboard.press("q");                                       // a key pecks its pair
+  await page.keyboard.press("q"); // a key pecks its pair
   await expect(page.locator('#peckPad .key[data-k="QV"]')).toBeDisabled();
   await expect(page.locator("#msg")).toContainText("5 pecks left");
 });
@@ -67,7 +67,7 @@ test("after 7 pecks the hint shows and a correct fill-in wins", async ({ page, c
 test("a wrong try keeps the right letters (green) and uses one try", async ({ page }) => {
   await open(page);
   await peckAll(page);
-  const blanks = await fill(page, n => n === 0);
+  const blanks = await fill(page, (n) => n === 0);
   await submit(page);
   await expect(page.locator("#msg")).toContainText("1 letter wrong");
   await expect(page.locator(".tile.locked")).toHaveCount(blanks - 1);
@@ -78,7 +78,9 @@ test("pressing Enter twice during the wrong-answer shake only uses one try", asy
   await open(page);
   await peckAll(page);
   await fill(page, () => true);
-  await submit(page); await submit(page); await submit(page);
+  await submit(page);
+  await submit(page);
+  await submit(page);
   await expect(page.locator("#checkNote")).toHaveText("2 tries left");
 });
 
@@ -115,7 +117,7 @@ test("peeking in hard mode shows the hint but loses the badge (Enter works on th
   await page.locator("#peek").focus();
   await page.keyboard.press("Enter");
   await expect(page.locator("#hintText")).not.toBeEmpty();
-  await expect(page.locator("#checkNote")).toHaveText("3 tries left");  // Enter didn't submit
+  await expect(page.locator("#checkNote")).toHaveText("3 tries left"); // Enter didn't submit
   await fill(page);
   await submit(page);
   await expect(page.locator("#verdict")).toBeVisible();
@@ -148,18 +150,32 @@ test("a finished game stays finished after a reload", async ({ page }) => {
 test("stats saved by older versions of the game are upgraded, not lost", async ({ page }) => {
   // What a player who last visited before stats were logged by day has saved (no version number).
   const old = {
-    days: { "2026-09-27": { p: "WHEN PIGS FLY", pecks: ["E"], hitsPerPeck: [1], phase: "won", tries: 1, locked: [], counted: true, solvedOnTry: 2 } },
+    days: {
+      "2026-09-27": {
+        p: "WHEN PIGS FLY",
+        pecks: ["E"],
+        hitsPerPeck: [1],
+        phase: "won",
+        tries: 1,
+        locked: [],
+        counted: true,
+        solvedOnTry: 2,
+      },
+    },
     stats: { played: 5, wins: 4, streak: 2, best: 3, last: "2026-09-28" },
     settings: { hard: false },
   };
-  await page.addInitScript(data => {
-    if (!sessionStorage.getItem("seeded")) { localStorage.setItem("henpecks:v1", JSON.stringify(data)); sessionStorage.setItem("seeded", "1"); }
+  await page.addInitScript((data) => {
+    if (!sessionStorage.getItem("seeded")) {
+      localStorage.setItem("henpecks:v1", JSON.stringify(data));
+      sessionStorage.setItem("seeded", "1");
+    }
   }, old);
   await open(page);
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("henpecks:v1")));
   expect(saved.version).toBeGreaterThanOrEqual(5);
-  expect(saved.log).toEqual({ "2026-09-27": "t2" });              // the saved game moved into the log…
-  expect(saved.base.played).toBe(4);                              // …and out of the old totals
+  expect(saved.log).toEqual({ "2026-09-27": "t2" }); // the saved game moved into the log…
+  expect(saved.base.played).toBe(4); // …and out of the old totals
   // Finish today's game: 5 old games + today = 6, and the streak carries on from yesterday.
   await peckAll(page);
   await fill(page);
@@ -171,7 +187,18 @@ test("stats saved by older versions of the game are upgraded, not lost", async (
 test("data saved by a newer version of the game is left alone", async ({ page }) => {
   await page.addInitScript(() => {
     if (!sessionStorage.getItem("seeded")) {
-      localStorage.setItem("henpecks:v1", JSON.stringify({ version: 999, days: {}, stats: { played: 0 }, settings: {}, log: {}, base: {}, future: "keep me" }));
+      localStorage.setItem(
+        "henpecks:v1",
+        JSON.stringify({
+          version: 999,
+          days: {},
+          stats: { played: 0 },
+          settings: {},
+          log: {},
+          base: {},
+          future: "keep me",
+        }),
+      );
       sessionStorage.setItem("seeded", "1");
     }
   });

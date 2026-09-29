@@ -1,0 +1,12 @@
+# The page files are laid out by hand (one CSS rule per line, one phrase per line, compact
+# drawing helpers). Prettier would rewrite ~5,500 lines of them without making them clearer,
+# so it formats the scripts, tests and config files only. ESLint still checks all the code.
+*.html
+*.css
+pecks.js
+pecks-art.js
+phrases.js
+pecks-config.js
+stories.json
+package-lock.json
+supabase/

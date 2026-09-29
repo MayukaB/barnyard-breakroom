@@ -10,5 +10,9 @@ export default defineConfig({
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "phone", use: { ...devices["Pixel 7"] } },
   ],
-  webServer: { command: "node tests/serve.mjs", url: "http://localhost:4173/pecks.html", reuseExistingServer: !process.env.CI },
+  webServer: {
+    command: "node tests/serve.mjs",
+    url: "http://localhost:4173/pecks.html",
+    reuseExistingServer: !process.env.CI,
+  },
 });

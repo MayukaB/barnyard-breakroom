@@ -436,7 +436,7 @@ function showResult(animate){
   r.classList.toggle("won", won && animate);
   r.classList.toggle("lost", !won && animate);
   try {
-    const art = window.PECKS_ART && (won ? PECKS_ART.win(PUZZLE.p) : PECKS_ART.lose());
+    const art = window.PECKS_ART && (won ? window.PECKS_ART.win(PUZZLE.p) : window.PECKS_ART.lose());
     $("artNote").hidden = won;
     if (art) { $("art").innerHTML = art; $("art").setAttribute("aria-label", won ? "Illustration of " + PUZZLE.p.toLowerCase() : "A sad hen in the rain"); $("art").setAttribute("role", "img"); $("art").parentNode.removeAttribute("aria-hidden"); }
   } catch {}
