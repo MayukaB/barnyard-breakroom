@@ -38,7 +38,8 @@ header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-be
 @media (max-width:420px){.switch{display:flex;width:100%}.switch a{flex:1;justify-content:center;padding-inline:10px}}
 @media (prefers-reduced-motion:reduce){@view-transition{navigation:none}}
 .headside{display:grid;gap:10px;justify-items:end}
-@media (max-width:760px){.headside{justify-items:start}}
+/* Left-align the switch and tagline once they wrap under the title (title ~544px + switch side ~334px + gaps) */
+@media (max-width:949px){.headside{justify-items:start}}
 h1{font:400 clamp(30px,5vw,46px)/1.05 "Young Serif",Georgia,serif;margin:0;letter-spacing:-.01em}
 h1 span{color:var(--cobalt)}
 /* Coffee-break pig after "Breakroom": nowrap keeps it on the word's line when the title wraps on phones */
