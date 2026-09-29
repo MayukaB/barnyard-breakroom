@@ -41,6 +41,14 @@ header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-be
 @media (max-width:760px){.headside{justify-items:start}}
 h1{font:400 clamp(30px,5vw,46px)/1.05 "Young Serif",Georgia,serif;margin:0;letter-spacing:-.01em}
 h1 span{color:var(--cobalt)}
+/* Coffee-break pig after "Breakroom": nowrap keeps it on the word's line when the title wraps on phones */
+h1>span,h1 a>span{white-space:nowrap}
+.title-pig{display:inline-block;width:1.2em;margin:-.5em 0 0 .1em;vertical-align:-.06em}
+.title-pig svg{display:block;width:100%;height:auto;overflow:visible}
+.title-pig .steam path{animation:steam 3s ease-in-out infinite}
+.title-pig .steam path+path{animation-delay:1.4s}
+@keyframes steam{0%{opacity:0;transform:translateY(2px)}40%{opacity:.8}100%{opacity:0;transform:translateY(-6px)}}
+@media (prefers-reduced-motion:reduce){.title-pig .steam path{animation:none;opacity:.6}}
 .tag{font:500 13px/1.4 Karla,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
 .btn.solid{background:var(--cobalt);color:var(--sheet)}
 .btn:hover{filter:brightness(1.08)}
