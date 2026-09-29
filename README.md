@@ -33,6 +33,12 @@ Each run is one API call with a couple of page fetches. On days when the top sto
 
 Free Supabase projects pause after about a week without any requests. If that happens, sign-in stops working (the game itself keeps going) until you restore the project from the dashboard.
 
+## Security policy
+
+Both pages set a Content-Security-Policy in a `<meta>` tag (GitHub Pages can't send headers). It lists what each page may load, so an injected script can't run. Inline scripts are blocked; that's why the story page's code lives in `index.js`. Inline styles are allowed because the pages and paintings use `style` attributes.
+
+`pecks.html`'s policy also allows the sign-in services: Supabase's script (from cdn.jsdelivr.net) and API, and Google's sign-in button. If you move Supabase to a new project, update the `connect-src` address in `pecks.html` to match `CLOUD.url` in `pecks.js`. If something stops loading after a change, the browser console (F12) says which directive blocked it.
+
 ## Tests
 
 ```sh

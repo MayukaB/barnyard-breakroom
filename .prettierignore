@@ -4,6 +4,7 @@
 *.html
 *.css
 pecks.js
+index.js
 pecks-art.js
 phrases.js
 pecks-config.js

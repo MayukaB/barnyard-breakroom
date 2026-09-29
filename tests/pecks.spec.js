@@ -257,3 +257,66 @@ test("with only a few stories there's no Show more button", async ({ page }) => 
   await expect(page.locator("#grid .card").first()).toBeVisible();
   await expect(page.locator("#more")).toBeHidden();
 });
+
+test.describe("security policy", () => {
+  const blocked = [];
+  test.beforeEach(({ page }) => {
+    blocked.length = 0;
+    page.on("console", (m) => {
+      if (/Content Security Policy/i.test(m.text())) blocked.push(m.text());
+    });
+  });
+
+  test("a full game and the story page load without anything being blocked", async ({ page }) => {
+    await open(page);
+    await peckAll(page);
+    await fill(page);
+    await submit(page);
+    await expect(page.locator("#verdict")).toBeVisible();
+    await page.goto("/");
+    await expect(page.locator("#grid .card").first()).toBeVisible();
+    expect(blocked).toEqual([]);
+  });
+
+  test("injected inline scripts don't run", async ({ page }) => {
+    for (const path of ["/", "/pecks.html"]) {
+      await page.goto(path);
+      const ran = await page.evaluate(() => {
+        const s = document.createElement("script");
+        s.textContent = "window.__injected = true";
+        document.body.appendChild(s);
+        return window.__injected === true;
+      });
+      expect(ran, `inline script blocked on ${path}`).toBe(false);
+    }
+    expect(blocked.length).toBeGreaterThan(0);
+  });
+
+  test("sign-in services are still allowed to load and connect", async ({ page }) => {
+    // Stand-ins for Supabase's script, Google's button script and the Supabase API.
+    await page.route("https://cdn.jsdelivr.net/**", (r) =>
+      r.fulfill({
+        contentType: "text/javascript",
+        body: "window.__supabaseLoaded = true; window.supabase = { createClient: () => ({ auth: { onAuthStateChange() { return { data: { subscription: { unsubscribe() {} } } }; } } }) };",
+      }),
+    );
+    await page.route("https://accounts.google.com/gsi/client", (r) =>
+      r.fulfill({
+        contentType: "text/javascript",
+        body: "window.__gsiLoaded = true; window.google = { accounts: { id: { initialize() {}, renderButton() {} } } };",
+      }),
+    );
+    await page.route("https://tgqwamamqcbrwpheldpi.supabase.co/**", (r) => r.fulfill({ json: { ok: true } }));
+    await open(page);
+    await expect.poll(() => page.evaluate(() => window.__supabaseLoaded === true)).toBe(true);
+    await expect.poll(() => page.evaluate(() => window.__gsiLoaded === true)).toBe(true);
+    const api = await page.evaluate(() =>
+      fetch("https://tgqwamamqcbrwpheldpi.supabase.co/auth/v1/health").then(
+        (r) => r.json(),
+        (e) => String(e),
+      ),
+    );
+    expect(api).toEqual({ ok: true });
+    expect(blocked).toEqual([]);
+  });
+});
