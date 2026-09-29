@@ -1,0 +1,8 @@
+# Keep every text file with LF line endings, on Windows too. Prettier writes LF,
+# and without this Git (core.autocrlf) would turn them into CRLF on checkout and
+# warn "LF will be replaced by CRLF" each time a file is formatted or added.
+* text=auto eol=lf
+
+# Images are never converted.
+*.png binary
+*.ico binary
