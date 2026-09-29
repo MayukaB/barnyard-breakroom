@@ -60,7 +60,8 @@ test("after 7 pecks the hint shows and a correct fill-in wins", async ({ page, c
   await expect(page.locator("#artNote")).toBeHidden();
   await expect(page.locator("#dist li.today")).toContainText("1st try");
   await page.locator("#share").click();
-  const shared = await page.evaluate(() => navigator.clipboard.readText());
+  // Windows turns the line breaks into \r\n on the clipboard; compare the text, not the line endings.
+  const shared = (await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, "\n");
   expect(shared).toMatch(/^Hen Pecks #3\nPecks: [🐣🥚]{7}\nCracked on try 1\/3/u);
 });
 
