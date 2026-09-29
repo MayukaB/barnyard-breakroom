@@ -156,6 +156,18 @@ details.how li{margin:2px 0}
 .kb .krow{display:flex;justify-content:center;gap:5px}
 .kb .key{flex:1 1 0;max-width:46px;font-size:17px;padding:14px 0;min-width:0}
 .kb .key.wide{max-width:76px;flex:1.6 1 0;font:700 13px/1 Karla,sans-serif;letter-spacing:.04em}
+.kb .key.enter{background:var(--cobalt);border-color:var(--cobalt);color:var(--sheet)}
+.kb .key.enter:hover{color:var(--sheet);filter:brightness(1.08)}
+/* The big "Check answer" button under the keyboard. Outlined while blanks are empty, solid once they're all filled. */
+.check{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:100%;max-width:440px;min-height:58px;margin:16px auto 0;padding:10px 20px;border-radius:999px;border:2px solid var(--cobalt);background:transparent;color:var(--cobalt);font:700 18px/1.1 Karla,sans-serif;cursor:pointer;touch-action:manipulation;transition:background-color .18s,color .18s,box-shadow .18s,transform .1s}
+.check small{font:500 13px/1 Karla,sans-serif;opacity:.85}
+.check.ready{background:var(--cobalt);color:var(--sheet);box-shadow:0 10px 24px -12px var(--cobalt)}
+.check.ready.pulse{animation:checkPulse .5s ease}
+.check:hover{filter:brightness(1.06)}
+.check:active{transform:scale(.98)}
+.check:focus-visible{outline:3px solid var(--ochre);outline-offset:3px}
+@keyframes checkPulse{0%{transform:scale(1)}40%{transform:scale(1.04)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.check.ready.pulse{animation:none}}
 .actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
 .btn{font:700 15px/1 Karla,sans-serif;padding:11px 18px;border-radius:999px;border:1.5px solid var(--cobalt);color:var(--cobalt);background:transparent;text-decoration:none;cursor:pointer;display:inline-flex;gap:8px;align-items:center}
 .btn.solid{background:var(--cobalt);color:var(--sheet)}
@@ -319,6 +331,7 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
 
     <section class="pad" id="solvePad" aria-label="Fill in the missing letters" hidden>
       <div class="kb" id="kb" role="group" aria-label="Letter keys"></div>
+      <button class="check" id="check" type="button"><span id="checkText">Check answer</span><small id="checkNote"></small></button>
     </section>
 
     <section class="result" id="result" hidden aria-labelledby="verdict">
@@ -687,6 +700,19 @@ function renderBoard(fresh = []){
     t.setAttribute("aria-label", label);
     if (fresh.includes(i) && !reduced){ t.classList.remove("pop"); void t.offsetWidth; t.classList.add("pop"); }
   }
+  renderCheck();
+}
+
+// Shows how many letters are still empty, then turns solid (with a small pulse) once the answer can be checked.
+function renderCheck(){
+  const btn = $("check");
+  if (S.phase !== "solve") return;
+  const left = blanks().filter(i => !entry[i]).length, tries = MAX_TRIES - S.tries;
+  const wasReady = btn.classList.contains("ready");
+  btn.classList.toggle("ready", !left);
+  $("checkText").textContent = left ? `Fill in ${left} more letter${left === 1 ? "" : "s"}` : "Check answer";
+  $("checkNote").textContent = `${tries} ${tries === 1 ? "try" : "tries"} left`;
+  if (!left && !wasReady && !reduced){ btn.classList.remove("pulse"); void btn.offsetWidth; btn.classList.add("pulse"); }
 }
 
 function renderEggs(){
@@ -712,12 +738,13 @@ function buildPad(){
   };
   VOWELS.forEach(k => mk(k, $("vowels")));
   PAIRS.forEach(k => mk(k, $("pairs")));
+  $("check").addEventListener("click", submit);
   const rows = ["QWERTYUIOP","ASDFGHJKL","+ZXCVBNM-"];
   for (const r of rows){
     const row = document.createElement("div"); row.className = "krow";
     for (const ch of r){
       const b = document.createElement("button"); b.type = "button"; b.className = "key";
-      if (ch === "+"){ b.textContent = "Enter"; b.classList.add("wide"); b.onclick = submit; }
+      if (ch === "+"){ b.textContent = "Enter"; b.classList.add("wide", "enter"); b.onclick = submit; }
       else if (ch === "-"){ b.textContent = "⌫"; b.classList.add("wide"); b.setAttribute("aria-label","Backspace"); b.onclick = back; }
       else { b.textContent = ch; b.onclick = () => type(ch); }
       row.appendChild(b);
