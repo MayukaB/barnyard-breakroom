@@ -88,6 +88,8 @@ test("pressing Enter twice during the wrong-answer shake only uses one try", asy
 test("three wrong tries loses and shows the sad hen", async ({ page }) => {
   await open(page);
   await peckAll(page);
+  const pecked = await page.locator(".tile.shown").count();
+  const missing = await page.locator(".tile.slot").count();
   for (let t = 0; t < 3; t++) {
     await fill(page, () => true);
     await submit(page);
@@ -96,6 +98,15 @@ test("three wrong tries loses and shows the sad hen", async ({ page }) => {
   await expect(page.locator("#verdict")).toHaveText("The phrase got away this time");
   await expect(page.locator("#artNote")).toBeVisible();
   await expect(page.locator("#dist li.today")).toContainText("Missed");
+  // Only letters found by pecks stay yellow; the rest of the answer is filled in plain.
+  await expect(page.locator(".tile.shown")).toHaveCount(pecked);
+  await expect(page.locator(".tile.answer")).toHaveCount(missing);
+  const bg = (sel) =>
+    page
+      .locator(sel)
+      .first()
+      .evaluate((e) => getComputedStyle(e).backgroundColor);
+  expect(await bg(".tile.answer")).not.toBe(await bg(".tile.shown"));
 });
 
 test("hard mode hides the hint; winning without peeking earns the badge", async ({ page }) => {
