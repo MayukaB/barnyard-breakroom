@@ -821,7 +821,10 @@ function peck(k){
   if (!blanks().length){ return finish(true, fresh); }
   if (S.pecks.length >= MAX_PECKS) startSolve();
   save(); renderAll(); renderBoard(fresh);
-  if (S.phase === "peck") say(hits ? `${hits} letter${hits===1?"":"s"}! ${MAX_PECKS - S.pecks.length} left` : `No ${k.split("").join(" or ")}. ${MAX_PECKS - S.pecks.length} left`, !hits, boardSpeech());
+  if (S.phase === "peck"){
+    const left = MAX_PECKS - S.pecks.length, pecksLeft = `${left} peck${left === 1 ? "" : "s"} left.`;
+    say(hits ? `Your peck found ${hits} letter${hits === 1 ? "" : "s"}! ${pecksLeft}` : `No ${k.split("").join(" or ")} in this one. ${pecksLeft}`, !hits, boardSpeech());
+  }
   else say(S.hard ? "Out of pecks. Hard mode: no hint unless you ask." : "Out of pecks. Here’s your hint!", false,
            (S.hard ? "" : `Hint: ${PUZZLE.hint} `) + boardSpeech() + " Type the missing letters, then press Enter.");
 }
