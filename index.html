@@ -182,6 +182,7 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
   </footer>
 </div>
 
+<script src="pecks-config.js"></script>
 <script>
 const SAFE_TAGS = new Set(["g","path","circle","ellipse","rect","line","polyline","polygon"]);
 const SAFE_ATTRS = new Set(["d","cx","cy","r","rx","ry","x","y","x1","y1","x2","y2","width","height","points","fill","fill-opacity","stroke","stroke-width","stroke-opacity","stroke-linecap","stroke-linejoin","opacity","transform","filter","fill-rule"]);
@@ -267,10 +268,12 @@ function renderGrid(){
   const p2 = n => String(n).padStart(2,"0"), d = new Date();
   const today = `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
   let day = null;
-  try { const db = JSON.parse(localStorage.getItem("henpecks:v1")) || {}; day = (db.days && db.days[today]) || null; } catch {}
+  const { MAX_PECKS, STORE } = window.PECKS_CONFIG;
+  $("teaserSub").textContent = `Crack today’s animal-related expression in ${MAX_PECKS} pecks.`;
+  try { const db = JSON.parse(localStorage.getItem(STORE)) || {}; day = (db.days && db.days[today]) || null; } catch {}
   const used = day ? day.pecks.length : 0;
   const eggs = $("teaserEggs");
-  for (let i = 0; i < 7; i++){ const e = document.createElement("i"); if (i < used) e.className = "on"; eggs.appendChild(e); }
+  for (let i = 0; i < MAX_PECKS; i++){ const e = document.createElement("i"); if (i < used) e.className = "on"; eggs.appendChild(e); }
   const pecksTab = document.querySelector('.switch a[href="pecks.html"]');
   if (!day || day.phase === "peck" || day.phase === "solve"){
     const dot = document.createElement("span"); dot.className = "dot"; dot.title = "Today's puzzle is waiting";
@@ -280,7 +283,7 @@ function renderGrid(){
   if (!day || !used) return;
   if (day.phase === "won"){ $("teaserTitle").textContent = "You cracked today’s Hen Pecks!"; $("teaserSub").textContent = "A new phrase arrives at midnight."; $("teaserGo").textContent = "See the answer →"; }
   else if (day.phase === "lost"){ $("teaserTitle").textContent = "Today’s phrase got away"; $("teaserSub").textContent = "A new one arrives at midnight."; $("teaserGo").textContent = "See the answer →"; }
-  else { $("teaserTitle").textContent = "Your Hen Pecks game is waiting"; $("teaserSub").textContent = day.phase === "solve" ? "Out of pecks. Time to fill in the blanks!" : `${7 - used} peck${7 - used === 1 ? "" : "s"} left.`; $("teaserGo").textContent = "Keep going →"; }
+  else { $("teaserTitle").textContent = "Your Hen Pecks game is waiting"; $("teaserSub").textContent = day.phase === "solve" ? "Out of pecks. Time to fill in the blanks!" : `${MAX_PECKS - used} peck${MAX_PECKS - used === 1 ? "" : "s"} left.`; $("teaserGo").textContent = "Keep going →"; }
 })();
 
 (async () => {

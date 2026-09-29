@@ -417,6 +417,7 @@ footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
   </footer>
 </div>
 
+<script src="pecks-config.js"></script>
 <script src="pecks-art.js"></script>
 <script>
 /* ---------- Puzzles ----------
@@ -551,7 +552,7 @@ const PUZZLES = [
 /* Consonant pairs, as drawn on the notepad: BC DF across the top, then columns. */
 const VOWELS = ["A","E","I","O","U","Y"];
 const PAIRS  = ["BC","DF","GL","HM","JN","KP","QV","RW","SX","TZ"];
-const MAX_PECKS = 7, MAX_TRIES = 3, STORE = "henpecks:v1";
+const { MAX_PECKS, MAX_TRIES, STORE } = window.PECKS_CONFIG;
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------- Date helpers (local time) ---------- */
