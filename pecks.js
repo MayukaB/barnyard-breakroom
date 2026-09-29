@@ -89,6 +89,7 @@ const S = db.days[TODAY] && db.days[TODAY].p === PUZZLE.p ? db.days[TODAY]
 // keep storage small: only the last 10 days
 for (const k of Object.keys(db.days).sort().slice(0,-10)) delete db.days[k];
 
+// Typing in progress (not saved). Only update() below changes these.
 let entry = {};          // pos -> typed letter (solve phase)
 let active = null;       // selected blank position
 let busy = false;        // true while a wrong try is shaking, so input waits
@@ -113,7 +114,7 @@ function buildBoard(){
     t.setAttribute("role", "img");
     if (!isLetter(c)){ t.textContent = c; t.setAttribute("aria-label", PUNCT_NAME[c] || c); }
     t.dataset.i = i;
-    t.addEventListener("click", () => { if (S.phase === "solve" && !busy && !isShown(i)){ active = i; renderBoard(); } });
+    t.addEventListener("click", () => dispatch({ type: "select", pos: i }));
     word.appendChild(t); tiles[i] = t;
   });
   const words = [...board.querySelectorAll(".word")];
@@ -189,19 +190,19 @@ function buildPad(){
     if (k.length === 1) b.textContent = k;
     else { b.classList.add(k === "BC" || k === "DF" ? "across" : "down"); for (const ch of k){ const sp = document.createElement("span"); sp.textContent = ch; sp.setAttribute("aria-hidden", "true"); b.appendChild(sp); } }
     b.setAttribute("aria-label", k.length === 1 ? `Vowel ${k}` : `Consonants ${k[0]} and ${k[1]}`);
-    b.addEventListener("click", () => peck(k)); parent.appendChild(b);
+    b.addEventListener("click", () => dispatch({ type: "peck", key: k })); parent.appendChild(b);
   };
   VOWELS.forEach(k => mk(k, $("vowels")));
   PAIRS.forEach(k => mk(k, $("pairs")));
-  $("check").addEventListener("click", submit);
+  $("check").addEventListener("click", () => dispatch({ type: "submit" }));
   const rows = ["QWERTYUIOP","ASDFGHJKL","+ZXCVBNM-"];
   for (const r of rows){
     const row = document.createElement("div"); row.className = "krow";
     for (const ch of r){
       const b = document.createElement("button"); b.type = "button"; b.className = "key";
-      if (ch === "+"){ b.textContent = "Enter"; b.classList.add("wide", "enter"); b.onclick = submit; }
-      else if (ch === "-"){ b.textContent = "⌫"; b.classList.add("wide"); b.setAttribute("aria-label","Backspace"); b.onclick = back; }
-      else { b.textContent = ch; b.dataset.letter = ch; b.onclick = () => type(ch); }
+      if (ch === "+"){ b.textContent = "Enter"; b.classList.add("wide", "enter"); b.onclick = () => dispatch({ type: "submit" }); }
+      else if (ch === "-"){ b.textContent = "⌫"; b.classList.add("wide"); b.setAttribute("aria-label","Backspace"); b.onclick = () => dispatch({ type: "back" }); }
+      else { b.textContent = ch; b.dataset.letter = ch; b.onclick = () => dispatch({ type: "type", ch }); }
       row.appendChild(b);
     }
     $("kb").appendChild(row);
@@ -250,95 +251,130 @@ function say(text, warn = false, spoken = ""){
 }
 const speak = text => { const r = $("srType"); r.textContent = ""; requestAnimationFrame(() => { r.textContent = text; }); };
 
-function renderAll(){
-  renderBoard(); renderEggs(); renderPad();
+// The status line when nothing more specific has just happened.
+function statusLine(){
   if (S.phase === "peck"){
     const left = MAX_PECKS - S.pecks.length;
-    say(S.pecks.length ? `${left} peck${left===1?"":"s"} left` : "Pick a vowel or a consonant pair");
-  } else if (S.phase === "solve"){
+    return S.pecks.length ? `${left} peck${left===1?"":"s"} left` : "Pick a vowel or a consonant pair";
+  }
+  if (S.phase === "solve"){
     const left = MAX_TRIES - S.tries;
-    say(`Fill the blanks · ${left} ${left===1?"try":"tries"} left`);
-  } else say("");
-  if (S.phase === "won" || S.phase === "lost") showResult(false);
-}
-
-/* ---------- Peck phase ---------- */
-function peck(k){
-  if (S.phase !== "peck" || S.pecks.includes(k)) return;
-  const before = new Set(LETTER_POS.filter(isShown));
-  S.pecks.push(k);
-  const hits = CHARS.filter(c => k.includes(c)).length;
-  S.hitsPerPeck.push(hits);
-  const fresh = LETTER_POS.filter(i => isShown(i) && !before.has(i));
-  if (!blanks().length){ return finish(true, fresh); }
-  if (S.pecks.length >= MAX_PECKS) startSolve();
-  save(); renderAll(); renderBoard(fresh);
-  if (S.phase === "peck"){
-    const left = MAX_PECKS - S.pecks.length, pecksLeft = `${left} peck${left === 1 ? "" : "s"} left.`;
-    say(hits ? `Your peck found ${hits} letter${hits === 1 ? "" : "s"}! ${pecksLeft}` : `No ${k.split("").join(" or ")} in this one. ${pecksLeft}`, !hits, boardSpeech());
+    return `Fill the blanks · ${left} ${left===1?"try":"tries"} left`;
   }
-  else say(S.hard ? "Out of pecks. Time to take a guess! Hard mode: hint hidden." : "Out of pecks. Time to take a guess!", false,
-           (S.hard ? "" : `Hint: ${PUZZLE.hint} `) + boardSpeech() + " Type the missing letters, then press Enter.");
+  return "";
 }
 
-function startSolve(){
-  S.phase = "solve";
-  S.hard = !!db.settings.hard;
-  S.hintUsed = false;
-  active = blanks()[0] ?? null;
-  setTimeout(() => {
-    $("hint").scrollIntoView({block:"nearest", behavior: reduced ? "auto" : "smooth"});
-    const f = document.activeElement; if (!f || f === document.body || (f.closest && f.closest("#peckPad"))) $("hint").focus({preventScroll: true});
-  }, 50);
-}
+// Draws the board, pecks and keys from the current state. Safe to call any time.
+function render(){ renderBoard(); renderEggs(); renderPad(); }
 
-/* ---------- Solve phase ---------- */
-function type(ch){
-  if (S.phase !== "solve" || active == null || busy) return;
-  if (guessed().has(ch)){ say(`${ch} was already pecked, so it isn’t in any blank.`, true); return; }
-  entry[active] = ch;
-  const bl = blanks(), at = bl.indexOf(active);
-  const nextEmpty = bl.slice(at + 1).find(i => !entry[i]) ?? bl.find(i => !entry[i]);
-  active = nextEmpty ?? active;
-  renderBoard();
-  const left = blanks().filter(i => !entry[i]).length;
-  speak(left ? `${ch}. ${left} blank${left === 1 ? "" : "s"} left.` : `${ch}. All blanks filled. Press Enter to check.`);
-}
-function back(){
-  if (S.phase !== "solve" || busy) return;
-  const bl = blanks();
-  if (active != null && entry[active]) { delete entry[active]; }
-  else {
-    const at = bl.indexOf(active), prev = bl[at - 1];
-    if (prev != null){ active = prev; delete entry[prev]; }
-  }
-  renderBoard();
-}
-function submit(){
-  if (S.phase !== "solve" || busy) return;
-  const bl = blanks();
-  const missing = bl.filter(i => !entry[i]);
-  if (missing.length){ say(`${missing.length} blank${missing.length===1?"":"s"} still empty`, true); active = missing[0]; renderBoard(); return; }
-  const wrong = bl.filter(i => entry[i] !== CHARS[i]);
-  if (!wrong.length){ S.locked.push(...bl); return finish(true, []); }
-  S.locked.push(...bl.filter(i => entry[i] === CHARS[i]));
-  S.tries++;
-  if (S.tries >= MAX_TRIES){ return finish(false, []); }
+/* ---------- Game flow ----------
+   Every change to the game goes through dispatch(action):
+     1. update() checks the action is allowed right now and changes the state (S, plus the
+        not-yet-saved typing: entry, active, busy). It returns a list of effects, or null to ignore it.
+     2. The state is saved and the page is redrawn with render() (after the shake, for a wrong try).
+     3. The effects run: messages, animations, focus, the result screen, syncing to the account.
+   Nothing else changes S, entry, active or busy, so each rule lives in one place. */
+function dispatch(action){
+  const fx = update(action);
+  if (!fx) return;
   save();
-  busy = true;
-  if (!reduced) wrong.forEach(i => { const t = tiles[i]; t.classList.remove("shake"); void t.offsetWidth; t.classList.add("shake"); });
-  setTimeout(() => {
-    busy = false;
-    wrong.forEach(i => { delete entry[i]; tiles[i].classList.remove("shake"); });
-    active = wrong[0];
-    renderAll();
-    const left = MAX_TRIES - S.tries;
-    say(`Not quite. ${wrong.length} letter${wrong.length===1?"":"s"} wrong · ${left} ${left===1?"try":"tries"} left`, true, "Correct letters stay. " + boardSpeech());
-  }, reduced ? 0 : 480);
+  // While wrong letters shake, the board stays as typed; it redraws when the shake ends.
+  if (!fx.some(f => f.shake)){
+    render();
+    if (!fx.some(f => f.say)) say(statusLine());
+  }
+  for (const f of fx) runEffect(f);
 }
 
-/* ---------- End of round ---------- */
-function finish(won, fresh){
+function update(a){
+  switch (a.type){
+    case "peck": {
+      if (S.phase !== "peck" || S.pecks.includes(a.key)) return null;
+      const before = new Set(LETTER_POS.filter(isShown));
+      S.pecks.push(a.key);
+      const hits = CHARS.filter(c => a.key.includes(c)).length;
+      S.hitsPerPeck.push(hits);
+      const fx = [{ pop: LETTER_POS.filter(i => isShown(i) && !before.has(i)) }];
+      if (!blanks().length) return fx.concat(endRound(true));
+      if (S.pecks.length < MAX_PECKS){
+        const left = MAX_PECKS - S.pecks.length, pecksLeft = `${left} peck${left === 1 ? "" : "s"} left.`;
+        return fx.concat({ say: [hits ? `Your peck found ${hits} letter${hits === 1 ? "" : "s"}! ${pecksLeft}` : `No ${a.key.split("").join(" or ")} in this one. ${pecksLeft}`, !hits, boardSpeech()] });
+      }
+      // Out of pecks: on to filling in the blanks.
+      S.phase = "solve";
+      S.hard = !!db.settings.hard;
+      S.hintUsed = false;
+      active = blanks()[0] ?? null;
+      return fx.concat(
+        { say: [S.hard ? "Out of pecks. Time to take a guess! Hard mode: hint hidden." : "Out of pecks. Time to take a guess!", false,
+                (S.hard ? "" : `Hint: ${PUZZLE.hint} `) + boardSpeech() + " Type the missing letters, then press Enter."] },
+        { focusHint: true });
+    }
+    case "setHard":
+      if (S.phase !== "peck") return null;
+      db.settings.hard = a.on;
+      return [{ say: [a.on ? "Hard mode on: the hint will stay hidden." : "Hard mode off: you’ll get the hint."] }, { sync: true }];
+    case "peek":
+      if (S.phase !== "solve" || !S.hard || S.hintUsed) return null;
+      S.hintUsed = true;
+      return [{ say: ["Hint revealed. This one won’t count as a hard-mode win."] }];
+    case "select":
+      if (S.phase !== "solve" || busy || isShown(a.pos)) return null;
+      active = a.pos;
+      return [];
+    case "move": {
+      if (S.phase !== "solve" || busy) return null;
+      const bl = blanks(), n = bl[bl.indexOf(active) + a.by];
+      if (n == null) return null;
+      active = n;
+      return [];
+    }
+    case "type": {
+      if (S.phase !== "solve" || active == null || busy) return null;
+      if (guessed().has(a.ch)) return [{ say: [`${a.ch} was already pecked, so it isn’t in any blank.`, true] }];
+      entry[active] = a.ch;
+      const bl = blanks(), at = bl.indexOf(active);
+      active = bl.slice(at + 1).find(i => !entry[i]) ?? bl.find(i => !entry[i]) ?? active;
+      const left = blanks().filter(i => !entry[i]).length;
+      return [{ speak: left ? `${a.ch}. ${left} blank${left === 1 ? "" : "s"} left.` : `${a.ch}. All blanks filled. Press Enter to check.` }];
+    }
+    case "back": {
+      if (S.phase !== "solve" || busy) return null;
+      if (active != null && entry[active]) delete entry[active];
+      else {
+        const bl = blanks(), prev = bl[bl.indexOf(active) - 1];
+        if (prev != null){ active = prev; delete entry[prev]; }
+      }
+      return [];
+    }
+    case "submit": {
+      if (S.phase !== "solve" || busy) return null;
+      const bl = blanks(), missing = bl.filter(i => !entry[i]);
+      if (missing.length){
+        active = missing[0];
+        return [{ say: [`${missing.length} blank${missing.length===1?"":"s"} still empty`, true] }];
+      }
+      const wrong = bl.filter(i => entry[i] !== CHARS[i]);
+      if (!wrong.length){ S.locked.push(...bl); return endRound(true); }
+      S.locked.push(...bl.filter(i => entry[i] === CHARS[i]));
+      S.tries++;
+      if (S.tries >= MAX_TRIES) return endRound(false);
+      busy = true;                                   // input waits while the wrong letters shake
+      return [{ shake: wrong, then: { type: "clearWrong", wrong } }];
+    }
+    case "clearWrong": {
+      busy = false;
+      a.wrong.forEach(i => delete entry[i]);
+      active = a.wrong[0];
+      const left = MAX_TRIES - S.tries;
+      return [{ say: [`Not quite. ${a.wrong.length} letter${a.wrong.length===1?"":"s"} wrong · ${left} ${left===1?"try":"tries"} left`, true, "Correct letters stay. " + boardSpeech()] }];
+    }
+  }
+  return null;
+}
+
+// The round is over: record the outcome once, then show the result.
+function endRound(won){
   if (S.hard === undefined) S.hard = !!db.settings.hard;
   const byPecks = S.phase === "peck";
   S.phase = won ? "won" : "lost";
@@ -348,9 +384,23 @@ function finish(won, fresh){
     S.counted = true;
     if (!db.log[TODAY]) db.log[TODAY] = S.outcome;
   }
-  save(); cloudSync();
-  renderBoard(fresh.length ? fresh : []); renderEggs(); renderPad(); say("");
-  showResult(true);
+  return [{ say: [""] }, { sync: true }, { result: true }];
+}
+
+function runEffect(f){
+  if (f.say) say(...f.say);
+  if (f.speak) speak(f.speak);
+  if (f.pop && !reduced) for (const i of f.pop){ const t = tiles[i]; t.classList.remove("pop"); void t.offsetWidth; t.classList.add("pop"); }
+  if (f.sync) cloudSync();
+  if (f.result) showResult(true);
+  if (f.focusHint) setTimeout(() => {
+    $("hint").scrollIntoView({block:"nearest", behavior: reduced ? "auto" : "smooth"});
+    const el = document.activeElement; if (!el || el === document.body || (el.closest && el.closest("#peckPad"))) $("hint").focus({preventScroll: true});
+  }, 50);
+  if (f.shake){
+    if (!reduced) f.shake.forEach(i => { const t = tiles[i]; t.classList.remove("shake"); void t.offsetWidth; t.classList.add("shake"); });
+    setTimeout(() => { f.shake.forEach(i => tiles[i].classList.remove("shake")); dispatch(f.then); }, reduced ? 0 : 480);
+  }
 }
 
 function showResult(animate){
@@ -652,18 +702,15 @@ document.addEventListener("keydown", e => {
   const k = e.key.toUpperCase();
   if (S.phase === "peck" && /^[A-Z]$/.test(k)){
     const key = VOWELS.includes(k) ? k : PAIRS.find(p => p.includes(k));
-    if (key && !S.pecks.includes(key)) { e.preventDefault(); peck(key); }
+    if (key && !S.pecks.includes(key)) { e.preventDefault(); dispatch({ type: "peck", key }); }
   } else if (S.phase === "solve"){
     // Enter or Space on a focused button (a letter key, Backspace, "Show the hint") should press that button.
     const onButton = e.target.closest && e.target.closest("button, a, input");
     if (onButton && (e.key === "Enter" || e.key === " ")) return;
-    if (/^[A-Z]$/.test(k)){ e.preventDefault(); type(k); }
-    else if (e.key === "Backspace"){ e.preventDefault(); back(); }
-    else if (e.key === "Enter"){ e.preventDefault(); submit(); }
-    else if (e.key === "ArrowLeft" || e.key === "ArrowRight"){
-      const bl = blanks(), at = bl.indexOf(active);
-      const n = bl[at + (e.key === "ArrowLeft" ? -1 : 1)]; if (n != null){ active = n; renderBoard(); }
-    }
+    if (/^[A-Z]$/.test(k)){ e.preventDefault(); dispatch({ type: "type", ch: k }); }
+    else if (e.key === "Backspace"){ e.preventDefault(); dispatch({ type: "back" }); }
+    else if (e.key === "Enter"){ e.preventDefault(); dispatch({ type: "submit" }); }
+    else if (e.key === "ArrowLeft" || e.key === "ArrowRight") dispatch({ type: "move", by: e.key === "ArrowLeft" ? -1 : 1 });
   }
 });
 
@@ -671,15 +718,9 @@ document.addEventListener("keydown", e => {
 $("puzzleNo").textContent = `No. ${DAY_INDEX + 1} · ${new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}`;
 try { if (!localStorage.getItem(STORE + ":seen")) { $("how").open = true; localStorage.setItem(STORE + ":seen","1"); } } catch { $("how").open = true; }
 save();
-$("hard").addEventListener("change", e => {
-  if (S.phase !== "peck") return;
-  db.settings.hard = e.target.checked; save(); renderPad(); cloudSync();
-  say(e.target.checked ? "Hard mode on: the hint will stay hidden." : "Hard mode off: you’ll get the hint.");
-});
-$("peek").addEventListener("click", () => {
-  S.hintUsed = true; save(); renderPad();
-  say("Hint revealed. This one won’t count as a hard-mode win.");
-});
+$("hard").addEventListener("change", e => { dispatch({ type: "setHard", on: e.target.checked }); renderPad(); });
+$("peek").addEventListener("click", () => dispatch({ type: "peek" }));
 buildBoard(); buildPad(); initCloud();
 if (S.phase === "solve") active = blanks()[0] ?? null;
-renderAll();
+render(); say(statusLine());
+if (S.phase === "won" || S.phase === "lost") showResult(false);
