@@ -1,4 +1,34 @@
+# Dependencies: `npm install` recreates them.
 node_modules/
-.DS_Store
+
+# Test output: `npm test` recreates it.
 test-results/
 playwright-report/
+blob-report/
+playwright/.cache/
+
+# The deploy step's build folder (made on GitHub; not needed locally).
+_site/
+
+# Patch files once applied with `git am`, and Claude's export folder.
+*.patch
+Claude outputs/
+
+# Secrets, e.g. ANTHROPIC_API_KEY for running scripts/update.mjs locally. Never commit keys.
+.env
+.env.*
+!.env.example
+
+# Logs.
+*.log
+npm-debug.log*
+
+# Files Windows and macOS create in folders.
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editor settings and swap files.
+.vscode/
+.idea/
+*.swp
