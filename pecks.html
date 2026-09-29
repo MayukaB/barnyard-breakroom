@@ -825,7 +825,7 @@ function peck(k){
     const left = MAX_PECKS - S.pecks.length, pecksLeft = `${left} peck${left === 1 ? "" : "s"} left.`;
     say(hits ? `Your peck found ${hits} letter${hits === 1 ? "" : "s"}! ${pecksLeft}` : `No ${k.split("").join(" or ")} in this one. ${pecksLeft}`, !hits, boardSpeech());
   }
-  else say(S.hard ? "Out of pecks. Hard mode: no hint unless you ask." : "Out of pecks. Here’s your hint!", false,
+  else say(S.hard ? "Out of pecks. Time to take a guess! Hard mode: hint hidden." : "Out of pecks. Time to take a guess!", false,
            (S.hard ? "" : `Hint: ${PUZZLE.hint} `) + boardSpeech() + " Type the missing letters, then press Enter.");
 }
 
