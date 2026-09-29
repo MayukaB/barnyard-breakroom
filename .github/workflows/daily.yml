@@ -57,7 +57,7 @@ jobs:
         with:
           ref: main
       - name: Collect site files
-        run: mkdir _site && cp index.html pecks.html pecks.css pecks.js phrases.js pecks-config.js pecks-art.js stories.json favicon.svg favicon.ico favicon-96.png favicon-32.png apple-touch-icon.png og-story.png og-pecks.png robots.txt sitemap.xml _site/
+        run: mkdir _site && cp index.html site.css pecks.html pecks.css pecks.js phrases.js pecks-config.js pecks-art.js stories.json favicon.svg favicon.ico favicon-96.png favicon-32.png apple-touch-icon.png og-story.png og-pecks.png robots.txt sitemap.xml _site/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
