@@ -1,52 +1,17 @@
-/* Hen Pecks page styles. */
+/* Hen Pecks page styles. Shared tokens, header, page switch and footer are in site.css. */
 :root{
-  --paper:#EEF2EC; --sheet:#FCFBF7; --ink:#27352F; --ink-soft:#5B6A63;
-  --cobalt:#3A68AE; --ochre:#D39A2F; --rule:#D5DDD6; --shadow:rgba(39,53,47,.14);
-  --plate:#FBF7EE; --tile:#FFFFFF; --tile-line:#B9C5BD; --hit:#F3D9A4; --hit-ink:#5A3F0B;
-  --good:#6E9E6A; --bad:#C0584A; --miss:#DCE2DD;
-  --bar:#3A68AE; --bar-today:#C07E14; --track:#E8EDE9;
-  --dialog:#FCFBF7; --scrim:rgba(39,53,47,.45);
-  color-scheme:light;
+  --tile:#FFFFFF; --tile-line:#B9C5BD; --hit:#F3D9A4; --hit-ink:#5A3F0B; --good:#6E9E6A; --bad:#C0584A; --miss:#DCE2DD; --bar:#3A68AE; --bar-today:#C07E14; --track:#E8EDE9; --dialog:#FCFBF7; --scrim:rgba(39,53,47,.45);
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --paper:#161D1B; --sheet:#1F2826; --ink:#E7ECE6; --ink-soft:#A3B1AA;
-    --cobalt:#8DB0EA; --ochre:#E8B85A; --rule:#34403C; --shadow:rgba(0,0,0,.45);
-    --plate:#F4EFE3; --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD;
-    --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --dialog:#27332F; --scrim:rgba(0,0,0,.66); color-scheme:dark;
+    --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD; --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --dialog:#27332F; --scrim:rgba(0,0,0,.66);
   }
 }
 :root[data-theme="dark"]{
-  --paper:#161D1B; --sheet:#1F2826; --ink:#E7ECE6; --ink-soft:#A3B1AA;
-  --cobalt:#8DB0EA; --ochre:#E8B85A; --rule:#34403C; --shadow:rgba(0,0,0,.45);
-  --plate:#F4EFE3; --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD;
-  --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --dialog:#27332F; --scrim:rgba(0,0,0,.66); color-scheme:dark;
+  --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD; --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --dialog:#27332F; --scrim:rgba(0,0,0,.66);
 }
-*{box-sizing:border-box}
-html{scrollbar-gutter:stable}
-[hidden]{display:none!important}
-body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 Karla,system-ui,sans-serif;padding-inline:16px;padding-block:28px 56px}
-.wrap{max-width:1040px;margin:0 auto;display:grid;gap:40px}
 .wrap>main{max-width:760px;width:100%;justify-self:center}
-.tag{font:500 13px/1.4 Karla,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
-.headside{display:grid;gap:10px;justify-items:end}
-@media (max-width:760px){.headside{justify-items:start}}
-header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px}
-h1{font:400 clamp(30px,5vw,46px)/1.05 "Young Serif",Georgia,serif;margin:0;letter-spacing:-.01em}
 h1 a{color:inherit;text-decoration:none}
-h1 span{color:var(--cobalt)}
-/* Site switch: shared by index.html and pecks.html */
-@view-transition{navigation:auto}
-.switch{display:inline-flex;gap:4px;padding:4px;background:var(--sheet);border:1px solid var(--rule);border-radius:999px;box-shadow:0 8px 20px -16px var(--shadow)}
-.switch a{position:relative;display:inline-flex;align-items:center;gap:8px;padding:9px 16px 9px 12px;border-radius:999px;font:700 15px/1 Karla,sans-serif;color:var(--ink-soft);text-decoration:none;transition:color .15s,background-color .15s}
-.switch a:hover{color:var(--ink);background:color-mix(in srgb,var(--rule) 55%,transparent)}
-.switch a:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
-.switch a[aria-current="page"]{background:var(--cobalt);color:var(--sheet);view-transition-name:switch-pill}
-.switch svg{width:22px;height:22px;flex:none}
-.switch .dot{position:absolute;top:6px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--ochre);box-shadow:0 0 0 2px var(--sheet)}
-::view-transition-group(switch-pill){animation-duration:.35s;animation-timing-function:cubic-bezier(.3,1.3,.5,1)}
-@media (max-width:420px){.switch{display:flex;width:100%}.switch a{flex:1;justify-content:center;padding-inline:10px}}
-@media (prefers-reduced-motion:reduce){@view-transition{navigation:none}}
 
 .sheet{background:var(--sheet);border-radius:6px;box-shadow:0 1px 0 var(--rule),0 18px 40px -22px var(--shadow);padding:28px;display:grid;gap:22px}
 @media (max-width:560px){.sheet{padding:18px 14px;gap:18px}}
@@ -147,9 +112,6 @@ details.how li{margin:2px 0}
 @media (prefers-reduced-motion:reduce){.check.ready.pulse{animation:none}}
 .actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
 .btn{font:700 15px/1 Karla,sans-serif;padding:11px 18px;border-radius:999px;border:1.5px solid var(--cobalt);color:var(--cobalt);background:transparent;text-decoration:none;cursor:pointer;display:inline-flex;gap:8px;align-items:center}
-.btn.solid{background:var(--cobalt);color:var(--sheet)}
-.btn:hover{filter:brightness(1.08)}
-.btn:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
 
 /* Result */
 .result{display:grid;grid-template-columns:190px 1fr;gap:22px;align-items:start;border-top:1px solid var(--rule);padding-top:22px}
@@ -227,8 +189,5 @@ dialog.acct .fine{font-size:13px;line-height:1.5;color:var(--ink-soft);max-width
 @media (prefers-reduced-motion:reduce){dialog.acct[open]{animation:none}}
 
 canvas#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:10}
-footer{font-size:13px;color:var(--ink-soft);display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 24px;border-top:1px solid var(--rule);padding-top:16px}
-footer p{margin:0}
-footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 @media (prefers-reduced-motion:reduce){.tile.pop,.tile.dance,.tile.shake,.result.won .hen svg,.result.lost .hen svg{animation:none}.hint,.result .hen{transform:none}}
