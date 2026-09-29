@@ -156,6 +156,9 @@ details.how li{margin:2px 0}
 .kb .krow{display:flex;justify-content:center;gap:5px}
 .kb .key{flex:1 1 0;max-width:46px;font-size:17px;padding:14px 0;min-width:0}
 .kb .key.wide{max-width:76px;flex:1.6 1 0;font:700 13px/1 Karla,sans-serif;letter-spacing:.04em}
+/* Letters already pecked are revealed everywhere, so they can't be in a blank: crossed out on the keyboard. */
+.kb .key.used{background:var(--miss);border-color:var(--miss);color:var(--ink-soft);text-decoration:line-through;text-decoration-thickness:2px;opacity:.75}
+.kb .key.used:hover{border-color:var(--miss);color:var(--ink-soft)}
 .kb .key.enter{background:var(--cobalt);border-color:var(--cobalt);color:var(--sheet)}
 .kb .key.enter:hover{color:var(--sheet);filter:brightness(1.08)}
 /* The big "Check answer" button under the keyboard. Outlined while blanks are empty, solid once they're all filled. */
@@ -746,14 +749,26 @@ function buildPad(){
       const b = document.createElement("button"); b.type = "button"; b.className = "key";
       if (ch === "+"){ b.textContent = "Enter"; b.classList.add("wide", "enter"); b.onclick = submit; }
       else if (ch === "-"){ b.textContent = "⌫"; b.classList.add("wide"); b.setAttribute("aria-label","Backspace"); b.onclick = back; }
-      else { b.textContent = ch; b.onclick = () => type(ch); }
+      else { b.textContent = ch; b.dataset.letter = ch; b.onclick = () => type(ch); }
       row.appendChild(b);
     }
     $("kb").appendChild(row);
   }
 }
 
+// Cross out keyboard letters that were pecked: every one of them is already showing on the board.
+function renderKb(){
+  const g = guessed();
+  document.querySelectorAll("#kb .key[data-letter]").forEach(b => {
+    const used = g.has(b.dataset.letter);
+    b.classList.toggle("used", used);
+    b.disabled = used;
+    b.setAttribute("aria-label", used ? `${b.dataset.letter}, already pecked` : b.dataset.letter);
+  });
+}
+
 function renderPad(){
+  renderKb();
   const used = new Set(S.pecks);
   document.querySelectorAll("#peckPad .key").forEach(b => {
     const k = b.dataset.k, n = S.pecks.indexOf(k);
@@ -825,6 +840,7 @@ function startSolve(){
 /* ---------- Solve phase ---------- */
 function type(ch){
   if (S.phase !== "solve" || active == null || busy) return;
+  if (guessed().has(ch)){ say(`${ch} was already pecked, so it isn’t in any blank.`, true); return; }
   entry[active] = ch;
   const bl = blanks(), at = bl.indexOf(active);
   const nextEmpty = bl.slice(at + 1).find(i => !entry[i]) ?? bl.find(i => !entry[i]);
