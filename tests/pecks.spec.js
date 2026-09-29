@@ -224,3 +224,36 @@ test("Backspace removes the letter just typed, even in the last blank", async ({
   await page.keyboard.press("Backspace");
   await expect(slots.first()).toHaveText("");
 });
+
+test("the story archive shows 12 paintings at a time", async ({ page }) => {
+  // 30 stories: the newest is the main story, so 29 go in "Earlier pages".
+  const real = await (await page.request.get("/stories.json")).json();
+  const stories = Array.from({ length: 30 }, (_, n) => ({
+    ...real[0],
+    id: `story-${n}`,
+    title: `Story ${n}`,
+    published: `2026-08-${String(30 - n).padStart(2, "0")}`,
+  }));
+  await page.route("**/stories.json", (r) => r.fulfill({ json: stories }));
+  await page.goto("/");
+  const cards = page.locator("#grid .card"),
+    more = page.locator("#more");
+  await expect(cards).toHaveCount(12);
+  await expect(more).toHaveText("Show 12 more");
+  await more.click();
+  await expect(cards).toHaveCount(24);
+  await expect(cards.nth(12)).toBeFocused();
+  await expect(more).toHaveText("Show 5 more");
+  await more.click();
+  await expect(cards).toHaveCount(29);
+  await expect(more).toBeHidden();
+  // Opening an older story keeps the longer list.
+  await cards.nth(20).click();
+  await expect(cards).toHaveCount(29);
+});
+
+test("with only a few stories there's no Show more button", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("#grid .card").first()).toBeVisible();
+  await expect(page.locator("#more")).toBeHidden();
+});
