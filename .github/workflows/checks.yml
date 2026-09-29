@@ -1,12 +1,28 @@
-name: Check Hen Pecks
+name: Checks
 
-# Runs on every push and pull request that touches the game, so a broken or
-# spoiling phrase never reaches the live site.
+# Runs on every push and pull request that touches the site, so a broken game,
+# page or spoiling phrase never reaches the live site.
 on:
   push:
-    paths: ["phrases.js", "pecks-art.js", "scripts/check-pecks.mjs", ".github/workflows/checks.yml"]
+    paths:
+      - "*.html"
+      - "*.css"
+      - "*.js"
+      - "tests/**"
+      - "scripts/check-pecks.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/checks.yml"
   pull_request:
-    paths: ["phrases.js", "pecks-art.js", "scripts/check-pecks.mjs", ".github/workflows/checks.yml"]
+    paths:
+      - "*.html"
+      - "*.css"
+      - "*.js"
+      - "tests/**"
+      - "scripts/check-pecks.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/checks.yml"
   workflow_dispatch:
 
 permissions:
@@ -15,6 +31,7 @@ permissions:
 jobs:
   phrases:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,3 +39,26 @@ jobs:
           node-version: 20
       - name: Check the phrase list and pictures
         run: node scripts/check-pecks.mjs
+
+  browser:
+    # Plays Hen Pecks in a real browser (desktop and phone sizes): winning, losing,
+    # hard mode, reloading, the story page card and upgrading old saved data.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run the browser tests
+        run: npx playwright test
+      - name: Keep the report when something fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7

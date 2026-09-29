@@ -1,0 +1,12 @@
+{
+  "name": "barnyard-breakroom",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "check": "node scripts/check-pecks.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}
