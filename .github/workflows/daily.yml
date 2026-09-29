@@ -20,6 +20,8 @@ jobs:
   update:
     if: github.event_name != 'push'
     runs-on: ubuntu-latest
+    # A stuck API call would otherwise wait for GitHub's 6-hour limit.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -46,6 +48,7 @@ jobs:
     needs: update
     if: always() && (needs.update.result == 'success' || needs.update.result == 'skipped')
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -67,6 +70,7 @@ jobs:
     needs: [update, deploy]
     if: always() && github.event_name != 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
       contents: read
       issues: write
