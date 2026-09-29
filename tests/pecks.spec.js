@@ -180,3 +180,20 @@ test("data saved by a newer version of the game is left alone", async ({ page })
   expect(saved.version).toBe(999);
   expect(saved.future).toBe("keep me");
 });
+
+test("Backspace removes the letter just typed, even in the last blank", async ({ page }) => {
+  await open(page);
+  await peckAll(page);
+  const slots = page.locator(".tile.slot");
+  const last = slots.last();
+  await last.click();
+  await page.keyboard.press("X");
+  await expect(last).toHaveText("X");
+  await page.keyboard.press("Backspace");
+  await expect(last).toHaveText("");
+  // Typing then Backspace in the middle still works as before.
+  await slots.first().click();
+  await page.keyboard.press("X");
+  await page.keyboard.press("Backspace");
+  await expect(slots.first()).toHaveText("");
+});

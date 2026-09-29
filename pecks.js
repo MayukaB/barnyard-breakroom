@@ -114,6 +114,7 @@ for (const k of Object.keys(db.days).sort().slice(0,-10)) delete db.days[k];
 let entry = {};          // pos -> typed letter (solve phase)
 let active = null;       // selected blank position
 let busy = false;        // true while a wrong try is shaking, so input waits
+let lastTyped = null;    // the blank typed into most recently, for Backspace
 
 /* ---------- Derived state ---------- */
 const guessed = () => new Set(S.pecks.flatMap(k => [...k]));
@@ -354,6 +355,7 @@ function update(a){
       if (S.phase !== "solve" || active == null || busy) return null;
       if (guessed().has(a.ch)) return [{ say: [`${a.ch} was already pecked, so it isn’t in any blank.`, true] }];
       entry[active] = a.ch;
+      lastTyped = active;
       const bl = blanks(), at = bl.indexOf(active);
       active = bl.slice(at + 1).find(i => !entry[i]) ?? bl.find(i => !entry[i]) ?? active;
       const left = blanks().filter(i => !entry[i]).length;
@@ -362,10 +364,14 @@ function update(a){
     case "back": {
       if (S.phase !== "solve" || busy) return null;
       if (active != null && entry[active]) delete entry[active];
+      // After typing, the cursor jumps to the next empty blank, which may wrap back to the start.
+      // Backspace then removes the letter just typed rather than the blank before the cursor.
+      else if (lastTyped != null && entry[lastTyped]){ active = lastTyped; delete entry[lastTyped]; }
       else {
         const bl = blanks(), prev = bl[bl.indexOf(active) - 1];
         if (prev != null){ active = prev; delete entry[prev]; }
       }
+      lastTyped = null;
       return [];
     }
     case "submit": {
