@@ -21,49 +21,70 @@ const LETTER_POS = CHARS.map((c,i) => isLetter(c) ? i : -1).filter(i => i >= 0);
 /* ---------- Storage (best effort) ---------- */
 function load(){ try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch { return {}; } }
 function save(){ try { localStorage.setItem(STORE, JSON.stringify(db)); } catch {} }
-const db = load();
-db.days = db.days || {};
-db.stats = db.stats || {played:0, wins:0, streak:0, best:0, last:null};
-db.settings = db.settings || {hard:false};
-if (!db.stats.dist){
-  // First visit since the chart was added: rebuild from the games still saved on this device.
-  db.stats.dist = {pecks:0, t1:0, t2:0, t3:0, miss:0};
-  for (const d of Object.values(db.days)){
-    if (!d.counted) continue;
-    const k = d.phase === "lost" ? "miss" : (d.pecks.length < MAX_PECKS && !d.tries ? "pecks" : "t" + (d.solvedOnTry || 1));
-    if (k in db.stats.dist) db.stats.dist[k]++;
-  }
-}
-/* ---------- Stats ----------
-   Each finished game is logged by day (db.log = {"2026-09-28":"t2", ...}) and the stats are
-   worked out from the log. Logs from two devices can then be merged without counting a day twice.
-   db.base holds the totals from before games were logged by day. db.cloud is the signed-in
-   player's saved copy, if any. */
-if (!db.log){
-  // Streak only survives if the last win was today or yesterday.
-  const st = db.stats, alive = st.last === TODAY || st.last === prevDay(TODAY);
-  db.base = {played:st.played, wins:st.wins, best:st.best, streak: alive ? st.streak : 0, last:st.last, dist:{...st.dist}};
-  db.log = {};
-}
-// Games still kept day by day (the last 10 days) move out of the old totals and into the log, so
-// the same day played on two devices counts once when they're merged into an account.
-if (!db.logFromDays){
-  const b = db.base;
-  const outcomeOf = d => d.outcome || (d.phase === "lost" ? "miss" : (d.pecks.length < MAX_PECKS && !d.tries ? "pecks" : "t" + (d.solvedOnTry || 1)));
-  for (const [day, d] of Object.entries(db.days)){
-    if (!d || !d.counted || db.log[day] || (d.phase !== "won" && d.phase !== "lost")) continue;
-    const o = outcomeOf(d);
-    db.log[day] = o;
-    if (b.played > 0){
-      b.played--;
-      if (o !== "miss") b.wins = Math.max(0, (b.wins || 0) - 1);
-      if (b.dist && b.dist[o] > 0) b.dist[o]--;
+/* ---------- Saved data ----------
+   Everything is saved in this browser under STORE as one object (db). db.version says which shape
+   it's in. MIGRATIONS[n] upgrades data from version n to version n + 1, so a returning player's
+   data is brought up to date step by step on their next visit.
+   To change the shape: add a new step to the END. Never edit, remove or reorder the old ones;
+   players who haven't visited in a while still need them. Each step also checks before it
+   changes anything, so data saved before versions existed (version 0) upgrades safely. */
+const MIGRATIONS = [
+  // 1: the basics.
+  d => {
+    d.days = d.days || {};
+    d.stats = d.stats || {played:0, wins:0, streak:0, best:0, last:null};
+    d.settings = d.settings || {hard:false};
+  },
+  // 2: the "How your games ended" chart. Rebuild it from the games still saved on this device.
+  d => {
+    if (d.stats.dist) return;
+    d.stats.dist = {pecks:0, t1:0, t2:0, t3:0, miss:0};
+    for (const g of Object.values(d.days)){
+      if (!g || !g.counted) continue;
+      const k = g.phase === "lost" ? "miss" : (g.pecks.length < MAX_PECKS && !g.tries ? "pecks" : "t" + (g.solvedOnTry || 1));
+      if (k in d.stats.dist) d.stats.dist[k]++;
     }
-  }
-  if (!b.played) db.base = {played:0, wins:0, best:0, streak:0, last:null, dist:{pecks:0, t1:0, t2:0, t3:0, miss:0}};
-  db.logFromDays = true;
+  },
+  /* 3: stats worked out from a log of finished games by day (d.log = {"2026-09-28":"t2", ...}), so
+     logs from two devices can be merged without counting a day twice. d.base keeps the totals
+     from before games were logged by day. d.cloud is the signed-in player's saved copy, if any. */
+  d => {
+    if (d.log) return;
+    // Streak only survives if the last win was today or yesterday.
+    const st = d.stats, alive = st.last === TODAY || st.last === prevDay(TODAY);
+    d.base = {played:st.played, wins:st.wins, best:st.best, streak: alive ? st.streak : 0, last:st.last, dist:{...st.dist}};
+    d.log = {};
+  },
+  // 4: games still kept day by day (the last 10 days) move out of the old totals and into the log,
+  //    so the same day played on two devices counts once when they're merged into an account.
+  d => {
+    if (d.logFromDays) return;
+    const b = d.base;
+    const outcomeOf = g => g.outcome || (g.phase === "lost" ? "miss" : (g.pecks.length < MAX_PECKS && !g.tries ? "pecks" : "t" + (g.solvedOnTry || 1)));
+    for (const [day, g] of Object.entries(d.days)){
+      if (!g || !g.counted || d.log[day] || (g.phase !== "won" && g.phase !== "lost")) continue;
+      const o = outcomeOf(g);
+      d.log[day] = o;
+      if (b.played > 0){
+        b.played--;
+        if (o !== "miss") b.wins = Math.max(0, (b.wins || 0) - 1);
+        if (b.dist && b.dist[o] > 0) b.dist[o]--;
+      }
+    }
+    if (!b.played) d.base = {played:0, wins:0, best:0, streak:0, last:null, dist:{pecks:0, t1:0, t2:0, t3:0, miss:0}};
+    d.logFromDays = true;
+  },
+  // 5: an id for this browser, so account sync can tell devices apart.
+  d => { if (!d.device) d.device = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()); },
+];
+function migrate(d){
+  const from = Number.isInteger(d.version) ? d.version : 0;
+  if (from > MIGRATIONS.length) return d;        // saved by a newer version of the game: leave it alone
+  for (let v = from; v < MIGRATIONS.length; v++) MIGRATIONS[v](d);
+  d.version = MIGRATIONS.length;
+  return d;
 }
-if (!db.device) db.device = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now());
+const db = migrate(load());
 function prevDay(key){ const [y,m,d] = key.split("-").map(Number); return new Date(Date.UTC(y,m-1,d-1)).toISOString().slice(0,10); }
 function computeStats(base, log){
   base = base || {};
