@@ -12,6 +12,8 @@ on:
       - "scripts/check-pecks.mjs"
       - "package.json"
       - "package-lock.json"
+      - ".prettierrc.json"
+      - ".prettierignore"
       - ".github/workflows/checks.yml"
   pull_request:
     paths:
@@ -22,6 +24,8 @@ on:
       - "scripts/check-pecks.mjs"
       - "package.json"
       - "package-lock.json"
+      - ".prettierrc.json"
+      - ".prettierignore"
       - ".github/workflows/checks.yml"
   workflow_dispatch:
 
@@ -39,6 +43,25 @@ jobs:
           node-version: 20
       - name: Check the phrase list and pictures
         run: node scripts/check-pecks.mjs
+
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Lint the code
+        run: npm run lint
+      - name: Check formatting
+        run: npm run format:check
+      - name: Check the Node scripts parse
+        run: |
+          for f in scripts/*.mjs; do node --check "$f"; done
+          bash -n scripts/alert.sh
 
   browser:
     # Plays Hen Pecks in a real browser (desktop and phone sizes): winning, losing,
