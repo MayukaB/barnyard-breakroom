@@ -29,7 +29,6 @@ main.sheet{position:relative}
 .title-pecker .bob{transform-box:view-box;transform-origin:0 0;animation:peck 2.6s ease-in-out infinite}
 @keyframes peck{0%,58%,100%{transform:rotate(0)}64%{transform:rotate(-24deg)}70%{transform:rotate(-4deg)}76%{transform:rotate(-24deg)}84%{transform:rotate(0)}}
 .title-pecker .seeds{position:absolute;left:-12px;bottom:1px;width:18px}
-.title-pecker .peckword{position:absolute;right:-12px;top:-14px;font:700 17px/1 Caveat,cursive;color:var(--title-accent);transform:rotate(8deg);white-space:nowrap}
 details.how{font-size:15px;color:var(--ink-soft);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:8px 0}
 details.how summary{cursor:pointer;color:var(--ink);font-weight:700;list-style:none}
 details.how summary::-webkit-details-marker{display:none}
@@ -76,7 +75,10 @@ details.how li{margin:2px 0}
 .egg{width:22px;height:28px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;border:2px solid var(--tile-line);background:var(--tile);display:grid;place-items:center;font:700 10px/1 Karla,sans-serif;color:var(--hit-ink)}
 .egg.hit{background:var(--hit);border-color:var(--ochre)}
 .egg.miss{background:var(--miss);border-color:var(--tile-line);color:var(--ink-soft)}
-.msg{font-size:15px;color:var(--ink-soft);min-height:1.5em;text-align:right;flex:1 1 200px}
+/* Hen + label + 7 eggs is ~317px, wider than the card on phones under ~362px; tighten it there */
+@media (max-width:400px){.status-left{gap:6px}.status-hen{width:36px}.pecks{gap:4px}.pecks .lbl{letter-spacing:.04em;margin-right:2px}.egg{width:19px;height:24px}}
+/* Sits on the eggs' line (not the hen's middle): bottom-aligned and as tall as an egg, text centered */
+.msg{font-size:15px;color:var(--ink-soft);min-height:28px;text-align:right;flex:1 1 200px;align-self:flex-end;display:flex;align-items:center;justify-content:flex-end}
 .msg.warn{color:var(--bad)}
 
 /* Focus moves here so screen readers read it; it isn't a control, so no ring. */
