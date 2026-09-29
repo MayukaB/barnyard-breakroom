@@ -27,8 +27,14 @@ const PROMPT = `You keep a storybook site that paints the newest National Geogra
 Painting rules (SVG inner markup for viewBox "0 0 400 300"):
 - Only these tags: g, path, circle, ellipse, rect, line, polyline, polygon. No <svg> wrapper, no text, script, image, ids, gradients or defs. Double-quoted attributes.
 - Filters already defined on the page: filter="url(#wc)" for watercolor shapes with soft darkened edges, filter="url(#wash)" for loose background washes, filter="url(#line)" for wobbly pencil lines (strokes with fill="none"). Paper texture is added automatically on a cream background.
-- 25-60 elements, back to front: a sky/background wash that bleeds past the edges (e.g. x="-10" width="420"), the landscape, then the animal as the clear hero near the centre. fill-opacity 0.55-0.95 so layers glaze. Soft, warm, slightly muted storybook palette suited to the habitat.
-- Make the animal adorable and recognisable: big round head, simple dot or happy-arc eyes, small pink blush cheeks (~0.55 opacity), a rounded chunky body, and its key features. Add one or two small details from the story.
+- 70-130 elements, back to front: a sky/background wash that bleeds past the edges (e.g. x="-10" width="420"), the landscape, then the animal as the clear hero near the centre. fill-opacity 0.55-0.95 so layers glaze. Soft, warm, slightly muted storybook palette suited to the habitat.
+- Make the animal adorable and recognisable: big round head, simple dot or happy-arc eyes, small pink blush cheeks (~0.55 opacity), a rounded chunky body, and its key features.
+- Fill the scene with storybook detail, keeping the animal the clear hero:
+  - background life: clouds, distant hills or trees, small birds or far-off animals
+  - the animal: fur or feather tufts, a lighter belly or muzzle, paw pads, a soft shadow on the ground beneath it
+  - foreground texture: grass tufts, pebbles, flowers, leaves or ripples suited to the habitat
+  - three to five small details from the story itself
+  The watercolor filter softens edges, so make small details at least 6 units across and give them slightly darker colors than their surroundings.
 
 Reply with only this JSON, nothing else:
 {"new": true, "id": "<id>", "title": "<exact headline>", "url": "<full https article URL>",
@@ -135,13 +141,13 @@ if (known.has(id)) {
   console.log(`No new story today (${id} is already on the site).`);
   process.exit(0);
 }
-// The prompt asks for 25-60 shapes; existing paintings are ~4 KB with ~40 shapes.
+// The prompt asks for 70-130 shapes (older paintings are ~4 KB with ~40 shapes).
 // Refuse anything far outside that so one bad reply can't bloat stories.json.
-const MAX_SCENE_CHARS = 20000;
+const MAX_SCENE_CHARS = 30000;
 const shapes = (story.scene.match(/<(g|path|circle|ellipse|rect|line|polyline|polygon)\b/g) || []).length;
-if (story.scene.length > MAX_SCENE_CHARS || shapes < 10 || shapes > 150) {
+if (story.scene.length > MAX_SCENE_CHARS || shapes < 10 || shapes > 200) {
   console.error(
-    `Painting rejected: ${story.scene.length} characters, ${shapes} shapes (allowed: up to ${MAX_SCENE_CHARS} characters, 10-150 shapes).`,
+    `Painting rejected: ${story.scene.length} characters, ${shapes} shapes (allowed: up to ${MAX_SCENE_CHARS} characters, 10-200 shapes).`,
   );
   process.exit(1);
 }
