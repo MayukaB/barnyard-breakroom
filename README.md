@@ -33,6 +33,17 @@ Each run is one API call with a couple of page fetches. On days when the top sto
 
 Free Supabase projects pause after about a week without any requests. If that happens, sign-in stops working (the game itself keeps going) until you restore the project from the dashboard.
 
+## Tests
+
+```sh
+npm install                       # once: installs the test runner
+npx playwright install chromium   # once: the browser the tests drive
+npm test                          # plays Hen Pecks in a browser (desktop and phone sizes)
+npm run check                     # checks the phrase list and pictures
+```
+
+`tests/pecks.spec.js` covers pecking, winning, losing, wrong tries, hard mode and peeking, reloading mid-game, the story page's Hen Pecks card and upgrading old saved data. The tests pin the date, so they always play the same puzzle, and they block the sign-in services so they run offline. `.github/workflows/checks.yml` runs both checks on every push and pull request that touches the site.
+
 ## Run locally
 
 ```sh
