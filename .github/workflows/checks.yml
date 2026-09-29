@@ -4,9 +4,9 @@ name: Check Hen Pecks
 # spoiling phrase never reaches the live site.
 on:
   push:
-    paths: ["pecks.html", "pecks-art.js", "scripts/check-pecks.mjs", ".github/workflows/checks.yml"]
+    paths: ["phrases.js", "pecks-art.js", "scripts/check-pecks.mjs", ".github/workflows/checks.yml"]
   pull_request:
-    paths: ["pecks.html", "pecks-art.js", "scripts/check-pecks.mjs", ".github/workflows/checks.yml"]
+    paths: ["phrases.js", "pecks-art.js", "scripts/check-pecks.mjs", ".github/workflows/checks.yml"]
   workflow_dispatch:
 
 permissions:

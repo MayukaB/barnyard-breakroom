@@ -4,19 +4,19 @@ import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 
 const root = new URL("../", import.meta.url);
-const html = await readFile(new URL("pecks.html", root), "utf8");
+const phrasesSrc = await readFile(new URL("phrases.js", root), "utf8");
 const artSrc = await readFile(new URL("pecks-art.js", root), "utf8");
 
 const errors = [], warnings = [];
 const err = (m) => errors.push(m), warn = (m) => warnings.push(m);
 
-// Pull START_DATE and PUZZLES straight out of the game page.
-const start = html.match(/const START_DATE = "([^"]+)";/);
-const list = html.match(/const PUZZLES = (\[[\s\S]*?\n\]);/);
-if (!start) err("Couldn't find START_DATE in pecks.html.");
-else if (!/^\d{4}-\d{2}-\d{2}$/.test(start[1]) || isNaN(Date.parse(start[1]))) err(`START_DATE "${start[1]}" isn't a valid YYYY-MM-DD date.`);
-if (!list) { console.error("Couldn't find the PUZZLES list in pecks.html."); process.exit(1); }
-const PUZZLES = vm.runInNewContext(list[1]);
+// Load phrases.js the way a browser would.
+const phraseBox = { window: {} };
+vm.runInNewContext(phrasesSrc, phraseBox);
+const phrases = phraseBox.window.PECKS_PHRASES;
+if (!phrases || !Array.isArray(phrases.list)) { console.error("phrases.js didn't define window.PECKS_PHRASES.list."); process.exit(1); }
+const PUZZLES = phrases.list;
+if (!/^\d{4}-\d{2}-\d{2}$/.test(phrases.startDate || "") || isNaN(Date.parse(phrases.startDate))) err(`startDate "${phrases.startDate}" isn't a valid YYYY-MM-DD date.`);
 
 // Load the art kit the way a browser would.
 const sandbox = { window: {}, console: { warn: () => {}, log: () => {} } };
