@@ -289,7 +289,26 @@ function statusLine(){
 }
 
 // Draws the board, pecks and keys from the current state. Safe to call any time.
-function render(){ renderBoard(); renderEggs(); renderPad(); }
+// The hen by the peck counter shows how the game is going.
+function henMood(){
+  if (S.phase === "won") return "happy2";
+  if (S.phase === "lost") return "sad";
+  if (S.phase === "solve") return S.tries ? "worried" : "happy";
+  if (!S.pecks.length) return "happy";
+  return S.hitsPerPeck[S.pecks.length - 1] ? "happy2" : "worried";
+}
+function renderHen(){
+  const g = document.querySelector("#statusHen .bob"), mood = henMood();
+  if (!g || !window.PECKS_ART || g.dataset.mood === mood) return;
+  try { g.innerHTML = window.PECKS_ART.kit.A("hen", 0, 0, 2, { mood }); g.dataset.mood = mood; } catch {}
+}
+function henPeck(){
+  const h = $("statusHen");
+  if (reduced || !h) return;
+  h.classList.remove("pecking"); void h.offsetWidth; h.classList.add("pecking");
+}
+
+function render(){ renderBoard(); renderEggs(); renderHen(); renderPad(); }
 
 /* ---------- Game flow ----------
    Every change to the game goes through dispatch(action):
@@ -318,7 +337,7 @@ function update(a){
       S.pecks.push(a.key);
       const hits = CHARS.filter(c => a.key.includes(c)).length;
       S.hitsPerPeck.push(hits);
-      const fx = [{ pop: LETTER_POS.filter(i => isShown(i) && !before.has(i)) }];
+      const fx = [{ pop: LETTER_POS.filter(i => isShown(i) && !before.has(i)), henPeck: true }];
       if (!blanks().length) return fx.concat(endRound(true));
       if (S.pecks.length < MAX_PECKS){
         const left = MAX_PECKS - S.pecks.length, pecksLeft = `${left} peck${left === 1 ? "" : "s"} left.`;
@@ -420,6 +439,7 @@ function runEffect(f){
   if (f.say) say(...f.say);
   if (f.speak) speak(f.speak);
   if (f.pop && !reduced) for (const i of f.pop){ const t = tiles[i]; t.classList.remove("pop"); void t.offsetWidth; t.classList.add("pop"); }
+  if (f.henPeck) henPeck();
   if (f.sync) cloudSync();
   if (f.result) showResult(true);
   if (f.focusHint) setTimeout(() => {
