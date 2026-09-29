@@ -16,6 +16,11 @@ export default [
     languageOptions: { sourceType: "module", globals: globals.node },
   },
   {
+    // Tests also pass functions to page.evaluate(), which run inside the browser.
+    files: ["tests/**/*.{js,mjs}"],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
+  {
     rules: {
       // Drawing helpers share one (colour, outline, options) signature even when they don't use all of it.
       "no-unused-vars": ["error", { args: "none", caughtErrors: "none" }],
