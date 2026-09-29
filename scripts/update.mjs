@@ -37,9 +37,42 @@ Reply with only this JSON, nothing else:
  "caption": "<a sweet 4-9 word storybook caption>", "alt": "<one sentence describing the painting>",
  "scene": "<the SVG markup>"}`;
 
+// Each API call gets 5 minutes (it includes Claude's own page fetches). Temporary
+// failures (rate limits, overload, network errors, timeouts) are retried twice.
+const CALL_TIMEOUT_MS = 5 * 60 * 1000;
+const RETRY_STATUSES = new Set([408, 429, 500, 502, 503, 504, 529]);
+const MAX_ATTEMPTS = 3;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 async function callClaude(messages) {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  for (let attempt = 1; ; attempt++) {
+    let res;
+    try {
+      res = await postMessages(messages);
+    } catch (err) {
+      // fetch throws on network errors and when the timeout aborts the request.
+      if (attempt < MAX_ATTEMPTS) {
+        console.warn(`Anthropic API call failed (${err.name}: ${err.message}); retrying in ${20 * attempt}s.`);
+        await sleep(20_000 * attempt);
+        continue;
+      }
+      throw new Error(`Anthropic API unreachable after ${attempt} attempts: ${err.message}`);
+    }
+    if (res.ok) return res.json();
+    const body = await res.text();
+    if (RETRY_STATUSES.has(res.status) && attempt < MAX_ATTEMPTS) {
+      console.warn(`Anthropic API ${res.status}; retrying in ${20 * attempt}s.`);
+      await sleep(20_000 * attempt);
+      continue;
+    }
+    throw new Error(`Anthropic API ${res.status}: ${body}`);
+  }
+}
+
+function postMessages(messages) {
+  return fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
+    signal: AbortSignal.timeout(CALL_TIMEOUT_MS),
     headers: {
       "x-api-key": API_KEY,
       "anthropic-version": "2023-06-01",
@@ -59,8 +92,6 @@ async function callClaude(messages) {
       ],
     }),
   });
-  if (!res.ok) throw new Error(`Anthropic API ${res.status}: ${await res.text()}`);
-  return res.json();
 }
 
 // Server tools can pause a long turn; resend until Claude finishes.
