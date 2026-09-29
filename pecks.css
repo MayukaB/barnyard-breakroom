@@ -1,14 +1,14 @@
 /* Hen Pecks page styles. Shared tokens, header, page switch and footer are in site.css. */
 :root{
-  --tile:#FFFFFF; --tile-line:#B9C5BD; --hit:#F3D9A4; --hit-ink:#5A3F0B; --good:#6E9E6A; --bad:#C0584A; --miss:#DCE2DD; --bar:#3A68AE; --bar-today:#C07E14; --track:#E8EDE9; --dialog:#FCFBF7; --scrim:rgba(39,53,47,.45); --title-accent:#C07E14;
+  --tile:#FFFFFF; --tile-line:#B9C5BD; --hit:#F3D9A4; --hit-ink:#5A3F0B; --good:#6E9E6A; --bad:#C0584A; --miss:#DCE2DD; --bar:#3A68AE; --bar-today:#C07E14; --track:#E8EDE9; --dialog:#FCFBF7; --scrim:rgba(39,53,47,.45); --title-accent:#C07E14; --ground-a:#C9E0AE; --ground-b:#B5D493;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD; --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --dialog:#27332F; --scrim:rgba(0,0,0,.66); --title-accent:var(--ochre);
+    --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD; --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --dialog:#27332F; --scrim:rgba(0,0,0,.66); --title-accent:var(--ochre); --ground-a:#34482F; --ground-b:#3F5A38;
   }
 }
 :root[data-theme="dark"]{
-  --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD; --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --dialog:#27332F; --scrim:rgba(0,0,0,.66); --title-accent:var(--ochre);
+  --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD; --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --dialog:#27332F; --scrim:rgba(0,0,0,.66); --title-accent:var(--ochre); --ground-a:#34482F; --ground-b:#3F5A38;
 }
 .wrap>main{max-width:760px;width:100%;justify-self:center}
 h1 a{color:inherit;text-decoration:none}
@@ -38,6 +38,13 @@ details.how[open] summary::before{content:"– "}
 details.how ol{margin:8px 0 4px;padding-left:20px}
 details.how li{margin:2px 0}
 
+/* Ground strip along the bottom of the card */
+.ground{margin:0 -28px -28px;border-radius:0 0 6px 6px;overflow:hidden;line-height:0}
+.ground svg{display:block;width:100%;height:auto}
+.ground .g1{fill:var(--ground-a)}
+.ground .g2{fill:var(--ground-b)}
+@media (max-width:560px){.ground{margin:0 -14px -18px}}
+
 /* Board */
 .board{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 22px;padding:6px 0}
 .word{display:flex;gap:5px}
@@ -58,6 +65,13 @@ details.how li{margin:2px 0}
 /* Pecks tracker */
 .status{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 18px}
 .pecks{display:flex;gap:8px;align-items:center}
+/* The hen by the peck counter: her mood follows the game, and she pecks with each peck. */
+.status-left{display:flex;align-items:flex-end;gap:10px}
+.status-hen{display:block;width:50px;flex:none}
+.status-hen svg{display:block;width:100%;height:auto;overflow:visible}
+.status-hen .bob{transform-box:view-box;transform-origin:0 0}
+.status-hen.pecking .bob{animation:henpeck .5s ease-in-out}
+@keyframes henpeck{0%,100%{transform:rotate(0)}45%{transform:rotate(28deg)}}
 .pecks .lbl{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-right:4px}
 .egg{width:22px;height:28px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;border:2px solid var(--tile-line);background:var(--tile);display:grid;place-items:center;font:700 10px/1 Karla,sans-serif;color:var(--hit-ink)}
 .egg.hit{background:var(--hit);border-color:var(--ochre)}
@@ -202,4 +216,4 @@ dialog.acct .fine{font-size:13px;line-height:1.5;color:var(--ink-soft);max-width
 
 canvas#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:10}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-@media (prefers-reduced-motion:reduce){.title-pecker .bob,.tile.pop,.tile.dance,.tile.shake,.result.won .hen svg,.result.lost .hen svg{animation:none}.hint,.result .hen{transform:none}}
+@media (prefers-reduced-motion:reduce){.title-pecker .bob,.status-hen.pecking .bob,.tile.pop,.tile.dance,.tile.shake,.result.won .hen svg,.result.lost .hen svg{animation:none}.hint,.result .hen{transform:none}}
