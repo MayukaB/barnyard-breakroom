@@ -1,14 +1,14 @@
 /* Hen Pecks page styles. Shared tokens, header, page switch and footer are in site.css. */
 :root{
-  --tile:#FFFFFF; --tile-line:#B9C5BD; --hit:#F3D9A4; --hit-ink:#5A3F0B; --good:#6E9E6A; --bad:#C0584A; --miss:#DCE2DD; --bar:#3A68AE; --bar-today:#C07E14; --track:#E8EDE9; --dialog:#FCFBF7; --scrim:rgba(39,53,47,.45);
+  --tile:#FFFFFF; --tile-line:#B9C5BD; --hit:#F3D9A4; --hit-ink:#5A3F0B; --good:#6E9E6A; --bad:#C0584A; --miss:#DCE2DD; --bar:#3A68AE; --bar-today:#C07E14; --track:#E8EDE9; --dialog:#FCFBF7; --scrim:rgba(39,53,47,.45); --title-accent:#C07E14;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD; --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --dialog:#27332F; --scrim:rgba(0,0,0,.66);
+    --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD; --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --dialog:#27332F; --scrim:rgba(0,0,0,.66); --title-accent:var(--ochre);
   }
 }
 :root[data-theme="dark"]{
-  --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD; --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --dialog:#27332F; --scrim:rgba(0,0,0,.66);
+  --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD; --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --dialog:#27332F; --scrim:rgba(0,0,0,.66); --title-accent:var(--ochre);
 }
 .wrap>main{max-width:760px;width:100%;justify-self:center}
 h1 a{color:inherit;text-decoration:none}
@@ -18,6 +18,18 @@ h1 a{color:inherit;text-decoration:none}
 .titlebar{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 16px}
 .titlebar h2{font:400 clamp(24px,3.4vw,30px)/1.15 "Young Serif",Georgia,serif;margin:0}
 .titlebar small{color:var(--ink-soft);font-size:14px}
+.titlebar .pk{color:var(--title-accent)}
+/* Title hens: one peeks over the top of the card (drawn behind it), one pecks at the "s". */
+main.sheet{position:relative}
+.title-peek{position:absolute;z-index:-1;top:-24px;left:40px;width:56px}
+.title-peek svg,.title-pecker svg{display:block;overflow:visible}
+.title-wrap{position:relative;display:inline-flex;align-items:flex-end;padding-right:6px}
+.title-pecker{position:relative;display:block;width:clamp(42px,5.6vw,52px);margin-bottom:-2px}
+.title-pecker .hen-bird{width:100%;height:auto}
+.title-pecker .bob{transform-box:view-box;transform-origin:0 0;animation:peck 2.6s ease-in-out infinite}
+@keyframes peck{0%,58%,100%{transform:rotate(0)}64%{transform:rotate(-24deg)}70%{transform:rotate(-4deg)}76%{transform:rotate(-24deg)}84%{transform:rotate(0)}}
+.title-pecker .seeds{position:absolute;left:-12px;bottom:1px;width:18px}
+.title-pecker .peckword{position:absolute;right:-12px;top:-14px;font:700 17px/1 Caveat,cursive;color:var(--title-accent);transform:rotate(8deg);white-space:nowrap}
 details.how{font-size:15px;color:var(--ink-soft);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:8px 0}
 details.how summary{cursor:pointer;color:var(--ink);font-weight:700;list-style:none}
 details.how summary::-webkit-details-marker{display:none}
@@ -190,4 +202,4 @@ dialog.acct .fine{font-size:13px;line-height:1.5;color:var(--ink-soft);max-width
 
 canvas#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:10}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-@media (prefers-reduced-motion:reduce){.tile.pop,.tile.dance,.tile.shake,.result.won .hen svg,.result.lost .hen svg{animation:none}.hint,.result .hen{transform:none}}
+@media (prefers-reduced-motion:reduce){.title-pecker .bob,.tile.pop,.tile.dance,.tile.shake,.result.won .hen svg,.result.lost .hen svg{animation:none}.hint,.result .hen{transform:none}}
