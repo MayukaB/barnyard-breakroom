@@ -129,6 +129,14 @@ if (known.has(id)) {
   console.log(`No new story today (${id} is already on the site).`);
   process.exit(0);
 }
+// The prompt asks for 25-60 shapes; existing paintings are ~4 KB with ~40 shapes.
+// Refuse anything far outside that so one bad reply can't bloat stories.json.
+const MAX_SCENE_CHARS = 20000;
+const shapes = (story.scene.match(/<(g|path|circle|ellipse|rect|line|polyline|polygon)\b/g) || []).length;
+if (story.scene.length > MAX_SCENE_CHARS || shapes < 10 || shapes > 150) {
+  console.error(`Painting rejected: ${story.scene.length} characters, ${shapes} shapes (allowed: up to ${MAX_SCENE_CHARS} characters, 10-150 shapes).`);
+  process.exit(1);
+}
 if (!/^https:\/\/(www\.)?nationalgeographic\.com\//.test(story.url)) {
   console.error(`Unexpected article URL: ${story.url}`);
   process.exit(1);
