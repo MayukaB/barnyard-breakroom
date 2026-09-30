@@ -6,7 +6,8 @@ import { readFile, writeFile } from "node:fs/promises";
 
 const API_KEY = process.env.ANTHROPIC_API_KEY;
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
-const FILE = new URL("../stories.json", import.meta.url);
+// STORIES_FILE lets the tests work on a copy instead of the real list.
+const FILE = process.env.STORIES_FILE || new URL("../public/stories.json", import.meta.url);
 
 // Every source here allows a summary in our own words plus a link back
 // (Mongabay uses CC BY-ND).

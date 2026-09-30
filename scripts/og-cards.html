@@ -1,5 +1,5 @@
 <!doctype html><meta charset="utf-8">
-<!-- Source for og-story.png and og-pecks.png (1200x630). Serve the repo root (npx serve .), open /scripts/og-cards.html, and screenshot each .card. -->
+<!-- Source for og-story.png and og-pecks.png (1200x630). Serve the repo root (npx serve .), open /scripts/og-cards.html, and screenshot each .card into public/og-story.png and public/og-pecks.png. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Karla:wght@400;500;700&family=Caveat:wght@700&display=swap">
 <style>
 body{margin:0;background:#999}
@@ -50,7 +50,7 @@ h1 span{color:#3A68AE}
   <div class="plate"><svg viewBox="0 0 160 140" id="s2"></svg><p>Can you crack today’s phrase?</p></div>
   <div class="url" style="left:auto;right:72px;bottom:28px;display:none"></div>
 </div>
-<script src="../pecks-art.js"></script>
+<script src="../public/pecks-art.js"></script>
 <script>
 const {A,P,BG,shadow}=PECKS_ART.kit;
 document.getElementById('s1').innerHTML = BG.sky() + P("sun",134,26,1) + P("barn",118,112,1.2) + P("fence",30,120,.8) + shadow(66,123,20) + A("cow",66,122,1.05,{mood:"happy2"}) + A("pig",100,126,.8,{mood:"happy2"}) + A("hen",32,126,.9,{mood:"happy2"}) + P("book",140,128,.8);

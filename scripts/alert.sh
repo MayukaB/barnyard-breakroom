@@ -10,7 +10,7 @@ set -euo pipefail
 LABEL="daily-story-alert"
 STALE_DAYS=4
 
-newest=$(node -e 'const s = require("./stories.json"); console.log(s.map(x => x.addedAt || x.published || "").sort().pop() || "")')
+newest=$(node -e 'const s = require("./public/stories.json"); console.log(s.map(x => x.addedAt || x.published || "").sort().pop() || "")')
 days=$(node -e 'const d = process.argv[1]; console.log(d ? Math.floor((Date.now() - Date.parse(d + "T12:00:00Z")) / 864e5) : 999)' "$newest")
 
 problem=""

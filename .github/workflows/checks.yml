@@ -6,8 +6,7 @@ name: Checks
 on:
   push:
     paths:
-      - "*.html"
-      - "*.css"
+      - "public/**"
       - "*.js"
       - "*.json"
       - ".prettierrc.json"
@@ -17,8 +16,7 @@ on:
       - ".github/workflows/**"
   pull_request:
     paths:
-      - "*.html"
-      - "*.css"
+      - "public/**"
       - "*.js"
       - "*.json"
       - ".prettierrc.json"
@@ -57,6 +55,8 @@ jobs:
         run: npm run lint
       - name: Check formatting
         run: npm run format:check
+      - name: Test the daily story script
+        run: npm run test:scripts
       - name: Check the Node scripts parse
         run: |
           for f in scripts/*.mjs; do node --check "$f"; done
