@@ -1,7 +1,7 @@
 // Adds the newest animal news story to stories.json, with a storybook
 // watercolor painting drawn by Claude.
 // Usage: ANTHROPIC_API_KEY=... node scripts/update.mjs [source]
-// With a source key (natgeo or mongabay) it only tries that source.
+// With a source key (see SOURCES) it only tries that source.
 import { readFile, writeFile } from "node:fs/promises";
 
 const API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -10,16 +10,10 @@ const FILE = new URL("../stories.json", import.meta.url);
 
 // Every source here allows a summary in our own words plus a link back
 // (Mongabay uses CC BY-ND).
-// Don't add a source without checking its terms and robots.txt first (The Guardian,
-// for example, forbids using its articles with AI, and The Conversation blocks Claude).
+// Don't add a source without checking its terms and robots.txt first. National Geographic
+// (Disney's terms) and The Guardian forbid using their articles with AI, and The
+// Conversation blocks Claude.
 const SOURCES = [
-  {
-    key: "natgeo",
-    name: "National Geographic",
-    list: "https://www.nationalgeographic.com/animals",
-    domains: ["nationalgeographic.com", "www.nationalgeographic.com"],
-    url: /^https:\/\/(www\.)?nationalgeographic\.com\//,
-  },
   {
     key: "mongabay",
     name: "Mongabay",
@@ -204,7 +198,7 @@ async function fromSource(src) {
   };
 }
 
-// Each day starts with a different source, so the site rotates between them.
+// With more than one source, each day starts with a different one, so the site rotates.
 // If that source has nothing new (or can't be read), the next one gets a turn.
 const day = Math.floor(Date.parse(today) / 864e5);
 const order = only ? SOURCES.filter((s) => s.key === only) : SOURCES.map((_, i) => SOURCES[(day + i) % SOURCES.length]);

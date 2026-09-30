@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       source:
-        description: "Only try this source (natgeo or mongabay). Leave empty for the usual rotation."
+        description: "Only try this source (mongabay). Leave empty to try every source."
         required: false
         default: ""
   push:
