@@ -306,12 +306,12 @@ test.describe("security policy", () => {
 
   test("sign-in services are still allowed to load and connect", async ({ page }) => {
     // Stand-ins for Supabase's script, Google's button script and the Supabase API.
-    await page.route("https://cdn.jsdelivr.net/**", (r) =>
-      r.fulfill({
-        contentType: "text/javascript",
-        body: "window.__supabaseLoaded = true; window.supabase = { createClient: () => ({ auth: { onAuthStateChange() { return { data: { subscription: { unsubscribe() {} } } }; } } }) };",
-      }),
-    );
+    // A request the policy blocks never reaches the network, so reaching this route means it was allowed.
+    let supabaseRequested = false;
+    await page.route("https://cdn.jsdelivr.net/**", (r) => {
+      supabaseRequested = true;
+      return r.fulfill({ contentType: "text/javascript", body: "window.__supabaseLoaded = true;" });
+    });
     await page.route("https://accounts.google.com/gsi/client", (r) =>
       r.fulfill({
         contentType: "text/javascript",
@@ -320,7 +320,7 @@ test.describe("security policy", () => {
     );
     await page.route("https://tgqwamamqcbrwpheldpi.supabase.co/**", (r) => r.fulfill({ json: { ok: true } }));
     await open(page);
-    await expect.poll(() => page.evaluate(() => window.__supabaseLoaded === true)).toBe(true);
+    await expect.poll(() => supabaseRequested).toBe(true);
     await expect.poll(() => page.evaluate(() => window.__gsiLoaded === true)).toBe(true);
     const api = await page.evaluate(() =>
       fetch("https://tgqwamamqcbrwpheldpi.supabase.co/auth/v1/health").then(

@@ -146,12 +146,13 @@ test("the story page is allowed to load the sign-in services", async ({ page }) 
   page.on("console", (m) => {
     if (/Content Security Policy/i.test(m.text())) blocked.push(m.text());
   });
-  await page.route("https://cdn.jsdelivr.net/**", (r) =>
-    r.fulfill({
-      contentType: "text/javascript",
-      body: "window.__supabaseLoaded = true; window.supabase = { createClient: () => ({ auth: { onAuthStateChange() { return { data: { subscription: { unsubscribe() {} } } }; } } }) };",
-    }),
-  );
+  // A request the policy blocks never reaches the network, so reaching this route means it was allowed.
+  // The stand-in isn't the real Supabase file, so its integrity check fails and it never runs.
+  let supabaseRequested = false;
+  await page.route("https://cdn.jsdelivr.net/**", (r) => {
+    supabaseRequested = true;
+    return r.fulfill({ contentType: "text/javascript", body: "window.__supabaseLoaded = true;" });
+  });
   await page.route("https://accounts.google.com/gsi/client", (r) =>
     r.fulfill({
       contentType: "text/javascript",
@@ -159,7 +160,8 @@ test("the story page is allowed to load the sign-in services", async ({ page }) 
     }),
   );
   await page.goto("/");
-  await expect.poll(() => page.evaluate(() => window.__supabaseLoaded === true)).toBe(true);
+  await expect.poll(() => supabaseRequested).toBe(true);
   await expect.poll(() => page.evaluate(() => window.__gsiLoaded === true)).toBe(true);
+  expect(await page.evaluate(() => window.__supabaseLoaded === true)).toBe(false);
   expect(blocked).toEqual([]);
 });

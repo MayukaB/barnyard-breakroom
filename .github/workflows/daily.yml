@@ -12,10 +12,8 @@ on:
   push:
     branches: [main]
 
-permissions:
-  contents: write
-  pages: write
-  id-token: write
+# Nothing by default; each job below asks for only what it needs.
+permissions: {}
 
 concurrency:
   group: pages
@@ -27,11 +25,13 @@ jobs:
     runs-on: ubuntu-latest
     # A stuck API call would otherwise wait for GitHub's 6-hour limit.
     timeout-minutes: 25
+    permissions:
+      contents: write # commit the new story
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 24
       - name: Add the newest story
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -48,6 +48,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add stories.json
           git commit -m "Add today's story"
+          # Someone may have pushed to main during the run; put the story on top of their work.
+          git pull --rebase origin main
           git push
 
   deploy:
@@ -55,21 +57,26 @@ jobs:
     if: always() && (needs.update.result == 'success' || needs.update.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read # check out the site
+      pages: write # publish it
+      id-token: write # prove to Pages that this run is allowed to publish
+      actions: read # deploy-pages reads this run's uploaded site
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
       - name: Collect site files
         run: mkdir _site && cp index.html index.js site.css site.js account.js pecks.html pecks.css pecks.js phrases.js pecks-config.js pecks-art.js stories.json favicon.svg favicon.ico favicon-96.png favicon-32.png apple-touch-icon.png og-story.png og-pecks.png robots.txt sitemap.xml _site/
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   alert:
     # Opens an issue (which emails you) if today's run broke or stories stopped arriving.
@@ -81,7 +88,7 @@ jobs:
       contents: read
       issues: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: main
       - name: Open or close the alert issue
