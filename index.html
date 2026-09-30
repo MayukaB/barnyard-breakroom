@@ -4,8 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <!-- Content-Security-Policy: what this page may load. Inline scripts are blocked; inline styles are
-     allowed because the page and its paintings use style attributes. Only this site's own scripts run; fonts come from Google Fonts. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+     allowed because the page and its paintings use style attributes. Fonts come from Google Fonts. Also allows sign-in (account.js):
+     Supabase (its script from jsdelivr, and its API) and Google's button. If CLOUD.url in account.js changes, update connect-src here too. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://tgqwamamqcbrwpheldpi.supabase.co wss://tgqwamamqcbrwpheldpi.supabase.co https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="description" content="The newest National Geographic animal story each morning, painted as a cute storybook watercolor.">
 <title>Barnyard Breakroom</title>
 <meta property="og:type" content="website">
@@ -28,6 +29,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Karla:wght@400;500;700&family=Caveat:wght@500;700&display=swap">
 <link rel="stylesheet" href="site.css">
+<script src="site.js"></script>
 <style>
 
 .spread{background:var(--sheet);border-radius:6px;box-shadow:0 1px 0 var(--rule),0 18px 40px -22px var(--shadow);display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:36px;padding:32px}
@@ -105,15 +107,111 @@
   </defs>
 </svg>
 
-<div class="wrap">
-  <header>
+<!-- Top bar and menu: the same on both pages. site.js opens the menu, sets the theme and shows who is signed in. -->
+<header class="topbar">
+  <div class="topbar-in">
+    <button class="icon-btn" id="menuBtn" type="button" aria-label="Open menu" aria-haspopup="dialog" aria-controls="menu" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
     <!-- Title pig: PECKS_ART.kit.A("pig", 0, 0, 1, { mood: "happy" }) holding a mug of cocoa, with two curls of steam. -->
-    <h1>Barnyard <span>Breakroom<span class="title-pig" aria-hidden="true"><svg viewBox="-24 -58 50 60"><g transform="translate(0 0) scale(1 1)"><path d="M10 -7 c4 1 9 0 9.5 -4 c.4 -3.2 -3.6 -4.2 -4.6 -1.6 c-.8 2 1.6 3.2 2.6 1.6" fill="none" stroke="#D98396" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="0" cy="-12" rx="13" ry="12" fill="#F7B7C1" stroke="#D98396" stroke-width="1.4" filter="url(#wct)"/><ellipse cx="-6" cy="-1" rx="4.5" ry="2.6" fill="#F7B7C1" stroke="#D98396" stroke-width="1.4" filter="url(#wct)"/><ellipse cx="6" cy="-1" rx="4.5" ry="2.6" fill="#F7B7C1" stroke="#D98396" stroke-width="1.4" filter="url(#wct)"/><path d="M-13 -41 L-11 -53 L-3 -47Z" fill="#F7B7C1" stroke="#D98396" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" filter="url(#wct)"/><g transform="scale(-1 1)"><path d="M-13 -41 L-11 -53 L-3 -47Z" fill="#F7B7C1" stroke="#D98396" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" filter="url(#wct)"/></g><ellipse cx="0" cy="-34" rx="15" ry="15" fill="#F7B7C1" stroke="#D98396" stroke-width="1.4" filter="url(#wct)"/><ellipse cx="0" cy="-28" rx="6.5" ry="4.6" fill="#F29AAB" stroke="#D98396" stroke-width="1.4" filter="url(#wct)"/><ellipse cx="-2.2" cy="-28" rx="1.2" ry="1.8" fill="#B5566A"/><ellipse cx="2.2" cy="-28" rx="1.2" ry="1.8" fill="#B5566A"/><ellipse cx="-5.5" cy="-37" rx="2.4" ry="2.4" fill="#2C2A28"/><ellipse cx="5.5" cy="-37" rx="2.4" ry="2.4" fill="#2C2A28"/><ellipse cx="-4.7" cy="-37.8" rx="0.8" ry="0.8" fill="#fff"/><ellipse cx="6.3" cy="-37.8" rx="0.8" ry="0.8" fill="#fff"/><ellipse cx="-10" cy="-30" rx="3.2" ry="2" fill="#F4A6A0" opacity=".65"/><ellipse cx="10" cy="-30" rx="3.2" ry="2" fill="#F4A6A0" opacity=".65"/><g transform="translate(-1 -6)"><path d="M-6 -14 h12 v11 q0 4 -4 4 h-4 q-4 0 -4 -4Z" fill="#F7F1E3" stroke="#8C7F72" stroke-width="1.3" filter="url(#wct)"/><path d="M6 -11 q5 0 5 4 q0 4 -5 4" fill="none" stroke="#8C7F72" stroke-width="1.6"/><ellipse cx="0" cy="-14" rx="6" ry="1.6" fill="#8B5A3C"/><path d="M-3 -9 h6" stroke="#E07A6B" stroke-width="2" stroke-linecap="round"/><ellipse cx="-7" cy="-6" rx="3.4" ry="2.6" fill="#F7B7C1" stroke="#D98396" stroke-width="1.1"/><ellipse cx="7" cy="-6" rx="3.4" ry="2.6" fill="#F7B7C1" stroke="#D98396" stroke-width="1.1"/></g><g class="steam" fill="none" stroke="#A3B1AA" stroke-width="1.3" stroke-linecap="round"><path d="M-3 -24 q-2 -3 0 -5 q2 -2 0 -5"/><path d="M2 -24 q-2 -3 0 -5 q2 -2 0 -5"/></g></g></svg></span></span></h1>
-    <div class="headside">
-      <nav class="switch" aria-label="Site"><a href="./" aria-current="page"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20c2.5 0 4.5-1.2 4.5-3.6 0-1.3-1-2.4-2.3-2.4C4.9 14 4 15 4 16.3 4 18 3 19 2 19.4 2.6 19.8 3.3 20 4 20Z" fill="currentColor" opacity=".9"/><path d="M8.2 13.6 18.6 3.2a1.6 1.6 0 0 1 2.2 2.2L10.4 15.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Daily story</span></a><a href="pecks.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c3.6 0 6.5 5.4 6.5 10.2 0 4.3-2.9 7.3-6.5 7.3s-6.5-3-6.5-7.3C5.5 7.9 8.4 2.5 12 2.5Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6 12.5l2.5 1.8 2.3-2 2.4 2 2.3-2 2.5 1.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span>Hen Pecks</span></a></nav>
-      <div class="tag">A new animal story, painted each morning</div>
+    <h1 class="brand"><a href="./">Barnyard <span>Breakroom<span class="title-pig" aria-hidden="true"><svg viewBox="-24 -58 50 60"><g transform="translate(0 0) scale(1 1)"><path d="M10 -7 c4 1 9 0 9.5 -4 c.4 -3.2 -3.6 -4.2 -4.6 -1.6 c-.8 2 1.6 3.2 2.6 1.6" fill="none" stroke="#D98396" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="0" cy="-12" rx="13" ry="12" fill="#F7B7C1" stroke="#D98396" stroke-width="1.4" filter="url(#wct)"/><ellipse cx="-6" cy="-1" rx="4.5" ry="2.6" fill="#F7B7C1" stroke="#D98396" stroke-width="1.4" filter="url(#wct)"/><ellipse cx="6" cy="-1" rx="4.5" ry="2.6" fill="#F7B7C1" stroke="#D98396" stroke-width="1.4" filter="url(#wct)"/><path d="M-13 -41 L-11 -53 L-3 -47Z" fill="#F7B7C1" stroke="#D98396" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" filter="url(#wct)"/><g transform="scale(-1 1)"><path d="M-13 -41 L-11 -53 L-3 -47Z" fill="#F7B7C1" stroke="#D98396" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" filter="url(#wct)"/></g><ellipse cx="0" cy="-34" rx="15" ry="15" fill="#F7B7C1" stroke="#D98396" stroke-width="1.4" filter="url(#wct)"/><ellipse cx="0" cy="-28" rx="6.5" ry="4.6" fill="#F29AAB" stroke="#D98396" stroke-width="1.4" filter="url(#wct)"/><ellipse cx="-2.2" cy="-28" rx="1.2" ry="1.8" fill="#B5566A"/><ellipse cx="2.2" cy="-28" rx="1.2" ry="1.8" fill="#B5566A"/><ellipse cx="-5.5" cy="-37" rx="2.4" ry="2.4" fill="#2C2A28"/><ellipse cx="5.5" cy="-37" rx="2.4" ry="2.4" fill="#2C2A28"/><ellipse cx="-4.7" cy="-37.8" rx="0.8" ry="0.8" fill="#fff"/><ellipse cx="6.3" cy="-37.8" rx="0.8" ry="0.8" fill="#fff"/><ellipse cx="-10" cy="-30" rx="3.2" ry="2" fill="#F4A6A0" opacity=".65"/><ellipse cx="10" cy="-30" rx="3.2" ry="2" fill="#F4A6A0" opacity=".65"/><g transform="translate(-1 -6)"><path d="M-6 -14 h12 v11 q0 4 -4 4 h-4 q-4 0 -4 -4Z" fill="#F7F1E3" stroke="#8C7F72" stroke-width="1.3" filter="url(#wct)"/><path d="M6 -11 q5 0 5 4 q0 4 -5 4" fill="none" stroke="#8C7F72" stroke-width="1.6"/><ellipse cx="0" cy="-14" rx="6" ry="1.6" fill="#8B5A3C"/><path d="M-3 -9 h6" stroke="#E07A6B" stroke-width="2" stroke-linecap="round"/><ellipse cx="-7" cy="-6" rx="3.4" ry="2.6" fill="#F7B7C1" stroke="#D98396" stroke-width="1.1"/><ellipse cx="7" cy="-6" rx="3.4" ry="2.6" fill="#F7B7C1" stroke="#D98396" stroke-width="1.1"/></g><g class="steam" fill="none" stroke="#A3B1AA" stroke-width="1.3" stroke-linecap="round"><path d="M-3 -24 q-2 -3 0 -5 q2 -2 0 -5"/><path d="M2 -24 q-2 -3 0 -5 q2 -2 0 -5"/></g></g></svg></span></span></a></h1>
+    <span class="here">Wild Watercolors</span>
+    <div class="bar-end">
+      <div class="theme" role="group" aria-label="Color theme">
+        <button type="button" data-theme-set="light" aria-pressed="false" aria-label="Light mode"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></g></svg></button>
+        <button type="button" data-theme-set="dark" aria-pressed="false" aria-label="Dark mode"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+      </div>
+      <button class="acct-chip" id="acctChip" type="button" aria-haspopup="dialog" aria-controls="menu"><span class="avatar" id="chipAvatar" aria-hidden="true" hidden></span><svg viewBox="0 0 24 24" aria-hidden="true" id="chipIcon"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/></g></svg><span class="chip-text" id="chipText">Sign in</span></button>
     </div>
-  </header>
+  </div>
+</header>
+
+<dialog class="menu" id="menu" aria-label="Site menu">
+  <div class="menu-head">
+    <span class="menu-title" aria-hidden="true">Menu</span>
+    <button class="icon-btn" id="menuClose" type="button" aria-label="Close menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+  </div>
+  <nav aria-labelledby="menuPagesLbl">
+    <p class="menu-label" id="menuPagesLbl">Pages</p>
+    <div class="menu-pages">
+      <a class="menu-page" href="./" aria-current="page"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20c2.5 0 4.5-1.2 4.5-3.6 0-1.3-1-2.4-2.3-2.4C4.9 14 4 15 4 16.3 4 18 3 19 2 19.4 2.6 19.8 3.3 20 4 20Z" fill="currentColor" opacity=".9"/><path d="M8.2 13.6 18.6 3.2a1.6 1.6 0 0 1 2.2 2.2L10.4 15.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><span class="txt"><strong>Wild Watercolors</strong><small>Today’s painted animal story</small></span></a>
+      <a class="menu-page" href="pecks.html"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c3.6 0 6.5 5.4 6.5 10.2 0 4.3-2.9 7.3-6.5 7.3s-6.5-3-6.5-7.3C5.5 7.9 8.4 2.5 12 2.5Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6 12.5l2.5 1.8 2.3-2 2.4 2 2.3-2 2.5 1.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span><span class="txt"><strong>Hen Pecks</strong><small>Daily animal expression puzzle</small></span></a>
+    </div>
+  </nav>
+  <div class="menu-theme">
+    <p class="menu-label">Appearance</p>
+    <div class="theme" role="group" aria-label="Color theme">
+      <button type="button" data-theme-set="light" aria-pressed="false" aria-label="Light mode"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></g></svg></button>
+      <button type="button" data-theme-set="dark" aria-pressed="false" aria-label="Dark mode"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+    </div>
+  </div>
+  <section class="menu-acct" id="menuAcct" aria-labelledby="menuAcctLbl">
+    <p class="menu-label" id="menuAcctLbl">Account</p>
+    <div class="acct-card" id="menuOut">
+      <h2>Sign in</h2>
+      <p>Keep your Hen Pecks streak and stats on every device.</p>
+      <button class="btn solid" id="menuSignIn" type="button" aria-haspopup="dialog">Sign in</button>
+    </div>
+    <div class="acct-card" id="menuIn" hidden>
+      <div class="acct-who"><span class="avatar" id="menuAvatar" aria-hidden="true"></span><p>Signed in as <b id="menuEmail"></b></p></div>
+      <p class="acct-sync"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Hen Pecks stats sync across your devices</p>
+      <button class="btn" id="menuSignOut" type="button">Sign out</button>
+    </div>
+  </section>
+</dialog>
+
+<!-- Sign-in dialog: the same on every page, run by account.js -->
+<dialog class="acct" id="acct" aria-labelledby="acctTitle">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <filter id="acct-wc" x="-15%" y="-15%" width="130%" height="130%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G" result="d"/>
+        <feGaussianBlur in="d" stdDeviation="0.6"/>
+      </filter>
+      <filter id="acct-wc2" x="-15%" y="-15%" width="130%" height="130%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="3.2" xChannelSelector="R" yChannelSelector="G" result="d"/>
+        <feGaussianBlur in="d" stdDeviation="0.4"/>
+      </filter>
+    </defs>
+  </svg>
+  <button class="acct-x" id="acctClose" type="button" aria-label="Close">×</button>
+  <div id="acctOut">
+    <svg class="acct-hero" viewBox="0 0 120 96" aria-hidden="true">
+      <path d="M30 40c-10 0-17-7-15-15 2-9 12-12 19-8 3-10 15-15 25-10 8-8 23-5 26 6 10-1 17 8 13 16-2 7-9 11-16 11Z" fill="var(--cobalt)" opacity=".22" filter="url(#acct-wc)"/>
+      <ellipse cx="60" cy="80" rx="40" ry="11" fill="#9B7A4E" opacity=".9" filter="url(#acct-wc)"/>
+      <path d="M24 76c10 7 62 7 72 0M28 82c12 5 52 5 64 0" stroke="#6E5433" stroke-width="2" fill="none" stroke-linecap="round" opacity=".7"/>
+      <path d="M60 30c11 0 19 16 19 30 0 11-8 18-19 18s-19-7-19-18c0-14 8-30 19-30Z" fill="#FBF3E0" stroke="#D39A2F" stroke-width="2" filter="url(#acct-wc2)"/>
+      <ellipse cx="53" cy="46" rx="4" ry="7" fill="#fff" opacity=".8"/>
+    </svg>
+    <h3 id="acctTitle">Keep your streak</h3>
+    <p class="lede">Right now your stats live in this browser only. Sign in to save them and pick up your streak on <b>any device</b>. No password needed.</p>
+    <div class="gsi" id="gsiBtn" hidden></div>
+    <button class="btn google wide" id="gBtn" type="button" hidden><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.7 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.2-13.4-9.9l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>Continue with Google</button>
+    <p class="or" id="orLine" hidden>or use your email</p>
+    <form id="emailForm">
+      <label for="email" class="sr">Email address</label>
+      <input type="email" id="email" required autocomplete="email" placeholder="Your email address">
+      <button class="btn solid wide" id="emailBtn" type="submit">Email me a sign-in link</button>
+    </form>
+    <p class="fine">We only use your email to sign you in. Games you’ve already played here are added to your account.</p>
+  </div>
+  <div id="acctIn" hidden>
+    <svg class="acct-hero" viewBox="0 0 120 96" aria-hidden="true">
+      <ellipse cx="60" cy="80" rx="40" ry="11" fill="#9B7A4E" opacity=".9" filter="url(#acct-wc)"/>
+      <path d="M24 76c10 7 62 7 72 0M28 82c12 5 52 5 64 0" stroke="#6E5433" stroke-width="2" fill="none" stroke-linecap="round" opacity=".7"/>
+      <path d="M60 30c11 0 19 16 19 30 0 11-8 18-19 18s-19-7-19-18c0-14 8-30 19-30Z" fill="#F3D9A4" stroke="#D39A2F" stroke-width="2" filter="url(#acct-wc2)"/>
+      <path d="m51 55 6 6 12-13" fill="none" stroke="#6E9E6A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <h3>You’re signed in</h3>
+    <p class="lede">Signed in as <b id="acctEmail"></b>. Sign in with the same account on any device to pick up your streak there.</p>
+    <button class="btn wide" id="signOut" type="button">Sign out</button>
+    <p class="fine">Signing out keeps the games you played here on this device.</p>
+  </div>
+  <p class="acct-msg" id="acctMsg" role="status" aria-live="polite"></p>
+</dialog>
+
+<div class="wrap">
+  <p class="tag">A new animal story, painted each morning</p>
 
   <article class="spread" id="spread" aria-live="polite">
     <figure class="plate" style="margin:0">
@@ -150,6 +248,7 @@
 </div>
 
 <script src="pecks-config.js"></script>
+<script src="account.js"></script>
 <script src="index.js"></script>
 </body>
 </html>

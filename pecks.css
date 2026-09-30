@@ -1,17 +1,20 @@
-/* Hen Pecks page styles. Shared tokens, header, page switch and footer are in site.css. */
+/* Hen Pecks page styles. Shared tokens, top bar, menu and footer are in site.css. */
 :root{
-  --tile:#FFFFFF; --tile-line:#B9C5BD; --hit:#F3D9A4; --hit-ink:#5A3F0B; --good:#6E9E6A; --bad:#C0584A; --miss:#DCE2DD; --bar:#3A68AE; --bar-today:#C07E14; --track:#E8EDE9; --dialog:#FCFBF7; --scrim:rgba(39,53,47,.45); --title-accent:#C07E14; --ground-a:#C9E0AE; --ground-b:#B5D493;
+  --tile:#FFFFFF; --tile-line:#B9C5BD; --hit:#F3D9A4; --hit-ink:#5A3F0B; --good:#6E9E6A; --bad:#C0584A; --miss:#DCE2DD; --bar:#3A68AE; --bar-today:#C07E14; --track:#E8EDE9; --title-accent:#C07E14; --ground-a:#C9E0AE; --ground-b:#B5D493;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD; --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --dialog:#27332F; --scrim:rgba(0,0,0,.66); --title-accent:var(--ochre); --ground-a:#34482F; --ground-b:#3F5A38;
+    --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD; --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --title-accent:var(--ochre); --ground-a:#34482F; --ground-b:#3F5A38;
   }
 }
 :root[data-theme="dark"]{
-  --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD; --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --dialog:#27332F; --scrim:rgba(0,0,0,.66); --title-accent:var(--ochre); --ground-a:#34482F; --ground-b:#3F5A38;
+  --tile:#26312E; --tile-line:#4A5853; --hit:#6B5222; --hit-ink:#FBE7BD; --good:#86B882; --bad:#E07B6C; --miss:#2B3532; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --title-accent:var(--ochre); --ground-a:#34482F; --ground-b:#3F5A38;
 }
 .wrap>main{max-width:760px;width:100%;justify-self:center}
-h1 a{color:inherit;text-decoration:none}
+/* Tagline: lined up with the right edge of the game sheet, clear of the hen peeking over its left side */
+.wrap>.tag{max-width:760px;width:100%;justify-self:center;text-align:right}
+/* On phones the tagline runs the full width, so the hen (24px above the sheet) needs the full gap */
+@media (max-width:560px){.wrap>.tag{margin-bottom:0}}
 
 .sheet{background:var(--sheet);border-radius:6px;box-shadow:0 1px 0 var(--rule),0 18px 40px -22px var(--shadow);padding:28px;display:grid;gap:22px}
 @media (max-width:560px){.sheet{padding:18px 14px;gap:18px}}
@@ -173,49 +176,13 @@ details.how li{margin:2px 0}
 @media (max-width:560px){.result .actions{justify-content:center}}
 .next{font-size:14px;color:var(--ink-soft);margin-top:12px}
 
-/* Account (sign in to keep stats) */
+/* Account: the "Sign in to save stats" link and note. The sign-in dialog itself is in site.css. */
 .acct-btn{margin-right:auto;display:inline-flex;align-items:center;gap:7px;font:700 14px/1.2 Karla,sans-serif;color:var(--cobalt);background:none;border:0;padding:4px 0;cursor:pointer}
 .acct-btn svg{width:18px;height:18px;flex:none}
 .acct-btn:hover{text-decoration:underline}
-.acct-btn:focus-visible,.linkish:focus-visible,.acct-x:focus-visible,dialog.acct input:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
+.acct-btn:focus-visible,.linkish:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
 .acct-note{font-size:14px;color:var(--ink-soft);margin:-4px 0 14px !important}
 .linkish{font:inherit;color:var(--cobalt);background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
-dialog.acct{border:1px solid var(--rule);border-radius:18px;background:var(--dialog);color:var(--ink);width:min(460px,calc(100vw - 24px));max-width:none;max-height:calc(100dvh - 24px);overflow:auto;padding:34px 32px 28px;box-shadow:0 30px 80px -24px rgba(0,0,0,.6);text-align:center}
-dialog.acct[open]{animation:acctIn .22s cubic-bezier(.2,.9,.3,1.1)}
-@keyframes acctIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
-dialog.acct::backdrop{background:var(--scrim);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
-.acct-hero{display:block;width:96px;height:78px;margin:0 auto 12px}
-dialog.acct h3{font:400 clamp(26px,5vw,30px)/1.15 "Young Serif",Georgia,serif;margin:0 0 10px}
-dialog.acct .lede{font-size:16px;line-height:1.55;color:var(--ink-soft);max-width:34ch;margin:0 auto 24px}
-dialog.acct .lede b{color:var(--ink);font-weight:700}
-dialog.acct .gsi{display:flex;justify-content:center;min-height:44px}
-/* Google draws its button in a frame. In dark mode the frame would inherit the dark color scheme and
-   the browser paints it with an opaque white background, so keep the frame itself in light mode. */
-dialog.acct .gsi iframe{color-scheme:light}
-dialog.acct .btn.wide{width:100%;justify-content:center;padding:14px 18px;font-size:16px;min-height:48px}
-dialog.acct .btn.google{background:#fff;color:#1f1f1f;border:1px solid #dadce0;font-weight:500;gap:12px}
-dialog.acct .btn.google svg{width:20px;height:20px}
-dialog.acct .btn[disabled]{opacity:.55;cursor:default;filter:none}
-dialog.acct .or{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--ink-soft);margin:20px 0 16px}
-dialog.acct .or::before,dialog.acct .or::after{content:"";flex:1;height:1px;background:var(--rule)}
-dialog.acct input{display:block;width:100%;height:50px;font:16px/1.2 Karla,sans-serif;color:var(--ink);background:var(--tile);border:1.5px solid var(--tile-line);border-radius:999px;padding:0 20px;margin:0 0 10px}
-dialog.acct input::placeholder{color:var(--ink-soft);opacity:.8}
-dialog.acct input:focus{outline:none;border-color:var(--cobalt);box-shadow:0 0 0 4px color-mix(in srgb,var(--cobalt) 25%,transparent)}
-dialog.acct .fine{font-size:13px;line-height:1.5;color:var(--ink-soft);max-width:38ch;margin:18px auto 0}
-.acct-x{position:absolute;top:12px;right:12px;width:40px;height:40px;border-radius:50%;border:0;background:none;color:var(--ink-soft);font:400 28px/1 Karla,sans-serif;cursor:pointer}
-.acct-x:hover{background:var(--track);color:var(--ink)}
-.acct-msg{margin:16px 0 0;font-size:14px;line-height:1.45;color:var(--ink);background:var(--track);border-radius:10px;padding:10px 14px}
-.acct-msg:empty{display:none}
-.acct-msg.warn{color:var(--bad)}
-/* Phones: a sheet that slides up from the bottom */
-@media (max-width:520px){
-  dialog.acct{inset:auto 0 0 0;width:auto;max-height:92dvh;margin:0;border-radius:22px 22px 0 0;border-bottom:0;padding:30px 20px calc(24px + env(safe-area-inset-bottom))}
-  dialog.acct[open]{animation:acctUp .26s cubic-bezier(.2,.9,.3,1)}
-  @keyframes acctUp{from{transform:translateY(100%)}to{transform:none}}
-  .acct-hero{width:80px;height:64px}
-}
-@media (prefers-reduced-motion:reduce){dialog.acct[open]{animation:none}}
 
 canvas#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:10}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 @media (prefers-reduced-motion:reduce){.title-pecker .bob,.status-hen.pecking .bob,.tile.pop,.tile.dance,.tile.shake,.result.won .hen svg,.result.lost .hen svg{animation:none}.hint,.result .hen{transform:none}}

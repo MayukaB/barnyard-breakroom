@@ -4,56 +4,148 @@
 :root{
   --paper:#EEF2EC; --sheet:#FCFBF7; --ink:#27352F; --ink-soft:#5B6A63;
   --cobalt:#3A68AE; --ochre:#D39A2F; --rule:#D5DDD6; --shadow:rgba(39,53,47,.14);
-  --plate:#FBF7EE;
+  --plate:#FBF7EE; --ok:#2F6B45; --dialog:#FCFBF7; --scrim:rgba(39,53,47,.45); --field:#FFFFFF; --field-line:#B9C5BD; --wash:#E8EDE9; --warn:#C0584A;
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
     --paper:#161D1B; --sheet:#1F2826; --ink:#E7ECE6; --ink-soft:#A3B1AA;
     --cobalt:#8DB0EA; --ochre:#E8B85A; --rule:#34403C; --shadow:rgba(0,0,0,.45);
-    --plate:#F4EFE3; color-scheme:dark;
+    --plate:#F4EFE3; --ok:#8FD1A6; --dialog:#27332F; --scrim:rgba(0,0,0,.66); --field:#26312E; --field-line:#4A5853; --wash:#2A3431; --warn:#E07B6C; color-scheme:dark;
   }
 }
 :root[data-theme="dark"]{
   --paper:#161D1B; --sheet:#1F2826; --ink:#E7ECE6; --ink-soft:#A3B1AA;
   --cobalt:#8DB0EA; --ochre:#E8B85A; --rule:#34403C; --shadow:rgba(0,0,0,.45);
-  --plate:#F4EFE3; color-scheme:dark;
+  --plate:#F4EFE3; --ok:#8FD1A6; --dialog:#27332F; --scrim:rgba(0,0,0,.66); --field:#26312E; --field-line:#4A5853; --wash:#2A3431; --warn:#E07B6C; color-scheme:dark;
 }
 *{box-sizing:border-box}
 html{scrollbar-gutter:stable}
 [hidden]{display:none!important}
 body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 Karla,system-ui,sans-serif;padding-inline:16px;padding-block:28px 56px}
 .wrap{max-width:1040px;margin:0 auto;display:grid;gap:40px}
-header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px}
-/* Site switch: shared by index.html and pecks.html */
+/* Top bar: shared by index.html and pecks.html. It sticks to the top of the window; site.js runs the menu,
+   the light/dark switch and the account chip. It bleeds past body's padding to reach the window edges. */
 @view-transition{navigation:auto}
-.switch{display:inline-flex;gap:4px;padding:4px;background:var(--sheet);border:1px solid var(--rule);border-radius:999px;box-shadow:0 8px 20px -16px var(--shadow)}
-.switch a{position:relative;display:inline-flex;align-items:center;gap:8px;padding:9px 16px 9px 12px;border-radius:999px;font:700 15px/1 Karla,sans-serif;color:var(--ink-soft);text-decoration:none;transition:color .15s,background-color .15s}
-.switch a:hover{color:var(--ink);background:color-mix(in srgb,var(--rule) 55%,transparent)}
-.switch a:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
-.switch a[aria-current="page"]{background:var(--cobalt);color:var(--sheet);view-transition-name:switch-pill}
-.switch svg{width:22px;height:22px;flex:none}
-.switch .dot{position:absolute;top:6px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--ochre);box-shadow:0 0 0 2px var(--sheet)}
-::view-transition-group(switch-pill){animation-duration:.35s;animation-timing-function:cubic-bezier(.3,1.3,.5,1)}
-@media (max-width:420px){.switch{display:flex;width:100%}.switch a{flex:1;justify-content:center;padding-inline:10px}}
 @media (prefers-reduced-motion:reduce){@view-transition{navigation:none}}
-.headside{display:grid;gap:10px;justify-items:end}
-/* Left-align the switch and tagline once they wrap under the title (title ~544px + switch side ~334px + gaps) */
-@media (max-width:949px){.headside{justify-items:start}}
-h1{font:400 clamp(30px,5vw,46px)/1.05 "Young Serif",Georgia,serif;margin:0;letter-spacing:-.01em}
-h1 span{color:var(--cobalt)}
+.topbar{position:sticky;top:0;z-index:20;margin:-28px -16px 28px;padding:0 16px;background:var(--sheet);border-bottom:1px solid var(--rule);view-transition-name:topbar}
+.topbar-in{max-width:1040px;min-height:72px;margin:0 auto;display:flex;align-items:center;gap:16px}
+.brand{font:400 clamp(18px,4.6vw,26px)/1 "Young Serif",Georgia,serif;margin:0;letter-spacing:-.01em;white-space:nowrap}
+.brand a{color:inherit;text-decoration:none;border-radius:4px}
+.brand a:focus-visible{outline:3px solid var(--ochre);outline-offset:4px}
+.brand span{color:var(--cobalt)}
+.here{font:500 13px/1.2 Karla,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);padding-left:16px;border-left:1px solid var(--rule);white-space:nowrap}
+.bar-end{margin-left:auto;display:flex;align-items:center;gap:12px}
+.icon-btn{position:relative;flex:none;width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;padding:0;border-radius:999px;border:1.5px solid var(--rule);background:var(--sheet);color:var(--ink);cursor:pointer}
+.icon-btn:hover{background:color-mix(in srgb,var(--rule) 45%,var(--sheet))}
+.icon-btn svg{width:22px;height:22px}
+/* Light/dark switch: two pressed-state buttons. site.js saves the choice; none saved follows the system. */
+.theme{display:inline-flex;gap:4px;padding:4px;border-radius:999px;background:var(--paper);border:1px solid var(--rule)}
+.theme button{width:40px;height:36px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:999px;background:transparent;color:var(--ink-soft);cursor:pointer;transition:background-color .15s,color .15s}
+.theme button:hover{color:var(--ink)}
+.theme button[aria-pressed="true"]{background:var(--cobalt);color:var(--sheet)}
+.theme svg{width:18px;height:18px}
+.acct-chip{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:999px;border:1.5px solid var(--cobalt);background:transparent;color:var(--cobalt);font:700 15px/1 Karla,sans-serif;cursor:pointer;white-space:nowrap}
+.acct-chip svg{width:18px;height:18px;flex:none}
+.acct-chip.in{padding:0 16px 0 4px;border-color:var(--rule);background:var(--sheet);color:var(--ink)}
+.avatar{flex:none;width:36px;height:36px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--ochre);color:#27352F;font:700 15px/1 Karla,sans-serif}
+.icon-btn:focus-visible,.theme button:focus-visible,.acct-chip:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
+/* "Today's puzzle is waiting" dot, on the menu button and the Hen Pecks menu entry (index.js adds it) */
+.dot{position:absolute;top:0;right:0;width:10px;height:10px;border-radius:50%;background:var(--ochre);box-shadow:0 0 0 2px var(--sheet)}
+@media (max-width:640px){
+  .topbar-in{min-height:64px;gap:12px}
+  .here,.topbar .theme{display:none}
+  .acct-chip{width:44px;padding:0;justify-content:center}
+  .acct-chip.in{padding:0;border:0;background:none}
+  .chip-text{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
+
+/* Menu: a modal <dialog> that slides in from the left, so focus, Escape and the backdrop come for free */
+dialog.menu{position:fixed;inset:0 auto 0 0;margin:0;width:min(380px,calc(100vw - 40px));max-width:none;height:100dvh;max-height:none;padding:20px 24px 24px;border:0;border-right:1px solid var(--rule);background:var(--sheet);color:var(--ink);box-shadow:0 24px 60px -20px var(--shadow);overflow-y:auto;overscroll-behavior:contain}
+dialog.menu[open]{display:flex;flex-direction:column;gap:28px;animation:menuIn .24s cubic-bezier(.2,.9,.3,1)}
+dialog.menu::backdrop{background:var(--scrim)}
+@keyframes menuIn{from{transform:translateX(-100%)}to{transform:none}}
+@media (prefers-reduced-motion:reduce){dialog.menu[open]{animation:none}}
+html:has(dialog.menu[open]){overflow:hidden}
+.menu-head{display:flex;align-items:center;justify-content:space-between}
+.menu-title{font:700 30px/1 Caveat,cursive}
+.menu-label{margin:0 0 10px;font:700 12px/1.2 Karla,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+.menu-pages{display:grid;gap:10px}
+.menu-page{position:relative;display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:16px;border:1.5px solid var(--rule);background:var(--sheet);color:var(--ink);text-decoration:none;transition:border-color .15s,background-color .15s}
+.menu-page:hover{border-color:var(--cobalt)}
+.menu-page:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
+.menu-page[aria-current="page"]{border-color:var(--cobalt);background:color-mix(in srgb,var(--cobalt) 12%,var(--sheet))}
+.menu-page .ico{flex:none;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--paper);color:var(--ink)}
+.menu-page[aria-current="page"] .ico{background:var(--cobalt);color:var(--sheet)}
+.menu-page .ico svg{width:22px;height:22px}
+.menu-page .txt{display:grid;gap:2px;min-width:0}
+.menu-page strong{font:400 18px/1.3 "Young Serif",Georgia,serif}
+.menu-page small{font-size:14px;line-height:1.45;color:var(--ink-soft)}
+.menu-page .dot{top:10px;right:10px}
+.menu-theme{display:none}
+@media (max-width:640px){.menu-theme{display:block}}
+.menu-acct{margin-top:auto}
+.acct-card{display:grid;gap:14px;padding:20px;border-radius:18px;background:var(--paper);border:1px solid var(--rule)}
+.acct-card h2{margin:0;font:400 20px/1.2 "Young Serif",Georgia,serif}
+.acct-card p{margin:0;font-size:14px;line-height:1.45;color:var(--ink-soft)}
+.acct-card .btn{width:100%;justify-content:center;min-height:44px}
+.acct-who{display:flex;align-items:center;gap:14px;min-width:0}
+.acct-who .avatar{width:48px;height:48px;font-size:20px}
+.acct-who b{display:block;font-size:16px;color:var(--ink);overflow-wrap:anywhere}
+.acct-card .acct-sync{display:flex;align-items:center;gap:8px;color:var(--ok)}
+.acct-sync svg{width:18px;height:18px;flex:none}
 /* Coffee-break pig after "Breakroom": nowrap keeps it on the word's line when the title wraps on phones */
-h1>span,h1 a>span{white-space:nowrap}
+.brand span{white-space:nowrap}
 .title-pig{display:inline-block;width:1.2em;margin:-.5em 0 0 .1em;vertical-align:-.06em}
 .title-pig svg{display:block;width:100%;height:auto;overflow:visible}
 .title-pig .steam path{animation:steam 3s ease-in-out infinite}
 .title-pig .steam path+path{animation-delay:1.4s}
 @keyframes steam{0%{opacity:0;transform:translateY(2px)}40%{opacity:.8}100%{opacity:0;transform:translateY(-6px)}}
 @media (prefers-reduced-motion:reduce){.title-pig .steam path{animation:none;opacity:.6}}
-.tag{font:500 13px/1.4 Karla,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+/* Each page's tagline, just under the top bar; the negative margin pulls the page closer than .wrap's gap */
+.tag{margin:0 0 -24px;font:500 13px/1.4 Karla,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
 .btn.solid{background:var(--cobalt);color:var(--sheet)}
 .btn:hover{filter:brightness(1.08)}
 .btn:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
 footer{font-size:13px;color:var(--ink-soft);display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 24px;border-top:1px solid var(--rule);padding-top:16px}
 footer p{margin:0}
 footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
+
+/* Sign-in dialog (account.js): the same on every page */
+dialog.acct{border:1px solid var(--rule);border-radius:18px;background:var(--dialog);color:var(--ink);width:min(460px,calc(100vw - 24px));max-width:none;max-height:calc(100dvh - 24px);overflow:auto;padding:34px 32px 28px;box-shadow:0 30px 80px -24px rgba(0,0,0,.6);text-align:center}
+dialog.acct[open]{animation:acctIn .22s cubic-bezier(.2,.9,.3,1.1)}
+@keyframes acctIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+dialog.acct::backdrop{background:var(--scrim);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.acct-hero{display:block;width:96px;height:78px;margin:0 auto 12px}
+dialog.acct h3{font:400 clamp(26px,5vw,30px)/1.15 "Young Serif",Georgia,serif;margin:0 0 10px}
+dialog.acct .lede{font-size:16px;line-height:1.55;color:var(--ink-soft);max-width:34ch;margin:0 auto 24px}
+dialog.acct .lede b{color:var(--ink);font-weight:700}
+dialog.acct .gsi{display:flex;justify-content:center;min-height:44px}
+/* Google draws its button in a frame. In dark mode the frame would inherit the dark color scheme and
+   the browser paints it with an opaque white background, so keep the frame itself in light mode. */
+dialog.acct .gsi iframe{color-scheme:light}
+dialog.acct .btn.wide{width:100%;justify-content:center;padding:14px 18px;font-size:16px;min-height:48px}
+dialog.acct .btn.google{background:#fff;color:#1f1f1f;border:1px solid #dadce0;font-weight:500;gap:12px}
+dialog.acct .btn.google svg{width:20px;height:20px}
+dialog.acct .btn[disabled]{opacity:.55;cursor:default;filter:none}
+dialog.acct .or{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--ink-soft);margin:20px 0 16px}
+dialog.acct .or::before,dialog.acct .or::after{content:"";flex:1;height:1px;background:var(--rule)}
+dialog.acct input{display:block;width:100%;height:50px;font:16px/1.2 Karla,sans-serif;color:var(--ink);background:var(--field);border:1.5px solid var(--field-line);border-radius:999px;padding:0 20px;margin:0 0 10px}
+dialog.acct input::placeholder{color:var(--ink-soft);opacity:.8}
+dialog.acct input:focus{outline:none;border-color:var(--cobalt);box-shadow:0 0 0 4px color-mix(in srgb,var(--cobalt) 25%,transparent)}
+dialog.acct .fine{font-size:13px;line-height:1.5;color:var(--ink-soft);max-width:38ch;margin:18px auto 0}
+.acct-x:focus-visible,dialog.acct input:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
+.acct-x{position:absolute;top:12px;right:12px;width:40px;height:40px;border-radius:50%;border:0;background:none;color:var(--ink-soft);font:400 28px/1 Karla,sans-serif;cursor:pointer}
+.acct-x:hover{background:var(--wash);color:var(--ink)}
+.acct-msg{margin:16px 0 0;font-size:14px;line-height:1.45;color:var(--ink);background:var(--wash);border-radius:10px;padding:10px 14px}
+.acct-msg:empty{display:none}
+.acct-msg.warn{color:var(--warn)}
+@media (prefers-reduced-motion:reduce){dialog.acct[open]{animation:none}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* Phones: the sign-in dialog becomes a sheet that slides up from the bottom */
+@media (max-width:520px){
+  dialog.acct{inset:auto 0 0 0;width:auto;max-height:92dvh;margin:0;border-radius:22px 22px 0 0;border-bottom:0;padding:30px 20px calc(24px + env(safe-area-inset-bottom))}
+  dialog.acct[open]{animation:acctUp .26s cubic-bezier(.2,.9,.3,1)}
+  @keyframes acctUp{from{transform:translateY(100%)}to{transform:none}}
+  .acct-hero{width:80px;height:64px}
+}
