@@ -2,14 +2,14 @@
 
 A new animal news story each morning, painted as a cute storybook watercolor.
 
-- `index.html` is the whole site. It reads `stories.json` and draws each painting as SVG with shared watercolor filters.
+- `index.html` is **Wild Watercolors**, the story page, and `index.js` runs it. It reads `stories.json` and draws each painting as SVG with shared watercolor filters.
 - `stories.json` holds every story, newest first.
 - `site.css` holds the styles both pages share: colors (light and dark), the top bar, the menu, the sign-in dialog and the footer. Page-only styles stay in `index.html` and `pecks.css`.
 - `site.js` runs the top bar on every page: the menu (switch between Wild Watercolors and Hen Pecks) and the light/dark switch. A visitor's light/dark choice is saved in their browser; with none saved, the site follows their device.
 - `account.js` is sign-in for the whole site: it loads Supabase and Google's button, runs the sign-in dialog, and fills in the account chip and the menu's Account card. Games use its `window.Account` (who is signed in, the Supabase client, and `Account.onChange` to hear when a player signs in or out); a new game that saves to Supabase needs no sign-in code of its own.
 - `pecks.html` is **Hen Pecks**, a daily animal-expression puzzle. Seven pecks (one vowel or one consonant pair each), then a hint and three tries to fill in the rest. Players can switch on hard mode, which hides the hint unless they choose to peek. Its files: `pecks.html` (markup), `pecks.css` (styles), `pecks.js` (the game), `phrases.js` (the phrase list, one per day from `startDate`; add more to the end), `pecks-config.js` (peck count, tries and save key, shared with the story page) and `pecks-art.js` (the pictures).
 - Hen Pecks stats are saved in the browser. Players can also sign in (Supabase: email link, optionally Google) so their stats follow them to any device. Sign-in lives in `account.js`; `pecks.js` only syncs the game's stats once someone is signed in. `supabase/schema.sql` sets up the database; see **Hen Pecks accounts** below. Until `CLOUD` in `account.js` is filled in, there's no sign-in anywhere and nothing changes.
-- `scripts/check-pecks.mjs` checks the phrase list: duplicates, stray characters, missing hints, meanings or origin notes, hints that give away a word of the answer, and phrases without a picture. `.github/workflows/checks.yml` runs it on every push that touches the game. Run it yourself with `node scripts/check-pecks.mjs` after adding phrases.
+- `scripts/check-pecks.mjs` checks the phrase list: duplicates, stray characters, missing hints, meanings or origin notes, hints that give away a word of the answer, and phrases without a picture. `.github/workflows/checks.yml` runs it with the other checks (see **Tests**). Run it yourself with `node scripts/check-pecks.mjs` after adding phrases.
 - `og-story.png` and `og-pecks.png` are the link preview images (what shows up when someone shares a link). Their source is `scripts/og-cards.html`. The preview tags point at barnyardbreakroom.com, so update them if the domain changes.
 - `pecks-art.js` draws the Hen Pecks pictures: a small kit of watercolor animals and props, one scene per phrase (shown on a win) and a sad hen (shown on a loss). A new phrase without a scene falls back to the happy hen.
 - `scripts/update.mjs` asks Claude (Anthropic API, with its web fetch tool) for the newest animal story from the sources below (currently just Mongabay), gets a painting, and adds it to `stories.json`. With more than one source, each day starts with a different one; if that one has nothing new or can't be read, the next one gets a turn. Only stories mainly about an animal count, and only from the last 14 days. Sad stories (deaths, disease, culls) are included and painted cute but gently sad, never graphic.
@@ -39,7 +39,7 @@ Free Supabase projects pause after about a week without any requests. If that ha
 
 Both pages set a Content-Security-Policy in a `<meta>` tag (GitHub Pages can't send headers). It lists what each page may load, so an injected script can't run. Inline scripts are blocked; that's why the story page's code lives in `index.js`. Inline styles are allowed because the pages and paintings use `style` attributes.
 
-Both policies also allow the sign-in services (every page can sign in): Supabase's script (from cdn.jsdelivr.net) and API, and Google's sign-in button. If you move Supabase to a new project, update the `connect-src` address in `index.html` and `pecks.html` to match `CLOUD.url` in `account.js`. If something stops loading after a change, the browser console (F12) says which directive blocked it.
+Both policies also allow the sign-in services (every page can sign in): Supabase's script (from cdn.jsdelivr.net) and API, and Google's sign-in button. Supabase's script is pinned to an exact version with an integrity hash (`SUPABASE_JS` and `SUPABASE_SRI` in `account.js`), so the browser refuses it if the CDN ever serves a different file; the comment above them says how to upgrade. Google's script can't be pinned this way, because Google changes it in place. If you move Supabase to a new project, update the `connect-src` address in `index.html` and `pecks.html` to match `CLOUD.url` in `account.js`. If something stops loading after a change, the browser console (F12) says which directive blocked it.
 
 ## Tests
 
@@ -52,7 +52,7 @@ npm run lint                      # ESLint: catches mistakes like undefined name
 npm run format                    # Prettier: formats the scripts, tests and config files
 ```
 
-`tests/pecks.spec.js` covers pecking, winning, losing, wrong tries, hard mode and peeking, reloading mid-game, the story page's Hen Pecks card and upgrading old saved data. `tests/site.spec.js` covers the top bar: the menu, the light/dark switch, and opening sign-in from every page. The tests pin the date, so they always play the same puzzle, and they block the sign-in services so they run offline. `.github/workflows/checks.yml` runs the phrase check, the lint and formatting checks, a syntax check of the Node scripts, and the browser tests on every push and pull request that touches the site.
+`tests/pecks.spec.js` covers pecking, winning, losing, wrong tries, hard mode and peeking, reloading mid-game, the story page's Hen Pecks card and upgrading old saved data. `tests/site.spec.js` covers the top bar: the menu, the light/dark switch, and opening sign-in from every page. The tests pin the date, so they always play the same puzzle, and they block the sign-in services so they run offline. `.github/workflows/checks.yml` runs the phrase check, the lint and formatting checks, a syntax check of the Node scripts, and the browser tests on every push and pull request that touches the site, its scripts or its workflows.
 
 ## Run locally
 

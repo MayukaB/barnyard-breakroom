@@ -28,7 +28,12 @@
     google: true,
     googleClientId: "818572636423-k4772kddhhhvq4b07l94peeegtu4hqkp.apps.googleusercontent.com",
   };
-  const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+  // An exact version plus its hash, so the browser refuses the script if the CDN ever serves anything else.
+  // To upgrade: change the version, then run
+  //   curl -s <new URL> | openssl dgst -sha384 -binary | openssl base64 -A
+  // and put "sha384-" plus the output in SUPABASE_SRI.
+  const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js";
+  const SUPABASE_SRI = "sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok";
   const GOOGLE_GSI = "https://accounts.google.com/gsi/client";
   // Who was signed in last ({ id, email }), so the top bar is right before Supabase has loaded.
   const CACHE_KEY = "bb:account";
@@ -198,6 +203,8 @@
 
     const s = document.createElement("script");
     s.src = SUPABASE_JS;
+    s.integrity = SUPABASE_SRI;
+    s.crossOrigin = "anonymous";
     s.async = true;
     s.onload = () => {
       try {
