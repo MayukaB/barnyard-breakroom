@@ -135,7 +135,9 @@ $("more").addEventListener("click", () => {
   try {
     const res = await fetch("stories.json", { cache: "no-cache" });
     if (!res.ok) throw new Error(res.status);
-    stories = (await res.json()).sort((a, b) => (b.published || "").localeCompare(a.published || "") || (b.addedAt || "").localeCompare(a.addedAt || ""));
+    // Newest painting first: a source's top story can be days old when it's painted.
+    const painted = s => s.addedAt || s.published || "";
+    stories = (await res.json()).sort((a, b) => painted(b).localeCompare(painted(a)) || (b.published || "").localeCompare(a.published || ""));
   } catch {
     $("headline").textContent = "The storybook couldn't open";
     $("summary").textContent = "stories.json didn't load. If you opened index.html straight from disk, serve the folder instead (for example: npx serve .).";
