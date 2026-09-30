@@ -32,3 +32,6 @@ desktop.ini
 .vscode/
 .idea/
 *.swp
+
+# Claude's local dev-server preview config.
+.claude/launch.json

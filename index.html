@@ -31,6 +31,36 @@
 <link rel="stylesheet" href="site.css">
 <script src="site.js"></script>
 <style>
+/* Paint colors for the letters of "Watercolors" in the page title */
+:root{--paint-1:#3A68AE;--paint-2:#A86C0F;--paint-3:#4F7F4B;--paint-4:#B8506F;--paint-5:#B8601F}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--paint-1:#8DB0EA;--paint-2:#E8B85A;--paint-3:#86B882;--paint-4:#EE9BB0;--paint-5:#F0A868}
+}
+:root[data-theme="dark"]{--paint-1:#8DB0EA;--paint-2:#E8B85A;--paint-3:#86B882;--paint-4:#EE9BB0;--paint-5:#F0A868}
+
+/* Page title: a palette, then "Wild Watercolors" with each letter of Watercolors in a different paint */
+.ww-title{display:flex;align-items:center;gap:12px;margin:0}
+.ww-title .palette{width:clamp(38px,5vw,50px);flex:none;transform:rotate(-10deg)}
+.ww-title .palette,.painter svg{display:block;height:auto;overflow:visible}
+.ww-title h2{font:400 clamp(28px,4vw,36px)/1.15 "Young Serif",Georgia,serif;margin:0}
+.ww-title .p1{color:var(--paint-1)}.ww-title .p2{color:var(--paint-2)}.ww-title .p3{color:var(--paint-3)}.ww-title .p4{color:var(--paint-4)}.ww-title .p5{color:var(--paint-5)}
+
+/* Painting horse: peeks over the top edge of the story card, dabbing its brush.
+   Everything is sized from --hw (the horse's width) so it scales down on phones. */
+.stage{position:relative;isolation:isolate}
+.stage>.spread{position:relative;z-index:1}
+.painter{--hw:clamp(104px,15vw,160px);position:absolute;top:0;right:clamp(20px,7vw,72px);width:var(--hw)}
+.painter .horse{position:absolute;z-index:0;left:0;top:calc(var(--hw) * -.3375);width:var(--hw)}
+.painter .drip{position:absolute;z-index:2;left:calc(var(--hw) * .85);top:calc(var(--hw) * -.125);width:calc(var(--hw) * .25)}
+.painter .dab{transform-box:fill-box;transform-origin:20% 100%;animation:dab 3.2s ease-in-out infinite}
+.painter .blink{transform-box:fill-box;transform-origin:50% 50%;animation:blink 4.8s infinite}
+.painter .drop{animation:drop 3.2s ease-in infinite}
+.painter .splat{transform-box:fill-box;transform-origin:50% 50%;animation:splat 3.2s ease-out infinite}
+@keyframes dab{0%,20%{transform:rotate(0)}38%{transform:rotate(-7deg)}52%{transform:rotate(5deg)}60%{transform:rotate(3deg)}78%,100%{transform:rotate(0)}}
+@keyframes blink{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(.1)}}
+@keyframes drop{0%,52%{transform:translateY(0);opacity:0}55%{opacity:1}70%{transform:translateY(20px);opacity:1}73%,100%{transform:translateY(20px);opacity:0}}
+@keyframes splat{0%,70%{transform:scale(1)}76%{transform:scale(1.25)}86%,100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.painter .dab,.painter .blink,.painter .drop,.painter .splat{animation:none}.painter .drop{opacity:0}}
 
 .spread{background:var(--sheet);border-radius:6px;box-shadow:0 1px 0 var(--rule),0 18px 40px -22px var(--shadow);display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:36px;padding:32px}
 @media (max-width:760px){.spread{grid-template-columns:1fr;padding:20px;gap:22px}}
@@ -104,6 +134,12 @@
       <feDisplacementMap in="SourceGraphic" in2="n" scale="1.6" xChannelSelector="R" yChannelSelector="G" result="d"/>
       <feGaussianBlur in="d" stdDeviation="0.25"/>
     </filter>
+    <!-- Painting horse: soft edges for the paint splat it drips on the story card -->
+    <filter id="ww-wash" x="-20%" y="-30%" width="140%" height="160%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="3" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="0.7"/>
+    </filter>
   </defs>
 </svg>
 
@@ -132,8 +168,8 @@
   <nav aria-labelledby="menuPagesLbl">
     <p class="menu-label" id="menuPagesLbl">Pages</p>
     <div class="menu-pages">
-      <a class="menu-page" href="./" aria-current="page"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20c2.5 0 4.5-1.2 4.5-3.6 0-1.3-1-2.4-2.3-2.4C4.9 14 4 15 4 16.3 4 18 3 19 2 19.4 2.6 19.8 3.3 20 4 20Z" fill="currentColor" opacity=".9"/><path d="M8.2 13.6 18.6 3.2a1.6 1.6 0 0 1 2.2 2.2L10.4 15.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span><span class="txt"><strong>Wild Watercolors</strong><small>Today’s painted animal story</small></span></a>
-      <a class="menu-page" href="pecks.html"><span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5c3.6 0 6.5 5.4 6.5 10.2 0 4.3-2.9 7.3-6.5 7.3s-6.5-3-6.5-7.3C5.5 7.9 8.4 2.5 12 2.5Z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6 12.5l2.5 1.8 2.3-2 2.4 2 2.3-2 2.5 1.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span><span class="txt"><strong>Hen Pecks</strong><small>Daily animal expression puzzle</small></span></a>
+      <a class="menu-page" href="./" aria-current="page"><span class="ico art" aria-hidden="true"><svg viewBox="3 -57 48 44" aria-hidden="true"><g filter="url(#wct)" stroke-width="1.3" stroke-linejoin="round"><path d="M9 -26 C10 -36 14 -42 18 -46 L26 -41 C22 -35 20 -28 19 -18Z" fill="#E3B98A" stroke="#A87650"/><path d="M19 -49 C15 -48 15 -44 12 -41 C10 -38 11 -34 8 -31 C7 -28 8 -26 8 -24 C5 -30 6 -38 10 -44 C13 -48 16 -49 19 -49Z" fill="#7A4E34" stroke="#5E3A26" stroke-width="1"/><path d="M18 -47 L18 -55 L23 -48Z" fill="#E3B98A" stroke="#A87650"/><ellipse cx="24" cy="-43" rx="8.5" ry="6" transform="rotate(30 24 -43)" fill="#E3B98A" stroke="#A87650"/><ellipse cx="30" cy="-38.5" rx="5" ry="4.5" fill="#F3DCC0" stroke="#A87650"/></g><path d="M18.2 -52 L18.4 -48 L21.4 -48.4Z" fill="#F2B5B9"/><path d="M19 -49 C22 -52 26 -50 26 -47 C23 -48 21 -47 19 -45Z" fill="#7A4E34"/><ellipse cx="32.5" cy="-40" rx=".8" ry="1.1" fill="#8B5A3C"/><circle cx="23" cy="-45" r="1.4" fill="#2C2A28"/><circle cx="23.5" cy="-45.5" r=".45" fill="#fff"/><ellipse cx="22" cy="-40" rx="2.2" ry="1.3" fill="#F4A6A0" opacity=".7"/><path d="M24 -35 L40 -38.5" stroke="#C07E14" stroke-width="2.2" stroke-linecap="round"/><path d="M40 -38.5 L43 -39.1" stroke="#A3B1AA" stroke-width="2.6"/><path d="M43 -40.6 C45.5 -41 48 -40 49 -39.2 C48 -38 45.5 -37.4 43 -37.6Z" fill="#3A68AE"/></svg></span><span class="txt"><strong>Wild Watercolors</strong><small>Today’s painted animal story</small></span></a>
+      <a class="menu-page" href="pecks.html"><span class="ico art" aria-hidden="true"><svg viewBox="-22 -40 46 42" aria-hidden="true"><path d="M-3 -3 v-5 M3 -3 v-5 M-6 -1 l3 -2 l3 2 M0 -1 l3 -2 l3 2" fill="none" stroke="#E8A93A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><g filter="url(#wct)" stroke-linejoin="round" stroke-linecap="round"><path d="M-9 -17 l-10 -7 l2 11Z" fill="#FFFFFF" stroke="#C9B89A" stroke-width="1.4"/><ellipse cx="0" cy="-14" rx="12" ry="11" fill="#FFFFFF" stroke="#C9B89A" stroke-width="1.4"/><path d="M5 -30 q1 -5 3 -2 q2 -4 4 0 q2 1 1 3Z" fill="#D9534F" stroke="#A8322F" stroke-width="1"/><ellipse cx="8" cy="-24" rx="8" ry="8" fill="#FFFFFF" stroke="#C9B89A" stroke-width="1.4"/><path d="M13 -20 q3 1 2 5 q-3 0 -2 -5Z" fill="#D9534F" stroke="#A8322F" stroke-width="0.9"/><path d="M15 -25.8 l6 2 l-6 2.4Z" fill="#E8A93A" stroke="#C27A1E" stroke-width="0.9"/><ellipse cx="-1" cy="-13" rx="7" ry="5" fill="#FFFFFF" stroke="#C9B89A" stroke-width="1.4" transform="rotate(-15 -1 -13)"/></g><path d="M7.8 -24 q2.2 -2.6 4.4 0" fill="none" stroke="#2C2A28" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="11" cy="-20.5" rx="2.4" ry="1.5" fill="#F4A6A0" opacity=".6"/></svg></span><span class="txt"><strong>Hen Pecks</strong><small>Daily animal expression puzzle</small></span></a>
     </div>
   </nav>
   <div class="menu-theme">
@@ -213,6 +249,18 @@
 <div class="wrap">
   <p class="tag">A new animal story, painted each morning</p>
 
+  <div class="ww-title">
+    <svg class="palette" viewBox="-20 -14 40 28" aria-hidden="true"><g filter="url(#wct)"><path d="M-16 2 C-18 -8 -6 -13 4 -12 C14 -11 19 -4 17 3 C15 9 8 8 5 11 C1 14 -4 12 -8 12 C-13 12 -15 7 -16 2Z" fill="#F4EFE3" stroke="#8C7F72" stroke-width="1.2"/></g><ellipse cx="8" cy="4" rx="3" ry="2.4" fill="#D9CFB8"/><circle cx="-10" cy="-2" r="2.6" fill="#3A68AE"/><circle cx="-4" cy="-7" r="2.6" fill="#D39A2F"/><circle cx="3" cy="-7.5" r="2.6" fill="#EE9B4E"/><circle cx="10" cy="-4" r="2.4" fill="#F29AAB"/><circle cx="-8" cy="5" r="2.4" fill="#6E9E6A"/></svg>
+    <h2>Wild <span aria-hidden="true"><span class="p1">W</span><span class="p2">a</span><span class="p3">t</span><span class="p4">e</span><span class="p5">r</span><span class="p1">c</span><span class="p2">o</span><span class="p3">l</span><span class="p4">o</span><span class="p5">r</span><span class="p1">s</span></span><span class="sr">Watercolors</span></h2>
+  </div>
+
+  <div class="stage">
+  <!-- Painting horse: its body hides behind the story card; the paint drip sits in front of it -->
+  <div class="painter" aria-hidden="true">
+    <svg class="horse" viewBox="-30 -57 80 58"><g filter="url(#wct)"><ellipse cx="0" cy="-21" rx="19" ry="11" fill="#E3B98A" stroke="#A87650" stroke-width="1.3"/></g><g class="dab"><g filter="url(#wct)" stroke-width="1.3" stroke-linejoin="round"><path d="M9 -26 C10 -36 14 -42 18 -46 L26 -41 C22 -35 20 -28 19 -18Z" fill="#E3B98A" stroke="#A87650"/><path d="M19 -49 C15 -48 15 -44 12 -41 C10 -38 11 -34 8 -31 C7 -28 8 -26 8 -24 C5 -30 6 -38 10 -44 C13 -48 16 -49 19 -49Z" fill="#7A4E34" stroke="#5E3A26" stroke-width="1"/><path d="M18 -47 L18 -55 L23 -48Z" fill="#E3B98A" stroke="#A87650"/><ellipse cx="24" cy="-43" rx="8.5" ry="6" transform="rotate(30 24 -43)" fill="#E3B98A" stroke="#A87650"/><ellipse cx="30" cy="-38.5" rx="5" ry="4.5" fill="#F3DCC0" stroke="#A87650"/></g><path d="M18.2 -52 L18.4 -48 L21.4 -48.4Z" fill="#F2B5B9"/><path d="M19 -49 C22 -52 26 -50 26 -47 C23 -48 21 -47 19 -45Z" fill="#7A4E34"/><ellipse cx="32.5" cy="-40" rx=".8" ry="1.1" fill="#8B5A3C"/><g class="blink"><circle cx="23" cy="-45" r="1.4" fill="#2C2A28"/><circle cx="23.5" cy="-45.5" r=".45" fill="#fff"/></g><ellipse cx="22" cy="-40" rx="2.2" ry="1.3" fill="#F4A6A0" opacity=".7"/><path d="M24 -35 L40 -38.5" stroke="#C07E14" stroke-width="2.2" stroke-linecap="round"/><path d="M40 -38.5 L43 -39.1" stroke="#A3B1AA" stroke-width="2.6"/><path d="M43 -40.6 C45.5 -41 48 -40 49 -39.2 C48 -38 45.5 -37.4 43 -37.6Z" fill="#3A68AE"/></g></svg>
+    <svg class="drip" viewBox="0 0 40 40"><path class="drop" d="M20 2 q3 6 0 9 q-3 -3 0 -9Z" fill="#3A68AE" opacity=".85"/><g class="splat" filter="url(#ww-wash)"><ellipse cx="20" cy="30" rx="12" ry="5" fill="#3A68AE" opacity=".55"/><circle cx="8" cy="27" r="2" fill="#3A68AE" opacity=".5"/><circle cx="33" cy="33" r="1.6" fill="#3A68AE" opacity=".5"/></g></svg>
+  </div>
+
   <article class="spread" id="spread" aria-live="polite">
     <figure class="plate" style="margin:0">
       <svg viewBox="0 0 400 300" id="hero" role="img" aria-label="Watercolor painting"></svg>
@@ -228,6 +276,7 @@
       <div class="note" id="note"></div>
     </div>
   </article>
+  </div>
 
   <a class="teaser" id="teaser" href="pecks.html">
     <span class="eggs" id="teaserEggs" aria-hidden="true"></span>

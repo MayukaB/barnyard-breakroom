@@ -78,6 +78,9 @@ html:has(dialog.menu[open]){overflow:hidden}
 .menu-page .ico{flex:none;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--paper);color:var(--ink)}
 .menu-page[aria-current="page"] .ico{background:var(--cobalt);color:var(--sheet)}
 .menu-page .ico svg{width:22px;height:22px}
+/* Page pictures: the painting horse and the Hen Pecks hen, drawn larger than line icons, on a light tile even for the current page */
+.menu-page .ico.art svg{width:36px;height:36px;overflow:visible}
+.menu-page[aria-current="page"] .ico.art{background:color-mix(in srgb,var(--cobalt) 22%,var(--sheet))}
 .menu-page .txt{display:grid;gap:2px;min-width:0}
 .menu-page strong{font:400 18px/1.3 "Young Serif",Georgia,serif}
 .menu-page small{font-size:14px;line-height:1.45;color:var(--ink-soft)}
