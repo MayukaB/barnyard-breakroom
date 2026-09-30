@@ -165,3 +165,22 @@ test("the story page is allowed to load the sign-in services", async ({ page }) 
   expect(await page.evaluate(() => window.__supabaseLoaded === true)).toBe(false);
   expect(blocked).toEqual([]);
 });
+
+test("a missing address shows the 404 page, styled and linking home, even when nested", async ({ page }) => {
+  const blocked = [];
+  page.on("console", (m) => {
+    if (/Content Security Policy/i.test(m.text())) blocked.push(m.text());
+  });
+  await page.addInitScript(() => localStorage.setItem("bb:theme", "dark"));
+  for (const path of ["/no-such-page", "/a/b/c.html"]) {
+    const res = await page.goto(path);
+    expect(res.status()).toBe(404);
+    await expect(page.getByRole("heading", { name: "This page wandered off" })).toBeVisible();
+    // site.css loaded from the root (its dark paper colour applies) and site.js applied the saved theme.
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(22, 29, 27)");
+    await page.getByRole("link", { name: "Hen Pecks" }).click();
+    await expect(page).toHaveURL(/\/pecks\.html$/);
+  }
+  expect(blocked).toEqual([]);
+});

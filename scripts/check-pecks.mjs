@@ -3,7 +3,7 @@
 import { readFile } from "node:fs/promises";
 import vm from "node:vm";
 
-const root = new URL("../", import.meta.url);
+const root = new URL("../public/", import.meta.url);
 const phrasesSrc = await readFile(new URL("phrases.js", root), "utf8");
 const artSrc = await readFile(new URL("pecks-art.js", root), "utf8");
 

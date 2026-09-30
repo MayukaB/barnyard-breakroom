@@ -7,9 +7,6 @@ playwright-report/
 blob-report/
 playwright/.cache/
 
-# The deploy step's build folder (made on GitHub; not needed locally).
-_site/
-
 # Patch files once applied with `git am`, and Claude's export folder.
 *.patch
 Claude outputs/

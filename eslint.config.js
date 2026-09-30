@@ -8,7 +8,7 @@ export default [
   {
     // The pages' scripts: classic browser scripts that share window globals.
     // Account is set by account.js (sign-in, shared by every page); google by Google's sign-in script.
-    files: ["*.js"],
+    files: ["public/**/*.js"],
     languageOptions: { sourceType: "script", globals: { ...globals.browser, google: "readonly", Account: "readonly" } },
   },
   {

@@ -2,6 +2,18 @@
 
 A new animal news story each morning, painted as a cute storybook watercolor.
 
+## Project layout
+
+```
+public/      the website: exactly what gets published to GitHub Pages
+scripts/     the daily story update, its failure alert, the phrase check and the link-preview card source
+tests/       browser tests (*.spec.js, Playwright), the daily script's tests (*.test.mjs) and a tiny local server
+supabase/    the database setup for Hen Pecks accounts
+.github/     the daily story workflow and the checks that run on every push
+```
+
+Everything in `public/` goes live as it is, so a new page, script or image only has to be put there. The files below are in `public/` unless their path says otherwise.
+
 - `index.html` is **Wild Watercolors**, the story page, and `index.js` runs it. It reads `stories.json` and draws each painting as SVG with shared watercolor filters.
 - `stories.json` holds every story, newest first.
 - `site.css` holds the styles both pages share: colors (light and dark), the top bar, the menu, the sign-in dialog and the footer. Page-only styles stay in `index.html` and `pecks.css`.
@@ -13,7 +25,8 @@ A new animal news story each morning, painted as a cute storybook watercolor.
 - `og-story.png` and `og-pecks.png` are the link preview images (what shows up when someone shares a link). Their source is `scripts/og-cards.html`. The preview tags point at barnyardbreakroom.com, so update them if the domain changes.
 - `pecks-art.js` draws the Hen Pecks pictures: a small kit of watercolor animals and props, one scene per phrase (shown on a win) and a sad hen (shown on a loss). A new phrase without a scene falls back to the happy hen.
 - `scripts/update.mjs` asks Claude (Anthropic API, with its web fetch tool) for the newest animal story from the sources below (currently just Mongabay), gets a painting, and adds it to `stories.json`. With more than one source, each day starts with a different one; if that one has nothing new or can't be read, the next one gets a turn. Only stories mainly about an animal count, and only from the last 14 days. Sad stories (deaths, disease, culls) are included and painted cute but gently sad, never graphic.
-- `.github/workflows/daily.yml` runs the update every morning, commits the new story, and deploys the site to GitHub Pages.
+- `404.html` is the page GitHub Pages shows for any address that doesn't exist. Its links start with `/` so it works at any depth.
+- `.github/workflows/daily.yml` runs the update every morning, commits the new story, and deploys `public/` to GitHub Pages. It also redeploys on every push to `main`.
 - `scripts/alert.sh` runs at the end of each daily run. If the run fails, or no new story has arrived for 4 days, it opens a GitHub issue labelled `daily-story-alert` (GitHub emails you about it). The issue closes itself after the next run that works.
 
 ## Setup
@@ -47,21 +60,28 @@ Both policies also allow the sign-in services (every page can sign in): Supabase
 npm install                       # once: installs the test runner
 npx playwright install chromium   # once: the browser the tests drive
 npm test                          # plays Hen Pecks in a browser (desktop and phone sizes)
+npm run test:scripts              # tests the daily story script (no API key needed)
 npm run check                     # checks the phrase list and pictures
 npm run lint                      # ESLint: catches mistakes like undefined names
 npm run format                    # Prettier: formats the scripts, tests and config files
 ```
 
-`tests/pecks.spec.js` covers pecking, winning, losing, wrong tries, hard mode and peeking, reloading mid-game, the story page's Hen Pecks card and upgrading old saved data. `tests/site.spec.js` covers the top bar: the menu, the light/dark switch, and opening sign-in from every page. The tests pin the date, so they always play the same puzzle, and they block the sign-in services so they run offline. `.github/workflows/checks.yml` runs the phrase check, the lint and formatting checks, a syntax check of the Node scripts, and the browser tests on every push and pull request that touches the site, its scripts or its workflows.
+`tests/pecks.spec.js` covers pecking, winning, losing, wrong tries, hard mode and peeking, reloading mid-game, the story page's Hen Pecks card and upgrading old saved data. `tests/site.spec.js` covers the top bar: the menu, the light/dark switch, opening sign-in from every page, and the 404 page. The tests pin the date, so they always play the same puzzle, and they block the sign-in services so they run offline. If port 4173 is busy, run them on another port: `PORT=4180 npm test` in Git Bash or macOS/Linux, or `$env:PORT=4180; npm test` in PowerShell.
+
+`tests/update.test.mjs` runs `scripts/update.mjs` on a copy of a small story list, with the Anthropic API replaced by `tests/fixtures/fake-anthropic.mjs`. It checks that a good story is added, that quiet days and repeats change nothing, and that bad replies (not JSON, links to other sites, missing fields, paintings too small or too big, API errors) are refused without touching the list.
+
+`.github/workflows/checks.yml` runs the phrase check, the lint and formatting checks, the daily script's tests, a syntax check of the Node scripts, and the browser tests on every push and pull request that touches the site, its scripts or its workflows.
 
 ## Run locally
 
 ```sh
-npx serve .                                   # view the site at the printed address
+npm start                                     # view the site at the printed address (4173, or the next free port)
 ANTHROPIC_API_KEY=sk-... node scripts/update.mjs   # add today's story
 ```
 
-Opening `index.html` directly from disk won't work, because browsers block `fetch` of local files. Serve the folder instead.
+`npx serve public` works too, and uses port 3000, the one listed in Supabase's redirect URLs, so use it to test signing in. Opening `public/index.html` directly from disk won't work, because browsers block `fetch` of local files. Serve the folder instead.
+
+The scripts need Node 22 or newer.
 
 ## Story sources
 

@@ -2,8 +2,13 @@
   "name": "barnyard-breakroom",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
+    "start": "node tests/serve.mjs",
     "test": "playwright test",
+    "test:scripts": "node --test tests/update.test.mjs",
     "check": "node scripts/check-pecks.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
