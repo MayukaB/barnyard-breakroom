@@ -1,4 +1,5 @@
--- Hen Pecks accounts: saves each signed-in player's stats so they follow them to any device.
+-- Barnyard Breakroom accounts: saves each signed-in player's game stats (Hen Pecks, and Biscuit and
+-- Marshmallow at the end) so they follow them to any device.
 -- Run this once in Supabase → SQL Editor → New query. It is safe to run again after changes.
 
 -- One row per player.
@@ -121,3 +122,76 @@ $$;
 
 revoke all on function public.pecks_sync(jsonb, jsonb, text, jsonb, boolean) from public, anon;
 grant execute on function public.pecks_sync(jsonb, jsonb, text, jsonb, boolean) to authenticated;
+
+
+-- ---------------------------------------------------------------------------------------------
+-- Biscuit and Marshmallow: the same idea for the word swap puzzle (biscuit.js).
+--   log: one solved board per day, {"2026-09-30": {"moves": 16, "stars": 2}, ...}. Stats are worked
+--        out from this, so merging two devices can never count the same day twice.
+create table if not exists public.biscuit_players (
+  user_id    uuid primary key default auth.uid() references auth.users (id) on delete cascade,
+  log        jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.biscuit_players enable row level security;
+
+drop policy if exists "Players read their own row" on public.biscuit_players;
+create policy "Players read their own row" on public.biscuit_players
+  for select to authenticated using ((select auth.uid()) = user_id);
+
+drop policy if exists "Players create their own row" on public.biscuit_players;
+create policy "Players create their own row" on public.biscuit_players
+  for insert to authenticated with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Players update their own row" on public.biscuit_players;
+create policy "Players update their own row" on public.biscuit_players
+  for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+
+revoke all on public.biscuit_players from anon;
+grant select, insert, update on public.biscuit_players to authenticated;
+
+-- The one call the game makes. Merges this device's solved boards into the player's row and returns it.
+--   p_log: this device's solved boards by day. Days already saved keep their saved result.
+create or replace function public.biscuit_sync(p_log jsonb default '{}'::jsonb)
+returns public.biscuit_players
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  uid uuid := auth.uid();
+  clean jsonb;
+  r public.biscuit_players;
+begin
+  if uid is null then
+    raise exception 'Sign in first' using errcode = '28000';
+  end if;
+  if jsonb_typeof(coalesce(p_log, '{}'::jsonb)) <> 'object' then
+    raise exception 'p_log must be an object' using errcode = '22023';
+  end if;
+
+  -- Keep only well-formed days: a whole number of swaps and 1 to 3 stars.
+  select coalesce(jsonb_object_agg(e.key, jsonb_build_object('moves', (e.value->>'moves')::int, 'stars', (e.value->>'stars')::int)), '{}'::jsonb)
+    into clean
+    from jsonb_each(coalesce(p_log, '{}'::jsonb)) e
+   where e.key ~ '^\d{4}-\d{2}-\d{2}$'
+     and jsonb_typeof(e.value) = 'object'
+     and coalesce(e.value->>'moves', '') ~ '^\d{1,4}$'
+     and coalesce(e.value->>'stars', '') in ('1', '2', '3');
+
+  insert into public.biscuit_players (user_id) values (uid) on conflict (user_id) do nothing;
+
+  update public.biscuit_players p set
+    log        = clean || p.log,   -- right side wins, so days already saved keep their result
+    updated_at = now()
+  where p.user_id = uid
+  returning p.* into r;
+
+  return r;
+end
+$$;
+
+revoke all on function public.biscuit_sync(jsonb) from public, anon;
+grant execute on function public.biscuit_sync(jsonb) to authenticated;

@@ -9,7 +9,7 @@
     "start": "node tests/serve.mjs",
     "test": "playwright test",
     "test:scripts": "node --test tests/update.test.mjs",
-    "check": "node scripts/check-pecks.mjs",
+    "check": "node scripts/check-pecks.mjs && node scripts/make-biscuit.mjs --check",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- Content-Security-Policy: what this page may load. Inline scripts are blocked; inline styles are
+     allowed because the page and its paintings use style attributes. Also allows sign-in: Supabase (its script from jsdelivr, and its API) and Google's button.
+     If CLOUD.url in account.js changes, update connect-src here too. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com/gsi/style; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://tgqwamamqcbrwpheldpi.supabase.co wss://tgqwamamqcbrwpheldpi.supabase.co https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="description" content="Biscuit and Marshmallow: a daily word swap puzzle from Barnyard Breakroom. Swap the letters until every word is right and Biscuit the kitten and Marshmallow the sheep are back together.">
+<title>Biscuit and Marshmallow · Barnyard Breakroom</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Barnyard Breakroom">
+<meta property="og:title" content="Biscuit and Marshmallow">
+<meta property="og:description" content="Swap the letters until every word is right, and bring Biscuit the orange kitten and Marshmallow the fluffy sheep back together. A new board every day from Barnyard Breakroom.">
+<meta property="og:url" content="https://barnyardbreakroom.com/biscuit.html">
+<meta property="og:image" content="https://barnyardbreakroom.com/og-biscuit.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A watercolor of Biscuit, an orange kitten, snuggling with Marshmallow, a fluffy sheep">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://barnyardbreakroom.com/biscuit.html">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="48x48">
+<link rel="icon" href="favicon-96.png" type="image/png" sizes="96x96">
+<link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Karla:wght@400;500;700&family=Caveat:wght@500;700&display=swap">
+<link rel="stylesheet" href="site.css">
+<script src="site.js"></script>
+<link rel="stylesheet" href="biscuit.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="wc" x="-15%" y="-15%" width="130%" height="130%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="0.6"/>
+    </filter><filter id="wc2" x="-15%" y="-15%" width="130%" height="130%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.2" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="0.4"/>
+    </filter><filter id="wc3" x="-15%" y="-15%" width="130%" height="130%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="0.28"/>
+    </filter>
+      <!-- Title pig: same filter on both pages so it looks the same everywhere -->
+    <filter id="wct" x="-15%" y="-15%" width="130%" height="130%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="1" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.6" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="0.25"/>
+    </filter>
+  </defs>
+</svg>
+<canvas id="confetti" hidden aria-hidden="true"></canvas>
+
+<!-- Top bar and menu: the same on both pages. site.js opens the menu, sets the theme and shows who is signed in. -->
+<header class="topbar">
+  <div class="topbar-in">
+    <button class="icon-btn" id="menuBtn" type="button" aria-label="Open menu" aria-haspopup="dialog" aria-controls="menu" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+    <!-- Title pig: PECKS_ART.kit.A("pig", 0, 0, 1, { mood: "happy" }) holding a mug of cocoa, with two curls of steam. -->
+    <h1 class="brand"><a href="./">Barnyard <span>Breakroom<span class="title-pig" aria-hidden="true"><svg viewBox="-24 -58 50 60"><g transform="translate(0 0) scale(1 1)"><path d="M10 -7 c4 1 9 0 9.5 -4 c.4 -3.2 -3.6 -4.2 -4.6 -1.6 c-.8 2 1.6 3.2 2.6 1.6" fill="none" stroke="#D98396" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="0" cy="-12" rx="13" ry="12" fill="#F7B7C1" stroke="#D98396" stroke-width="1.4" filter="url(#wct)"/><ellipse cx="-6" cy="-1" rx="4.5" ry="2.6" fill="#F7B7C1" stroke="#D98396" stroke-width="1.4" filter="url(#wct)"/><ellipse cx="6" cy="-1" rx="4.5" ry="2.6" fill="#F7B7C1" stroke="#D98396" stroke-width="1.4" filter="url(#wct)"/><path d="M-13 -41 L-11 -53 L-3 -47Z" fill="#F7B7C1" stroke="#D98396" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" filter="url(#wct)"/><g transform="scale(-1 1)"><path d="M-13 -41 L-11 -53 L-3 -47Z" fill="#F7B7C1" stroke="#D98396" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" filter="url(#wct)"/></g><ellipse cx="0" cy="-34" rx="15" ry="15" fill="#F7B7C1" stroke="#D98396" stroke-width="1.4" filter="url(#wct)"/><ellipse cx="0" cy="-28" rx="6.5" ry="4.6" fill="#F29AAB" stroke="#D98396" stroke-width="1.4" filter="url(#wct)"/><ellipse cx="-2.2" cy="-28" rx="1.2" ry="1.8" fill="#B5566A"/><ellipse cx="2.2" cy="-28" rx="1.2" ry="1.8" fill="#B5566A"/><ellipse cx="-5.5" cy="-37" rx="2.4" ry="2.4" fill="#2C2A28"/><ellipse cx="5.5" cy="-37" rx="2.4" ry="2.4" fill="#2C2A28"/><ellipse cx="-4.7" cy="-37.8" rx="0.8" ry="0.8" fill="#fff"/><ellipse cx="6.3" cy="-37.8" rx="0.8" ry="0.8" fill="#fff"/><ellipse cx="-10" cy="-30" rx="3.2" ry="2" fill="#F4A6A0" opacity=".65"/><ellipse cx="10" cy="-30" rx="3.2" ry="2" fill="#F4A6A0" opacity=".65"/><g transform="translate(-1 -6)"><path d="M-6 -14 h12 v11 q0 4 -4 4 h-4 q-4 0 -4 -4Z" fill="#F7F1E3" stroke="#8C7F72" stroke-width="1.3" filter="url(#wct)"/><path d="M6 -11 q5 0 5 4 q0 4 -5 4" fill="none" stroke="#8C7F72" stroke-width="1.6"/><ellipse cx="0" cy="-14" rx="6" ry="1.6" fill="#8B5A3C"/><path d="M-3 -9 h6" stroke="#E07A6B" stroke-width="2" stroke-linecap="round"/><ellipse cx="-7" cy="-6" rx="3.4" ry="2.6" fill="#F7B7C1" stroke="#D98396" stroke-width="1.1"/><ellipse cx="7" cy="-6" rx="3.4" ry="2.6" fill="#F7B7C1" stroke="#D98396" stroke-width="1.1"/></g><g class="steam" fill="none" stroke="#A3B1AA" stroke-width="1.3" stroke-linecap="round"><path d="M-3 -24 q-2 -3 0 -5 q2 -2 0 -5"/><path d="M2 -24 q-2 -3 0 -5 q2 -2 0 -5"/></g></g></svg></span></span></a></h1>
+    <span class="here">Biscuit and Marshmallow</span>
+    <div class="bar-end">
+      <div class="theme" role="group" aria-label="Color theme">
+        <button type="button" data-theme-set="light" aria-pressed="false" aria-label="Light mode"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></g></svg></button>
+        <button type="button" data-theme-set="dark" aria-pressed="false" aria-label="Dark mode"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+      </div>
+      <button class="acct-chip" id="acctChip" type="button" aria-haspopup="dialog" aria-controls="menu"><span class="avatar" id="chipAvatar" aria-hidden="true" hidden></span><svg viewBox="0 0 24 24" aria-hidden="true" id="chipIcon"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5"/></g></svg><span class="chip-text" id="chipText">Sign in</span></button>
+    </div>
+  </div>
+</header>
+
+<dialog class="menu" id="menu" aria-label="Site menu">
+  <div class="menu-head">
+    <span class="menu-title" aria-hidden="true">Menu</span>
+    <button class="icon-btn" id="menuClose" type="button" aria-label="Close menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+  </div>
+  <nav aria-labelledby="menuPagesLbl">
+    <p class="menu-label" id="menuPagesLbl">Pages</p>
+    <div class="menu-pages">
+      <a class="menu-page" href="./"><span class="ico art" aria-hidden="true"><svg viewBox="3 -57 48 44" aria-hidden="true"><g filter="url(#wct)" stroke-width="1.3" stroke-linejoin="round"><path d="M9 -26 C10 -36 14 -42 18 -46 L26 -41 C22 -35 20 -28 19 -18Z" fill="#E3B98A" stroke="#A87650"/><path d="M19 -49 C15 -48 15 -44 12 -41 C10 -38 11 -34 8 -31 C7 -28 8 -26 8 -24 C5 -30 6 -38 10 -44 C13 -48 16 -49 19 -49Z" fill="#7A4E34" stroke="#5E3A26" stroke-width="1"/><path d="M18 -47 L18 -55 L23 -48Z" fill="#E3B98A" stroke="#A87650"/><ellipse cx="24" cy="-43" rx="8.5" ry="6" transform="rotate(30 24 -43)" fill="#E3B98A" stroke="#A87650"/><ellipse cx="30" cy="-38.5" rx="5" ry="4.5" fill="#F3DCC0" stroke="#A87650"/></g><path d="M18.2 -52 L18.4 -48 L21.4 -48.4Z" fill="#F2B5B9"/><path d="M19 -49 C22 -52 26 -50 26 -47 C23 -48 21 -47 19 -45Z" fill="#7A4E34"/><ellipse cx="32.5" cy="-40" rx=".8" ry="1.1" fill="#8B5A3C"/><circle cx="23" cy="-45" r="1.4" fill="#2C2A28"/><circle cx="23.5" cy="-45.5" r=".45" fill="#fff"/><ellipse cx="22" cy="-40" rx="2.2" ry="1.3" fill="#F4A6A0" opacity=".7"/><path d="M24 -35 L40 -38.5" stroke="#C07E14" stroke-width="2.2" stroke-linecap="round"/><path d="M40 -38.5 L43 -39.1" stroke="#A3B1AA" stroke-width="2.6"/><path d="M43 -40.6 C45.5 -41 48 -40 49 -39.2 C48 -38 45.5 -37.4 43 -37.6Z" fill="#3A68AE"/></svg></span><span class="txt"><strong>Wild Watercolors</strong><small>Today’s painted animal story</small></span></a>
+      <a class="menu-page" href="pecks.html"><span class="ico art" aria-hidden="true"><svg viewBox="-22 -40 46 42" aria-hidden="true"><path d="M-3 -3 v-5 M3 -3 v-5 M-6 -1 l3 -2 l3 2 M0 -1 l3 -2 l3 2" fill="none" stroke="#E8A93A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><g filter="url(#wct)" stroke-linejoin="round" stroke-linecap="round"><path d="M-9 -17 l-10 -7 l2 11Z" fill="#FFFFFF" stroke="#C9B89A" stroke-width="1.4"/><ellipse cx="0" cy="-14" rx="12" ry="11" fill="#FFFFFF" stroke="#C9B89A" stroke-width="1.4"/><path d="M5 -30 q1 -5 3 -2 q2 -4 4 0 q2 1 1 3Z" fill="#D9534F" stroke="#A8322F" stroke-width="1"/><ellipse cx="8" cy="-24" rx="8" ry="8" fill="#FFFFFF" stroke="#C9B89A" stroke-width="1.4"/><path d="M13 -20 q3 1 2 5 q-3 0 -2 -5Z" fill="#D9534F" stroke="#A8322F" stroke-width="0.9"/><path d="M15 -25.8 l6 2 l-6 2.4Z" fill="#E8A93A" stroke="#C27A1E" stroke-width="0.9"/><ellipse cx="-1" cy="-13" rx="7" ry="5" fill="#FFFFFF" stroke="#C9B89A" stroke-width="1.4" transform="rotate(-15 -1 -13)"/></g><path d="M7.8 -24 q2.2 -2.6 4.4 0" fill="none" stroke="#2C2A28" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="11" cy="-20.5" rx="2.4" ry="1.5" fill="#F4A6A0" opacity=".6"/></svg></span><span class="txt"><strong>Hen Pecks</strong><small>Daily animal expression puzzle</small></span></a>
+      <a class="menu-page" href="biscuit.html" aria-current="page"><span class="ico art" aria-hidden="true"><svg viewBox="-27 -15 54 30" aria-hidden="true"><g transform="translate(-12 0) scale(.62)"><g><path d="M-17 -5 L-15 -21 L-4 -13Z" fill="#F29B45" stroke="#C4702A" stroke-width="1.3" stroke-linejoin="round" filter="url(#wct)"/><path d="M-14.2 -8.5 L-13.4 -17 L-7.6 -12.6Z" fill="#F7B9A6"/><g transform="scale(-1 1)"><path d="M-17 -5 L-15 -21 L-4 -13Z" fill="#F29B45" stroke="#C4702A" stroke-width="1.3" stroke-linejoin="round" filter="url(#wct)"/><path d="M-14.2 -8.5 L-13.4 -17 L-7.6 -12.6Z" fill="#F7B9A6"/></g><ellipse cx="0" cy="2" rx="17.5" ry="15" fill="#F5A552" stroke="#C4702A" stroke-width="1.3" filter="url(#wct)"/><path d="M-4.5 -12.4 q1.2 3 0 5.6 M0 -13.2 v6 M4.5 -12.4 q-1.2 3 0 5.6" fill="none" stroke="#D7772C" stroke-width="1.7" stroke-linecap="round"/><path d="M-17 2 h4.5 M-16.6 5.6 h4" stroke="#D7772C" stroke-width="1.5" stroke-linecap="round"/><path d="M17 2 h-4.5 M16.6 5.6 h-4" stroke="#D7772C" stroke-width="1.5" stroke-linecap="round"/><ellipse cx="0" cy="8.6" rx="7.6" ry="5.4" fill="#FCE6CC"/><ellipse cx="-6.6" cy="1" rx="2.4" ry="2.592" fill="#2C2A28"/><ellipse cx="6.6" cy="1" rx="2.4" ry="2.592" fill="#2C2A28"/><circle cx="-5.8" cy="0.09999999999999998" r="0.8160000000000001" fill="#fff"/><circle cx="7.3999999999999995" cy="0.09999999999999998" r="0.8160000000000001" fill="#fff"/><ellipse cx="-10.5" cy="6" rx="3" ry="1.8" fill="#F08C8C" opacity=".55"/><ellipse cx="10.5" cy="6" rx="3" ry="1.8" fill="#F08C8C" opacity=".55"/><path d="M-2 5.4 h4 l-2 2.4Z" fill="#E27A8A" stroke="#C45F70" stroke-width=".6" stroke-linejoin="round"/><path d="M0 7.8 q-1.6 2.2 -3.4 1 M0 7.8 q1.6 2.2 3.4 1" fill="none" stroke="#8A5230" stroke-width="1" stroke-linecap="round"/><path d="M-7.5 8 l-9 -1.4 M-7.5 10 l-8.6 1.8 M7.5 8 l9 -1.4 M7.5 10 l8.6 1.8" stroke="#8A5230" stroke-width=".8" stroke-linecap="round" opacity=".75"/></g></g><g transform="translate(12 0) scale(.62)"><g><g fill="#FFFDF7" stroke="#CFC3AE" stroke-width="1.3" filter="url(#wct)"><circle cx="13.9" cy="5.0" r="7.4"/><circle cx="8.7" cy="11.8" r="7.4"/><circle cx="0.2" cy="14.5" r="7.4"/><circle cx="-8.4" cy="12.0" r="7.4"/><circle cx="-13.7" cy="5.4" r="7.4"/><circle cx="-13.9" cy="-3.0" r="7.4"/><circle cx="-8.7" cy="-9.8" r="7.4"/><circle cx="-0.2" cy="-12.5" r="7.4"/><circle cx="8.4" cy="-10.0" r="7.4"/><circle cx="13.7" cy="-3.4" r="7.4"/></g><ellipse cx="0" cy="1" rx="15" ry="14" fill="#FFFDF7"/><ellipse cx="-14" cy="0" rx="6.4" ry="3.2" transform="rotate(-24 -14 0)" fill="#EBCDB0" stroke="#B89878" stroke-width="1.2" filter="url(#wct)"/><g transform="scale(-1 1)"><ellipse cx="-14" cy="0" rx="6.4" ry="3.2" transform="rotate(-24 -14 0)" fill="#EBCDB0" stroke="#B89878" stroke-width="1.2" filter="url(#wct)"/></g><ellipse cx="0" cy="4" rx="9.6" ry="10.6" fill="#F4E4D2" stroke="#BFA88E" stroke-width="1.2" filter="url(#wct)"/><g fill="#FFFDF7" stroke="#CFC3AE" stroke-width="1.1" filter="url(#wct)"><circle cx="-5.4" cy="-7" r="4.8"/><circle cx="5.4" cy="-7" r="4.8"/><circle cx="0" cy="-9" r="5.4"/></g><ellipse cx="-4.2" cy="3" rx="2" ry="2.16" fill="#2C2A28"/><ellipse cx="4.2" cy="3" rx="2" ry="2.16" fill="#2C2A28"/><circle cx="-3.4000000000000004" cy="2.1" r="0.68" fill="#fff"/><circle cx="5" cy="2.1" r="0.68" fill="#fff"/><ellipse cx="-6.4" cy="7.4" rx="2.4" ry="1.5" fill="#F08C8C" opacity=".5"/><ellipse cx="6.4" cy="7.4" rx="2.4" ry="1.5" fill="#F08C8C" opacity=".5"/><ellipse cx="0" cy="8.6" rx="2.4" ry="1.5" fill="#D98396"/><path d="M0 10 q-1.4 1.9 -3 .9 M0 10 q1.4 1.9 3 .9" fill="none" stroke="#8C6E58" stroke-width="1" stroke-linecap="round"/></g></g></svg></span><span class="txt"><strong>Biscuit and Marshmallow</strong><small>Daily word swap puzzle</small></span></a>
+    </div>
+  </nav>
+  <div class="menu-theme">
+    <p class="menu-label">Appearance</p>
+    <div class="theme" role="group" aria-label="Color theme">
+      <button type="button" data-theme-set="light" aria-pressed="false" aria-label="Light mode"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></g></svg></button>
+      <button type="button" data-theme-set="dark" aria-pressed="false" aria-label="Dark mode"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+    </div>
+  </div>
+  <section class="menu-acct" id="menuAcct" aria-labelledby="menuAcctLbl">
+    <p class="menu-label" id="menuAcctLbl">Account</p>
+    <div class="acct-card" id="menuOut">
+      <h2>Sign in</h2>
+      <p>Keep your game streaks and stats on every device.</p>
+      <button class="btn solid" id="menuSignIn" type="button" aria-haspopup="dialog">Sign in</button>
+    </div>
+    <div class="acct-card" id="menuIn" hidden>
+      <div class="acct-who"><span class="avatar" id="menuAvatar" aria-hidden="true"></span><p>Signed in as <b id="menuEmail"></b></p></div>
+      <p class="acct-sync"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Game stats sync across your devices</p>
+      <button class="btn" id="menuSignOut" type="button">Sign out</button>
+    </div>
+  </section>
+</dialog>
+
+<!-- Sign-in dialog: the same on every page, run by account.js -->
+<dialog class="acct" id="acct" aria-labelledby="acctTitle">
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <filter id="acct-wc" x="-15%" y="-15%" width="130%" height="130%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="5" xChannelSelector="R" yChannelSelector="G" result="d"/>
+        <feGaussianBlur in="d" stdDeviation="0.6"/>
+      </filter>
+      <filter id="acct-wc2" x="-15%" y="-15%" width="130%" height="130%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="3.2" xChannelSelector="R" yChannelSelector="G" result="d"/>
+        <feGaussianBlur in="d" stdDeviation="0.4"/>
+      </filter>
+    </defs>
+  </svg>
+  <button class="acct-x" id="acctClose" type="button" aria-label="Close">×</button>
+  <div id="acctOut">
+    <svg class="acct-hero" viewBox="0 0 120 96" aria-hidden="true">
+      <path d="M30 40c-10 0-17-7-15-15 2-9 12-12 19-8 3-10 15-15 25-10 8-8 23-5 26 6 10-1 17 8 13 16-2 7-9 11-16 11Z" fill="var(--cobalt)" opacity=".22" filter="url(#acct-wc)"/>
+      <ellipse cx="60" cy="80" rx="40" ry="11" fill="#9B7A4E" opacity=".9" filter="url(#acct-wc)"/>
+      <path d="M24 76c10 7 62 7 72 0M28 82c12 5 52 5 64 0" stroke="#6E5433" stroke-width="2" fill="none" stroke-linecap="round" opacity=".7"/>
+      <path d="M60 30c11 0 19 16 19 30 0 11-8 18-19 18s-19-7-19-18c0-14 8-30 19-30Z" fill="#FBF3E0" stroke="#D39A2F" stroke-width="2" filter="url(#acct-wc2)"/>
+      <ellipse cx="53" cy="46" rx="4" ry="7" fill="#fff" opacity=".8"/>
+    </svg>
+    <h3 id="acctTitle">Keep your streak</h3>
+    <p class="lede">Right now your stats live in this browser only. Sign in to save them and pick up your streak on <b>any device</b>. No password needed.</p>
+    <div class="gsi" id="gsiBtn" hidden></div>
+    <button class="btn google wide" id="gBtn" type="button" hidden><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.9 6.1C12.5 13.7 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.4 5.7c4.3-4 6.9-9.9 6.9-17.1z"/><path fill="#FBBC05" d="M10.5 28.6c-.5-1.4-.8-3-.8-4.6s.3-3.2.8-4.6l-7.9-6.1C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.4-5.7c-2.1 1.4-4.8 2.3-8.5 2.3-6.2 0-11.5-4.2-13.4-9.9l-7.9 6.1C6.6 42.6 14.6 48 24 48z"/></svg>Continue with Google</button>
+    <p class="or" id="orLine" hidden>or use your email</p>
+    <form id="emailForm">
+      <label for="email" class="sr">Email address</label>
+      <input type="email" id="email" required autocomplete="email" placeholder="Your email address">
+      <button class="btn solid wide" id="emailBtn" type="submit">Email me a sign-in link</button>
+    </form>
+    <p class="fine">We only use your email to sign you in. Games you’ve already played here are added to your account.</p>
+  </div>
+  <div id="acctIn" hidden>
+    <svg class="acct-hero" viewBox="0 0 120 96" aria-hidden="true">
+      <ellipse cx="60" cy="80" rx="40" ry="11" fill="#9B7A4E" opacity=".9" filter="url(#acct-wc)"/>
+      <path d="M24 76c10 7 62 7 72 0M28 82c12 5 52 5 64 0" stroke="#6E5433" stroke-width="2" fill="none" stroke-linecap="round" opacity=".7"/>
+      <path d="M60 30c11 0 19 16 19 30 0 11-8 18-19 18s-19-7-19-18c0-14 8-30 19-30Z" fill="#F3D9A4" stroke="#D39A2F" stroke-width="2" filter="url(#acct-wc2)"/>
+      <path d="m51 55 6 6 12-13" fill="none" stroke="#6E9E6A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <h3>You’re signed in</h3>
+    <p class="lede">Signed in as <b id="acctEmail"></b>. Sign in with the same account on any device to pick up your streak there.</p>
+    <button class="btn wide" id="signOut" type="button">Sign out</button>
+    <p class="fine">Signing out keeps the games you played here on this device.</p>
+  </div>
+  <p class="acct-msg" id="acctMsg" role="status" aria-live="polite"></p>
+</dialog>
+
+<!-- The story as four storybook panels. On wide screens they sit beside the game (1 and 2 on the left,
+     3 and 4 on the right); on narrower screens they fold out under the title instead (#storyBook).
+     Drawn by biscuit.js from BISCUIT_ART.panels(). -->
+<section class="sb-col l" id="storyLeft" aria-label="The story, part 1"></section>
+<section class="sb-col r" id="storyRight" aria-label="The story, part 2"></section>
+
+<div class="wrap">
+  <p class="tag">Help Biscuit find her way home</p>
+
+  <main class="sheet">
+    <!-- Title animals peeking over the card: BISCUIT_ART.kitten() and BISCUIT_ART.sheep(), drawn by biscuit.js. -->
+    <span class="title-peek" id="titlePeek" aria-hidden="true"><svg viewBox="-50 -24 100 30"><g transform="translate(-20 0)" class="peek-k"></g><g transform="translate(20 0)" class="peek-s"></g></svg></span>
+    <div class="titlebar">
+      <h2><span class="bk">Biscuit</span> and <span class="mm">Marshmallow</span></h2>
+      <small id="puzzleNo"></small>
+    </div>
+    <details class="how story-book" id="storyBook">
+      <summary>The story so far</summary>
+      <div class="sb-strip" id="storyStrip"></div>
+    </details>
+
+    <details class="how" id="how">
+      <summary>How to play</summary>
+      <ol>
+        <li>Drag a tile onto another to swap them, or tap two tiles. You can also move Biscuit the kitten, her bestie Marshmallow the sheep, and her ball of yarn.</li>
+        <li>Make a word along every unbroken line of 3 or more tiles, across and down. Biscuit, Marshmallow or the yarn can split a line into two words, and every word is at least 3 letters long. The board’s shape changes with the day of the week.</li>
+        <li><b class="k-g">Green</b> letters are in the right place and stay put. <b class="k-y">Yellow</b> letters belong somewhere else in their row or column. <b class="k-w">White</b> letters belong in a different row or column.</li>
+        <li>You win when every letter is green and Biscuit is side by side or corner to corner with both Marshmallow and her ball of yarn. (Marshmallow and the yarn don’t need to touch each other.)</li>
+        <li>Use as few swaps as you can. Par, shown next to your swaps, is how many swaps today's board can be solved in. Par or better earns <b>3 stars</b>, up to 10 swaps over par earns <b>2 stars</b>, and more than that earns <b>1 star</b>.</li>
+      </ol>
+    </details>
+
+    <div class="modes">
+      <button class="acct-btn" id="acctBtn" type="button" hidden aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18.5h10.2a4.3 4.3 0 0 0 .6-8.6A6 6 0 0 0 6.3 11a3.8 3.8 0 0 0 .7 7.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path id="acctTick" d="m9.2 14 2 2 3.8-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" hidden/></svg><span id="acctBtnText">Sign in to save stats</span></button>
+    </div>
+
+    <div class="status">
+      <p class="moves"><span class="lbl">Swaps</span> <b id="moves">0</b> <span class="par" id="par"></span></p>
+      <p class="stars" id="stars" role="img"></p>
+    </div>
+
+    <div class="board" id="board" role="group" aria-label="Game board" aria-describedby="boardHelp"></div>
+    <p class="sr" id="boardHelp">Use the arrow keys to move between tiles. Press Enter or Space to pick up a tile, then again on another tile to swap them.</p>
+    <p class="msg" id="msg" role="status" aria-live="polite"></p>
+
+    <section class="result" id="result" hidden aria-labelledby="verdict">
+      <div class="pic" aria-hidden="true"><svg viewBox="0 0 160 120" id="art"></svg></div>
+      <div>
+        <p class="verdict" id="verdict" tabindex="-1"></p>
+        <p class="result-stars" id="resultStars"></p>
+        <h3 id="summary"></h3>
+        <div class="stats" id="stats"></div>
+        <p class="dist-title" id="distTitle">How your games went</p>
+        <ol class="dist" id="dist" aria-labelledby="distTitle"></ol>
+        <p class="acct-note" id="acctNote" hidden></p>
+        <div class="actions">
+          <button class="btn solid" id="share" type="button">Copy my result</button>
+          <a class="btn" href="./">Read today’s story →</a>
+        </div>
+        <p class="next" id="next"></p>
+      </div>
+    </section>
+
+    <!-- Ground strip: grass, a ball of yarn and a few flowers. -->
+    <div class="ground" aria-hidden="true"><svg viewBox="0 0 520 40"><path class="g1" d="M0 30 C70 22 150 27 260 24 C360 21 440 28 520 23 V40 H0Z" filter="url(#wc)"/><path class="g2" d="M0 34 C90 30 190 33 290 31 C390 29 460 33 520 31 V40 H0Z" filter="url(#wc)"/><g fill="none" stroke="#6E9E56" stroke-width="1.3" stroke-linecap="round"><path d="M28 30 l-2 -6 M30 30 l1 -7 M33 30 l3 -5 M40 30 l-1 -6 M42 30 l2 -7"/><path d="M168 29 l-2 -6 M170 29 l1 -7 M173 29 l3 -5"/><path d="M344 29 l-2 -6 M346 29 l1 -7 M349 29 l3 -5 M356 29 l-1 -6"/><path d="M500 31 l-2 -6 M502 31 l1 -7 M505 31 l3 -5"/></g><g transform="translate(250 22)"><circle r="9" fill="#E27A8A" stroke="#B85466" stroke-width="1.2" filter="url(#wc)"/><path d="M-7 -4 q7 -3 13 3 M-8 1 q8 -3 15 4 M-5 6 q5 -1 9 2 M-3 -8 q2 7 -2 15" fill="none" stroke="#B85466" stroke-width="1" stroke-linecap="round"/><path d="M8 4 q10 8 22 4 q8 -3 14 2" fill="none" stroke="#B85466" stroke-width="1.2" stroke-linecap="round"/></g><g transform="translate(96 29)"><path d="M0 0 v-13" stroke="#5E8C44" stroke-width="1.5" stroke-linecap="round"/><circle cx="0" cy="-15" r="3.2" fill="#F7D154" stroke="#C9A12A" stroke-width=".8"/></g><g transform="translate(420 29)"><path d="M0 0 v-12" stroke="#5E8C44" stroke-width="1.5" stroke-linecap="round"/><circle cx="0" cy="-14" r="3.2" fill="#B79AE0" stroke="#7E5FB0" stroke-width=".8"/></g></svg></div>
+  </main>
+
+  <footer>
+    <p>A new board every morning. Everyone gets the same one each day.</p>
+    <p class="credit">Created by Mayuka</p>
+  </footer>
+</div>
+
+<script src="biscuit-puzzles.js"></script>
+<script src="biscuit-art.js"></script>
+<script src="account.js"></script>
+<script src="biscuit.js"></script>
+</body>
+</html>

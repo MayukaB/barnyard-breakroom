@@ -1,5 +1,5 @@
 <!doctype html><meta charset="utf-8">
-<!-- Source for og-story.png and og-pecks.png (1200x630). Serve the repo root (npx serve .), open /scripts/og-cards.html, and screenshot each .card into public/og-story.png and public/og-pecks.png. -->
+<!-- Source for og-story.png, og-pecks.png and og-biscuit.png (1200x630). Serve the repo root (npx serve .), open /scripts/og-cards.html, and screenshot each .card into public/og-story.png, public/og-pecks.png and public/og-biscuit.png. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Karla:wght@400;500;700&family=Caveat:wght@700&display=swap">
 <style>
 body{margin:0;background:#999}
@@ -21,6 +21,10 @@ h1 span{color:#3A68AE}
 .eggs{display:flex;gap:10px;margin:0 0 28px;align-items:center}
 .egg{width:28px;height:36px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;border:3px solid #B9C5BD;background:#fff}
 .egg.h{background:#F3D9A4;border-color:#D39A2F}.egg.m{background:#DCE2DD}
+.mini{display:grid;grid-template-columns:repeat(6,46px);gap:7px;margin:0 0 28px}
+.mini i{height:46px;border-radius:8px;border:3px solid #B9C5BD;border-bottom-width:5px;background:#fff;display:grid;place-items:center;font:400 26px "Young Serif";font-style:normal;color:#27352F}
+.mini i.g{background:#6E9E6A;border-color:#5A8A56;color:#fff}.mini i.y{background:#F3D9A4;border-color:#D39A2F;color:#5A3F0B}.mini i.a{background:none;border-color:transparent}
+.mini i.a svg{width:52px;height:52px;overflow:visible}
 </style>
 <svg width="0" height="0" style="position:absolute"><defs>
 <filter id="wc" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation="0.2"/></filter>
@@ -50,9 +54,27 @@ h1 span{color:#3A68AE}
   <div class="plate"><svg viewBox="0 0 160 140" id="s2"></svg><p>Can you crack today’s phrase?</p></div>
   <div class="url" style="left:auto;right:72px;bottom:28px;display:none"></div>
 </div>
+<div class="card flip" id="biscuit">
+  <div>
+    <p class="tag">A daily puzzle from Barnyard Breakroom</p>
+    <h1 style="font-size:66px"><span style="color:#D7772C">Biscuit</span> and <span style="color:#8C7A66">Marshmallow</span></h1>
+    <div class="mini"><i class="g">S</i><i class="y">N</i><i class="g">U</i><i class="a" id="bk"></i><i class="a" id="yn"></i><i class="a" id="mm"></i></div>
+    <p class="lede">Swap the letters until every word is right, and bring the kitten and the sheep back together.</p>
+    <p class="url" style="position:static;margin:24px 0 0">barnyardbreakroom.com/biscuit.html</p>
+  </div>
+  <div class="plate"><svg viewBox="0 0 160 120" id="s3"></svg><p>Together again!</p></div>
+</div>
 <script src="../public/pecks-art.js"></script>
 <script>
 const {A,P,BG,shadow}=PECKS_ART.kit;
 document.getElementById('s1').innerHTML = BG.sky() + P("sun",134,26,1) + P("barn",118,112,1.2) + P("fence",30,120,.8) + shadow(66,123,20) + A("cow",66,122,1.05,{mood:"happy2"}) + A("pig",100,126,.8,{mood:"happy2"}) + A("hen",32,126,.9,{mood:"happy2"}) + P("book",140,128,.8);
 document.getElementById('s2').innerHTML = BG.meadow() + P("cloud",36,30,1) + P("nest",120,120,1.2,{eggs:["#FFF8EC","#FFF8EC"]}) + A("hen",66,122,1.6,{mood:"wink"}) + P("bubble",112,58,1,{t:"peck peck!",w:40});
+const bgSky = '<rect width="160" height="120" fill="#DCEBF2"/><path d="M0 78 C40 66 80 72 160 62 V120 H0Z" fill="#CFE3B8"/><path d="M0 92 C50 84 110 90 160 84 V120 H0Z" fill="#BFD9A2"/>';
+</script>
+<script src="../public/biscuit-art.js"></script>
+<script>
+document.getElementById('s3').innerHTML = bgSky + BISCUIT_ART.snuggle();
+document.getElementById('bk').innerHTML = '<svg viewBox="-24 -24 48 48">' + BISCUIT_ART.kitten("happy") + '</svg>';
+document.getElementById('mm').innerHTML = '<svg viewBox="-24 -24 48 48">' + BISCUIT_ART.sheep("happy") + '</svg>';
+document.getElementById('yn').innerHTML = '<svg viewBox="-24 -24 48 48">' + BISCUIT_ART.yarnTile() + '</svg>';
 </script>

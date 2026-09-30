@@ -40,6 +40,8 @@ jobs:
           node-version: 24
       - name: Check the phrase list and pictures
         run: node scripts/check-pecks.mjs
+      - name: Check the Biscuit and Marshmallow boards
+        run: node scripts/make-biscuit.mjs --check
 
   lint:
     runs-on: ubuntu-latest

@@ -101,7 +101,7 @@ test("with no choice saved, the page follows the system setting", async ({ page 
 });
 
 test("sign-in opens from the menu and the top bar on every page", async ({ page }) => {
-  for (const path of ["/", "/pecks.html"]) {
+  for (const path of ["/", "/pecks.html", "/biscuit.html"]) {
     await page.goto(path);
     await page.locator("#acctChip").click();
     await expect(menu(page)).toBeVisible();
@@ -135,10 +135,14 @@ test("the top bar and menu show who is signed in", async ({ page }) => {
   await expect(menu(page).getByRole("button", { name: "Sign in" })).toBeHidden();
 });
 
-test("the menu button shows a dot until today's Hen Pecks is played", async ({ page }) => {
+test("the menu button shows a dot until today's games are played", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("#menuBtn .dot")).toBeAttached();
-  await expect(page.locator("#menuBtn")).toHaveAccessibleName(/today's Hen Pecks isn't finished/);
+  await expect(page.locator("#menuBtn .dot")).toHaveCount(1);
+  await expect(page.locator("#menuBtn")).toHaveAccessibleName(
+    /today's Hen Pecks and Biscuit and Marshmallow aren't finished/,
+  );
+  await expect(page.locator('.menu-page[href="pecks.html"] .dot')).toBeAttached();
+  await expect(page.locator('.menu-page[href="biscuit.html"] .dot')).toBeAttached();
 });
 
 test("the story page is allowed to load the sign-in services", async ({ page }) => {
@@ -183,4 +187,28 @@ test("a missing address shows the 404 page, styled and linking home, even when n
     await expect(page).toHaveURL(/\/pecks\.html$/);
   }
   expect(blocked).toEqual([]);
+});
+
+test("no page scrolls sideways at tablet and small-laptop widths", async ({ page }) => {
+  // The top bar's page label used to push the account chip off screen between 641px and 900px.
+  for (const width of [700, 768, 900, 1024]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const path of ["/", "/pecks.html", "/biscuit.html"]) {
+      await page.goto(path);
+      const [scrollWidth, innerWidth] = await page.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
+      expect(scrollWidth, `${path} at ${width}px`).toBeLessThanOrEqual(innerWidth);
+    }
+  }
+});
+
+test("pages fit the smallest phones without widening", async ({ browser }) => {
+  // On a phone the browser widens the page to fit anything too wide, so compare with the phone's real width.
+  const context = await browser.newContext({ viewport: { width: 320, height: 568 }, isMobile: true, hasTouch: true });
+  await context.route(/supabase|jsdelivr|accounts\.google|fonts\.(googleapis|gstatic)/, (r) => r.abort());
+  const page = await context.newPage();
+  for (const path of ["/", "/pecks.html", "/biscuit.html"]) {
+    await page.goto(path);
+    expect(await page.evaluate(() => innerWidth), path).toBe(320);
+  }
+  await context.close();
 });

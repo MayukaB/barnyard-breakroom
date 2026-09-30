@@ -8,4 +8,8 @@
     <loc>https://barnyardbreakroom.com/pecks.html</loc>
     <changefreq>daily</changefreq>
   </url>
+  <url>
+    <loc>https://barnyardbreakroom.com/biscuit.html</loc>
+    <changefreq>daily</changefreq>
+  </url>
 </urlset>

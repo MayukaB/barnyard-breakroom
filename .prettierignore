@@ -8,6 +8,9 @@ public/index.js
 public/pecks-art.js
 public/phrases.js
 public/pecks-config.js
+public/biscuit.js
+public/biscuit-art.js
+public/biscuit-puzzles.js
 public/stories.json
 scripts/og-cards.html
 package-lock.json

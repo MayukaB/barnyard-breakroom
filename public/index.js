@@ -104,10 +104,23 @@ $("more").addEventListener("click", () => {
   if (next[0]) next[0].focus({preventScroll: true});
 });
 
-/* Hen Pecks teaser + menu dot: reads the game's saved progress for today */
+/* Game cards + menu dots: read each game's saved progress for today */
+const p2 = n => String(n).padStart(2,"0"), now = new Date();
+const today = `${now.getFullYear()}-${p2(now.getMonth()+1)}-${p2(now.getDate())}`;
+// A dot on a game's menu entry while today's game isn't finished, and one on the menu button for them all.
+const unfinished = [];
+function markUnfinished(name, href){
+  const link = document.querySelector(`.menu-page[href="${href}"]`);
+  const dot = () => { const el = document.createElement("span"); el.className = "dot"; el.title = "Today's puzzle is waiting"; return el; };
+  if (link){ link.appendChild(dot()); link.setAttribute("aria-label", `${name}, today's puzzle not finished`); }
+  const menuBtn = $("menuBtn");
+  if (!unfinished.length) menuBtn.appendChild(dot());
+  unfinished.push(name);
+  menuBtn.setAttribute("aria-label", `Open menu (today's ${unfinished.join(" and ")} ${unfinished.length === 1 ? "isn't" : "aren't"} finished)`);
+}
+
+/* Hen Pecks card */
 (() => {
-  const p2 = n => String(n).padStart(2,"0"), d = new Date();
-  const today = `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
   let day = null;
   const { MAX_PECKS, STORE } = window.PECKS_CONFIG;
   $("teaserSub").textContent = `Crack today’s animal-related expression in ${MAX_PECKS} pecks.`;
@@ -115,20 +128,29 @@ $("more").addEventListener("click", () => {
   const used = day ? day.pecks.length : 0;
   const eggs = $("teaserEggs");
   for (let i = 0; i < MAX_PECKS; i++){ const e = document.createElement("i"); if (i < used) e.className = "on"; eggs.appendChild(e); }
-  if (!day || day.phase === "peck" || day.phase === "solve"){
-    // A dot on the menu button and on the Hen Pecks entry inside the menu.
-    const menuBtn = $("menuBtn"), pecksLink = document.querySelector('.menu-page[href="pecks.html"]');
-    for (const el of [menuBtn, pecksLink]){
-      const dot = document.createElement("span"); dot.className = "dot"; dot.title = "Today's puzzle is waiting";
-      el.appendChild(dot);
-    }
-    menuBtn.setAttribute("aria-label", "Open menu (today's Hen Pecks isn't finished)");
-    pecksLink.setAttribute("aria-label", "Hen Pecks, today's puzzle not finished");
-  }
+  if (!day || day.phase === "peck" || day.phase === "solve") markUnfinished("Hen Pecks", "pecks.html");
   if (!day || !used) return;
   if (day.phase === "won"){ $("teaserTitle").textContent = "You cracked today’s Hen Pecks!"; $("teaserSub").textContent = "A new phrase arrives at midnight."; $("teaserGo").textContent = "See the answer →"; }
   else if (day.phase === "lost"){ $("teaserTitle").textContent = "Today’s phrase got away"; $("teaserSub").textContent = "A new one arrives at midnight."; $("teaserGo").textContent = "See the answer →"; }
   else { $("teaserTitle").textContent = "Your Hen Pecks game is waiting"; $("teaserSub").textContent = day.phase === "solve" ? "Out of pecks. Time to fill in the blanks!" : `${MAX_PECKS - used} peck${MAX_PECKS - used === 1 ? "" : "s"} left.`; $("teaserGo").textContent = "Keep going →"; }
+})();
+
+/* Biscuit and Marshmallow card (biscuit.js saves today's board under "biscuit:v1") */
+(() => {
+  let day = null;
+  try { const db = JSON.parse(localStorage.getItem("biscuit:v1")) || {}; day = (db.days && db.days[today]) || null; } catch {}
+  if (!day || !day.done) markUnfinished("Biscuit and Marshmallow", "biscuit.html");
+  if (!day || !day.moves) return;
+  const swaps = `${day.moves} swap${day.moves === 1 ? "" : "s"}`;
+  if (day.done){
+    $("bmTitle").textContent = "You reunited Biscuit and Marshmallow!";
+    $("bmSub").textContent = `Solved in ${swaps}. A new board arrives at midnight.`;
+    $("bmGo").textContent = "See your result →";
+  } else {
+    $("bmTitle").textContent = "Biscuit and Marshmallow are waiting";
+    $("bmSub").textContent = `${swaps} so far. Keep swapping to bring them back together.`;
+    $("bmGo").textContent = "Keep going →";
+  }
 })();
 
 (async () => {
