@@ -185,13 +185,38 @@
 
     <details class="how" id="how">
       <summary>How to play</summary>
+      <!-- Each step has a small picture made of mini tiles. biscuit.js draws the animals into [data-a]. -->
       <ol>
-        <li>Drag a tile onto another to swap them, or tap two tiles. You can also move Biscuit the kitten, her bestie Marshmallow the sheep, and her ball of yarn.</li>
-        <li>Make a word along every unbroken line of 3 or more tiles, across and down. Biscuit, Marshmallow or the yarn can split a line into two words, and every word is at least 3 letters long. The board’s shape changes with the day of the week.</li>
-        <li><b class="k-g">Green</b> letters are in the right place and stay put. <b class="k-y">Yellow</b> letters belong somewhere else in their row or column. <b class="k-w">White</b> letters belong in a different row or column.</li>
-        <li>You win when every letter is green and Biscuit is side by side or corner to corner with both Marshmallow and her ball of yarn. (Marshmallow and the yarn don’t need to touch each other.)</li>
-        <li>Use as few swaps as you can. Par, shown next to your swaps, is how many swaps today's board can be solved in. Par or better earns <b>3 stars</b>, up to 10 swaps over par earns <b>2 stars</b>, and more than that earns <b>1 star</b>.</li>
+        <li>Make a word along every line of 3 or more tiles, across and down.</li>
+        <li>Drag a tile onto another to swap them, or tap two tiles. You can also move Biscuit the kitten, her bestie Marshmallow the sheep, and her ball of yarn. Biscuit, Marshmallow or the yarn can split a line into two words. Every word is at least 3 letters long.
+          <div class="howpic" role="img" aria-label="Example: Marshmallow splits a row into two words, HEN and OWL.">
+            <span class="mwords"><i class="mt g">H</i><i class="mt g">E</i><i class="mt g">N</i><i class="mt a" data-a="2"></i><i class="mt g">O</i><i class="mt g">W</i><i class="mt g">L</i><span class="br" style="grid-column:1/4">HEN</span><span class="br" style="grid-column:5/8">OWL</span></span>
+          </div>
+        </li>
+        <li><b class="k-g">Green</b> letters are in the right place and stay put. <b class="k-y">Yellow</b> letters belong somewhere else in their row or column. <b class="k-w">White</b> letters belong in a different row or column. Biscuit, Marshmallow and the yarn sit on lilac tiles that never change color.
+        </li>
+        <li>You win when every letter is green and Biscuit is side by side or corner to corner with both Marshmallow and her ball of yarn. (Marshmallow and the yarn don’t need to touch each other.)
+          <div class="howpic" role="img" aria-label="Example: a small board where every letter is green, but Biscuit and her ball of yarn are the wrong way round. One swap between them puts Biscuit next to both Marshmallow and her yarn, and solves it.">
+            <span class="mboard"><span class="mgrid five"><i class="mt g">S</i><i class="mt g">T</i><i class="mt g">R</i><i class="mt g">U</i><i class="mt g">M</i><i class="mt g">E</i><i class="mt h"></i><i class="mt g">E</i><i class="mt h"></i><i class="mt g">A</i><i class="mt g">T</i><i class="mt a" data-a="2" data-mood="calm"></i><i class="mt g">L</i><i class="mt g">A</i><i class="mt g">P</i><i class="mt a pk" data-a="3"></i><i class="mt h"></i><i class="mt g">A</i><i class="mt h"></i><i class="mt g">L</i><i class="mt a pk" data-a="1" data-mood="calm"></i><i class="mt g">T</i><i class="mt g">Y</i><i class="mt g">P</i><i class="mt g">E</i></span><svg class="mswap" viewBox="0 0 156 156" aria-hidden="true"><path d="M3 109 C-14 111 -14 137 3 139" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M-3 104.5 l5.5 4.5 l-5.5 4.5 M-3 134.5 l5.5 4.5 l-5.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="mcap">Every letter is green, but Biscuit isn’t next to Marshmallow yet. <b>One swap</b> with her yarn and she’s home!</span>
+          </div>
+        </li>
+        <li>Use as few swaps as you can. Par, shown next to your swaps, is how many swaps today's board can be solved in. Par or better earns <b>3 stars</b>, up to 10 swaps over par earns <b>2 stars</b>, and more than that earns <b>1 star</b>.
+          <div class="howpic" role="img" aria-label="Par or fewer swaps: 3 stars. 1 to 10 over par: 2 stars. More than 10 over: 1 star.">
+            <span class="mstar"><span class="s">★★★</span>par or fewer</span>
+            <span class="mstar"><span class="s">★★<span class="off">★</span></span>1–10 over</span>
+            <span class="mstar"><span class="s">★<span class="off">★★</span></span>more</span>
+          </div>
+        </li>
       </ol>
+      <div class="stuck">
+        <b>Stuck?</b>
+        <ul>
+          <li>Start with the words that already have green letters, and fill in the letters around them.</li>
+          <li>A yellow letter belongs somewhere else in its own row or column, so try it in the other spots along those lines.</li>
+          <li>Leave Biscuit, Marshmallow and the yarn for last. Once the letters are in place, the squares left over are theirs.</li>
+        </ul>
+      </div>
     </details>
 
     <div class="modes">

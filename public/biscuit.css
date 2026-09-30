@@ -3,21 +3,21 @@
   --tile:#FFFFFF; --tile-line:#B9C5BD; --tile-ink:#27352F;
   --good:#6E9E6A; --good-line:#5A8A56; --near:#F3D9A4; --near-line:#D39A2F; --near-ink:#5A3F0B;
   --well:#E6ECE5; --bar:#3A68AE; --bar-today:#C07E14; --track:#E8EDE9; --star:#E0A526; --star-off:#D5DDD6;
-  --biscuit:#D7772C; --mallow:#8C7A66; --ground-a:#C9E0AE; --ground-b:#B5D493;
+  --biscuit:#D7772C; --mallow:#8C7A66; --ground-a:#C9E0AE; --ground-b:#B5D493; --lilac:#EEE7F7; --lilac-line:#B7A3D8;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
     --tile:#2B3633; --tile-line:#4A5853; --tile-ink:#E7ECE6;
     --good:#5E8F5A; --good-line:#86B882; --near:#6B5222; --near-line:#C9982F; --near-ink:#FBE7BD;
     --well:#1A2220; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --star:#E8B85A; --star-off:#3A4642;
-    --biscuit:#F0A060; --mallow:#D8CCBC; --ground-a:#34482F; --ground-b:#3F5A38;
+    --biscuit:#F0A060; --mallow:#D8CCBC; --ground-a:#34482F; --ground-b:#3F5A38; --lilac:#3B3550; --lilac-line:#8676B3;
   }
 }
 :root[data-theme="dark"]{
   --tile:#2B3633; --tile-line:#4A5853; --tile-ink:#E7ECE6;
   --good:#5E8F5A; --good-line:#86B882; --near:#6B5222; --near-line:#C9982F; --near-ink:#FBE7BD;
   --well:#1A2220; --bar:#6A92D8; --bar-today:#B37A1E; --track:#2A3431; --star:#E8B85A; --star-off:#3A4642;
-  --biscuit:#F0A060; --mallow:#D8CCBC; --ground-a:#34482F; --ground-b:#3F5A38;
+  --biscuit:#F0A060; --mallow:#D8CCBC; --ground-a:#34482F; --ground-b:#3F5A38; --lilac:#3B3550; --lilac-line:#8676B3;
 }
 .wrap>main{max-width:640px;width:100%;justify-self:center}
 .wrap>.tag{max-width:640px;width:100%;justify-self:center;text-align:right}
@@ -41,8 +41,33 @@ details.how summary::-webkit-details-marker{display:none}
 details.how summary::before{content:"+ ";color:var(--ochre)}
 details.how[open] summary::before{content:"– "}
 details.how ol{margin:8px 0 4px;padding-left:20px}
-details.how li{margin:3px 0}
 details.how b[class^="k-"]{padding:0 6px;border-radius:4px;border:1.5px solid}
+/* How-to pictures: mini tiles in the game's colors */
+details.how li{margin:3px 0 12px}
+.howpic{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:8px 0 2px}
+.mt{width:26px;height:26px;box-sizing:border-box;display:grid;place-items:center;border-radius:5px;border:1.5px solid var(--tile-line);border-bottom-width:2.5px;background:var(--tile);color:var(--tile-ink);font:400 15px/1 "Young Serif",Georgia,serif;font-style:normal}
+.mt.g{background:var(--good);border-color:var(--good-line);color:#fff}
+.mt.a{background:var(--lilac);border-color:var(--lilac-line)}
+.mt.a svg{width:96%;height:96%;overflow:visible}
+.mwords{display:grid;grid-template-columns:repeat(7,26px);gap:4px}
+.mwords .br{grid-row:2;margin:1px 2px 0;padding-top:2px;border:1.5px solid var(--ok);border-top:0;border-radius:0 0 6px 6px;text-align:center;font:700 11px/1.2 Karla,sans-serif;letter-spacing:.08em;color:var(--ok)}
+.mcap{font-size:13px;line-height:1.3;color:var(--ink-soft)}
+.mgrid{display:grid;grid-template-columns:repeat(3,26px);gap:4px;padding:6px;border-radius:8px;background:var(--well)}
+.mgrid.five{grid-template-columns:repeat(5,26px)}
+.mt.h{visibility:hidden}
+.mt.a.pk{box-shadow:0 0 0 2px var(--cobalt)}
+.mboard{position:relative;flex:none;margin-left:14px}
+.mswap{position:absolute;inset:0;width:100%;height:100%;overflow:visible;color:var(--cobalt);pointer-events:none}
+.howpic .mcap{flex:1 1 180px;max-width:32ch}
+.mcap b{color:var(--ink)}
+/* The "Stuck?" tips at the end of How to play */
+.stuck{margin:4px 0 6px;padding:10px 14px;border-radius:10px;background:var(--well);border-left:4px solid var(--ochre)}
+.stuck b{color:var(--ink)}
+.stuck ul{margin:4px 0 0;padding-left:18px}
+details.how .stuck li{margin:3px 0}
+.mstar{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 8px;border-radius:999px;background:var(--well);font-size:13px;color:var(--ink-soft)}
+.mstar .s{color:var(--star);letter-spacing:1px}
+.mstar .off{color:var(--star-off)}
 .k-g{background:var(--good);border-color:var(--good-line);color:#fff}
 .k-y{background:var(--near);border-color:var(--near-line);color:var(--near-ink)}
 .k-w{background:var(--tile);border-color:var(--tile-line);color:var(--tile-ink)}
@@ -69,14 +94,13 @@ details.how b[class^="k-"]{padding:0 6px;border-radius:4px;border:1.5px solid}
 .tile.g{background:var(--good);border-color:var(--good-line);color:#fff;cursor:default}
 .tile.y{background:var(--near);border-color:var(--near-line);color:var(--near-ink)}
 /* Animals never change color */
-.tile.animal{background:transparent;border-color:transparent}
-.tile.animal svg{width:112%;height:112%;overflow:visible;pointer-events:none}
+/* Biscuit, Marshmallow and the yarn sit on lilac tiles: clearly tiles you can move, in a color no letter ever takes */
+.tile.animal{background:var(--lilac);border-color:var(--lilac-line)}
+.tile.animal svg{width:94%;height:94%;overflow:visible;pointer-events:none}
 .tile:focus-visible{outline:3px solid var(--cobalt);outline-offset:2px;z-index:2}
 .tile.picked{box-shadow:0 0 0 3px var(--cobalt);transform:translateY(-3px)}
-.tile.animal.picked{box-shadow:none;filter:drop-shadow(0 0 3px var(--cobalt)) drop-shadow(0 0 3px var(--cobalt))}
 .tile.lifted{opacity:.3}
 .tile.target{box-shadow:0 0 0 3px var(--ochre)}
-.tile.animal.target{box-shadow:none;filter:drop-shadow(0 0 3px var(--ochre)) drop-shadow(0 0 3px var(--ochre))}
 .tile.nope{animation:nope .35s ease}
 @keyframes nope{25%,75%{transform:translateX(-3px)}50%{transform:translateX(3px)}}
 .ghost{position:fixed;z-index:30;pointer-events:none;margin:0;transform:scale(1.08) rotate(-3deg);box-shadow:0 14px 28px -8px rgba(0,0,0,.35);opacity:.95}

@@ -116,10 +116,12 @@ async function solve(page) {
     await tile(page, i).click();
     await tile(page, j).click();
   }
-  await expect(page.locator("#result")).toBeVisible();
+  // The win screen follows the celebration, which can be slow when every test runs at once.
+  await expect(page.locator("#result")).toBeVisible({ timeout: 15000 });
 }
 
 test("solving the board reunites the animals, shows the result and survives a reload", async ({ page }) => {
+  test.slow(); // plays a whole game, which can pass 30 seconds when every test runs at once
   await open(page);
   await solve(page);
   await expect(page.getByRole("link", { name: "Read today’s story →" })).toHaveAttribute("href", "./");
@@ -152,6 +154,7 @@ test("progress is kept after a reload", async ({ page }) => {
 });
 
 test("the story page card shows today's progress", async ({ page }) => {
+  test.slow(); // plays a whole game, which can pass 30 seconds when every test runs at once
   await open(page);
   await expect(page.locator(".menu-page[href='biscuit.html']")).toHaveCount(1);
   await page.goto("/");
@@ -172,6 +175,7 @@ test("the story page card shows today's progress", async ({ page }) => {
 });
 
 test("a signed-in player's solved boards are saved to their account", async ({ page }) => {
+  test.slow(); // plays a whole game, which can pass 30 seconds when every test runs at once
   // A stand-in for account.js's window.Account: signed in, with an account that already has one
   // solved day from another device. account.js's own assignment is ignored.
   await page.addInitScript(() => {
@@ -311,4 +315,18 @@ test("stars: par or better is 3, up to 10 over par is 2, more is 1", async ({ pa
     await page.reload();
     await expect(page.locator("#stars")).toHaveAccessibleName(`${stars} star${stars === 1 ? "" : "s"} so far`);
   }
+});
+
+test("How to play has pictures for splitting words, the last swap and stars, with the animals drawn in", async ({
+  page,
+}) => {
+  await open(page);
+  const how = page.locator("#how");
+  if (!(await how.evaluate((d) => d.open))) await how.locator("summary").click();
+  const pictures = how.locator(".howpic");
+  await expect(pictures).toHaveCount(3);
+  for (const pic of await pictures.all()) await expect(pic).toHaveAttribute("aria-label", /\w/);
+  await expect(how.locator("[data-a] svg")).toHaveCount(await how.locator("[data-a]").count());
+  // Tips for when a player is stuck, at the end
+  await expect(how.locator(".stuck")).toContainText("Stuck?");
 });

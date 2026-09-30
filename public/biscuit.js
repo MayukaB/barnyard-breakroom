@@ -539,6 +539,8 @@ function initCloud() {
 }
 
 /* ---------- Start ---------- */
+// The animals in the How to play pictures
+for (const el of document.querySelectorAll("#how [data-a]")) el.innerHTML = animalSvg(el.dataset.a, el.dataset.mood || "happy");
 document.querySelector("#titlePeek .peek-k").innerHTML = ART.kitten();
 document.querySelector("#titlePeek .peek-s").innerHTML = ART.sheep();
 $("puzzleNo").textContent = `No. ${DAY_INDEX + 1} · ${new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} · ${SHAPE}`;
