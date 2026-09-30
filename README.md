@@ -1,6 +1,6 @@
 # Barnyard Breakroom
 
-The newest National Geographic animal story each morning, painted as a cute storybook watercolor.
+A new animal news story each morning, painted as a cute storybook watercolor.
 
 - `index.html` is the whole site. It reads `stories.json` and draws each painting as SVG with shared watercolor filters.
 - `stories.json` holds every story, newest first.
@@ -12,7 +12,7 @@ The newest National Geographic animal story each morning, painted as a cute stor
 - `scripts/check-pecks.mjs` checks the phrase list: duplicates, stray characters, missing hints, meanings or origin notes, hints that give away a word of the answer, and phrases without a picture. `.github/workflows/checks.yml` runs it on every push that touches the game. Run it yourself with `node scripts/check-pecks.mjs` after adding phrases.
 - `og-story.png` and `og-pecks.png` are the link preview images (what shows up when someone shares a link). Their source is `scripts/og-cards.html`. The preview tags point at barnyardbreakroom.com, so update them if the domain changes.
 - `pecks-art.js` draws the Hen Pecks pictures: a small kit of watercolor animals and props, one scene per phrase (shown on a win) and a sad hen (shown on a loss). A new phrase without a scene falls back to the happy hen.
-- `scripts/update.mjs` asks Claude (Anthropic API, with its web fetch tool) for the top story on nationalgeographic.com/animals, gets a painting, and adds it to `stories.json`.
+- `scripts/update.mjs` asks Claude (Anthropic API, with its web fetch tool) for the newest animal story from one of the sources below, gets a painting, and adds it to `stories.json`. Each day starts with a different source; if that one has nothing new or can't be read, the next one gets a turn. Only stories mainly about an animal count, and only from the last 14 days. Sad stories (deaths, disease, culls) are included and painted cute but gently sad, never graphic.
 - `.github/workflows/daily.yml` runs the update every morning, commits the new story, and deploys the site to GitHub Pages.
 - `scripts/alert.sh` runs at the end of each daily run. If the run fails, or no new story has arrived for 4 days, it opens a GitHub issue labelled `daily-story-alert` (GitHub emails you about it). The issue closes itself after the next run that works.
 
@@ -63,4 +63,15 @@ ANTHROPIC_API_KEY=sk-... node scripts/update.mjs   # add today's story
 
 Opening `index.html` directly from disk won't work, because browsers block `fetch` of local files. Serve the folder instead.
 
-Stories link back to the original articles on National Geographic. The summaries are written in Claude's own words.
+## Story sources
+
+| Key        | Source              | News page                      | Why it's allowed                                                          |
+| ---------- | ------------------- | ------------------------------ | ------------------------------------------------------------------------- |
+| `natgeo`   | National Geographic | nationalgeographic.com/animals | Summary in our own words plus a link                                      |
+| `mongabay` | Mongabay            | news.mongabay.com/list/animals | CC BY-ND: summary in our own words plus a link, article text never copied |
+
+Stories link back to the original articles. The summaries are written in Claude's own words.
+
+To try one source on its own: Actions → "Paint today's story" → **Run workflow**, and type its key in the source box. Locally: `node scripts/update.mjs mongabay`.
+
+Before adding a source, check its terms and its robots.txt. The Guardian's API terms forbid using its articles with AI, and The Conversation and the BBC block Claude in robots.txt. Mongabay sits behind bot protection that turns away plain requests; if Claude's fetch is turned away too, the run log says so and that source is skipped.

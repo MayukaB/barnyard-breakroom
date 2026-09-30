@@ -20,7 +20,7 @@ if [ "$UPDATE" != "success" ]; then
 elif [ "$DEPLOY" != "success" ]; then
   kind="broken"; problem="The story updated, but publishing the site ended with **$DEPLOY**."
 elif [ "$days" -ge "$STALE_DAYS" ]; then
-  kind="stale"; problem="No new story has been added for **$days days** (newest: $newest). The runs themselves are working, so either National Geographic's top story hasn't changed or its page layout has."
+  kind="stale"; problem="No new story has been added for **$days days** (newest: $newest). The runs themselves are working, so either no source has posted a new animal story, or a news page's layout has changed or started blocking the fetch. The run log shows each source's reason."
 fi
 
 gh label create "$LABEL" --color D39A2F --description "The daily story run needs attention" --force >/dev/null
