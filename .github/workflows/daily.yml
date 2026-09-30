@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "49 11 * * *" # 11:49 UTC = 7:49am Toronto in summer, 6:49am in winter
   workflow_dispatch:
+    inputs:
+      source:
+        description: "Only try this source (natgeo or mongabay). Leave empty for the usual rotation."
+        required: false
+        default: ""
   push:
     branches: [main]
 
@@ -31,6 +36,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ANTHROPIC_MODEL: ${{ vars.ANTHROPIC_MODEL }}
+          ONLY_SOURCE: ${{ inputs.source }}
         run: node scripts/update.mjs
       - name: Commit if something changed
         run: |
