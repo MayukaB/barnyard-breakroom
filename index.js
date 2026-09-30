@@ -104,7 +104,7 @@ $("more").addEventListener("click", () => {
   if (next[0]) next[0].focus({preventScroll: true});
 });
 
-/* Hen Pecks teaser + tab dot: reads the game's saved progress for today */
+/* Hen Pecks teaser + menu dot: reads the game's saved progress for today */
 (() => {
   const p2 = n => String(n).padStart(2,"0"), d = new Date();
   const today = `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
@@ -115,11 +115,15 @@ $("more").addEventListener("click", () => {
   const used = day ? day.pecks.length : 0;
   const eggs = $("teaserEggs");
   for (let i = 0; i < MAX_PECKS; i++){ const e = document.createElement("i"); if (i < used) e.className = "on"; eggs.appendChild(e); }
-  const pecksTab = document.querySelector('.switch a[href="pecks.html"]');
   if (!day || day.phase === "peck" || day.phase === "solve"){
-    const dot = document.createElement("span"); dot.className = "dot"; dot.title = "Today's puzzle is waiting";
-    pecksTab.appendChild(dot);
-    pecksTab.setAttribute("aria-label", "Hen Pecks, today's puzzle not finished");
+    // A dot on the menu button and on the Hen Pecks entry inside the menu.
+    const menuBtn = $("menuBtn"), pecksLink = document.querySelector('.menu-page[href="pecks.html"]');
+    for (const el of [menuBtn, pecksLink]){
+      const dot = document.createElement("span"); dot.className = "dot"; dot.title = "Today's puzzle is waiting";
+      el.appendChild(dot);
+    }
+    menuBtn.setAttribute("aria-label", "Open menu (today's Hen Pecks isn't finished)");
+    pecksLink.setAttribute("aria-label", "Hen Pecks, today's puzzle not finished");
   }
   if (!day || !used) return;
   if (day.phase === "won"){ $("teaserTitle").textContent = "You cracked today’s Hen Pecks!"; $("teaserSub").textContent = "A new phrase arrives at midnight."; $("teaserGo").textContent = "See the answer →"; }

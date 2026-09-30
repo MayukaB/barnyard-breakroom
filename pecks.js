@@ -545,84 +545,26 @@ function tickNext(){
   upd(); nextTimer = setInterval(upd, 1000);
 }
 
-/* ---------- Accounts: sign in to keep stats (Supabase) ----------
-   Fill in url and anonKey from Supabase → Project Settings → API. The anon key is meant to be
-   public: row-level security in supabase/schema.sql keeps each player to their own row.
-   Leave url empty and the game works exactly as before, with no sign-in button.
-   Set google to true once Google is switched on under Authentication → Providers.
-   googleClientId: the OAuth client ID from Google Cloud. With it, the page shows Google's own
-   "Sign in with Google" button, so Google names barnyardbreakroom.com rather than the Supabase
-   address. Without it, the plain button sends players through Supabase's Google sign-in instead. */
-const CLOUD = { url: "https://tgqwamamqcbrwpheldpi.supabase.co", anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRncXdhbWFtcWNicndwaGVsZHBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1ODc4ODcsImV4cCI6MjEwNjE2Mzg4N30.aNfjzKbuOArjBqcpLZkjRVjoUTrkJZqWFzfefs8vPE8", google: true, googleClientId: "818572636423-k4772kddhhhvq4b07l94peeegtu4hqkp.apps.googleusercontent.com" };
-const SUPABASE_JS = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
-const GOOGLE_GSI = "https://accounts.google.com/gsi/client";
-let sb = null, user = null, syncChain = Promise.resolve();
+/* ---------- Accounts: keep stats in the player's account ----------
+   Signing in and out is handled for the whole site by account.js (window.Account). This part only
+   syncs Hen Pecks: when a player signs in, this device's games go up and the merged copy comes back.
+   db.cloud holds that merged copy while signed in. */
+let syncChain = Promise.resolve();
 
-function acctMsg(text, warn = false){ const m = $("acctMsg"); m.textContent = text; m.classList.toggle("warn", warn); }
 function renderAcct(){
-  if (!CLOUD.url || !CLOUD.anonKey) return;
+  if (!Account.enabled) return;
   const inAcct = !!db.cloud;
   $("acctBtnText").textContent = inAcct ? "Stats saved to your account" : "Sign in to save stats";
   $("acctTick").hidden = !inAcct;
-  $("acctOut").hidden = inAcct; $("acctIn").hidden = !inAcct;
-  $("acctEmail").textContent = (db.cloud && db.cloud.email) || "";
-  $("orLine").hidden = !CLOUD.google;
-  $("gsiBtn").hidden = !(CLOUD.google && gsiReady);
-  $("gBtn").hidden = !CLOUD.google || gsiReady || gsiLoading;
-  for (const b of [$("gBtn"), $("emailBtn"), $("signOut")]) b.disabled = !sb;
   const note = $("acctNote"); note.hidden = false; note.textContent = "";
   if (inAcct) note.textContent = "Saved to your account, so these follow you to any device.";
   else {
     const b = document.createElement("button"); b.type = "button"; b.className = "linkish"; b.textContent = "Sign in to keep them";
-    b.addEventListener("click", openAcct);
+    b.addEventListener("click", Account.open);
     note.append("These stats are saved in this browser only. ", b, ".");
   }
 }
 function refreshStats(){ if (!$("result").hidden) renderStats(false); }
-function openAcct(){ if (!$("acct").open) $("acct").showModal(); drawGsiButton(); }
-
-/* Google's own sign-in button (Google Identity Services). Google hands back a signed ID token
-   and Supabase checks it (signInWithIdToken), so players never pass through the supabase.co
-   address. A one-time random value (nonce) ties the token to this page: Google gets its SHA-256
-   hash, Supabase gets the original and checks they match. */
-let gsiReady = false, gsiLoading = false, gsiDrawn = false, gsiNonce = "";
-async function sha256hex(text){
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
-}
-function initGsi(){
-  if (!CLOUD.google || !CLOUD.googleClientId || !window.crypto || !crypto.subtle) return;
-  gsiLoading = true;
-  const s = document.createElement("script");
-  s.src = GOOGLE_GSI; s.async = true;
-  s.onload = async () => {
-    try {
-      gsiNonce = [...crypto.getRandomValues(new Uint8Array(24))].map(b => b.toString(16).padStart(2, "0")).join("");
-      google.accounts.id.initialize({
-        client_id: CLOUD.googleClientId,
-        nonce: await sha256hex(gsiNonce),
-        callback: onGoogleCredential
-      });
-      gsiReady = true;
-    } catch {}
-    gsiLoading = false; renderAcct(); drawGsiButton();
-  };
-  s.onerror = () => { gsiLoading = false; renderAcct(); };   // fall back to the plain button
-  document.head.appendChild(s);
-}
-function drawGsiButton(){
-  // Google sizes its button when drawn, so wait until the dialog is open and the box has a width.
-  if (!gsiReady || gsiDrawn || !$("acct").open || $("acctOut").hidden) return;
-  const box = $("gsiBtn"), w = Math.max(200, Math.min(400, Math.floor(box.getBoundingClientRect().width)));
-  google.accounts.id.renderButton(box, { type: "standard", theme: "outline", size: "large", shape: "pill", text: "continue_with", logo_alignment: "center", width: w });
-  gsiDrawn = true;
-}
-async function onGoogleCredential(res){
-  if (!sb){ acctMsg("Sign-in is still loading. Try again in a moment.", true); return; }
-  acctMsg("Signing you in…");
-  const { error } = await sb.auth.signInWithIdToken({ provider: "google", token: res.credential, nonce: gsiNonce });
-  if (error) acctMsg("Google sign-in didn’t work. Try again, or use the email link.", true);
-}
 
 // Sends this device's games and gets back the merged copy. Calls run one at a time.
 function cloudSync(opts = {}){
@@ -630,6 +572,7 @@ function cloudSync(opts = {}){
   return syncChain;
 }
 async function doSync({first = false} = {}){
+  const sb = Account.client, user = Account.user;
   if (!sb || !user) return;
   const uid = user.id, email = user.email;
   const { data, error } = await sb.rpc("pecks_sync", {
@@ -639,9 +582,9 @@ async function doSync({first = false} = {}){
     p_settings: db.settings,
     p_overwrite_settings: !first
   });
-  if (!user || user.id !== uid) return;          // signed out while this was on its way
+  if (!Account.user || Account.user.id !== uid) return;          // signed out while this was on its way
   if (error || !data){
-    if (first) acctMsg("Signed in, but your stats couldn’t be saved just now. They’re safe here and will be saved next time.", true);
+    if (first) Account.message("Signed in, but your stats couldn’t be saved just now. They’re safe here and will be saved next time.", true);
     return;
   }
   db.cloud = { uid, email, base: data.base || {}, log: data.log || {} };
@@ -650,65 +593,16 @@ async function doSync({first = false} = {}){
 }
 
 function initCloud(){
-  if (!CLOUD.url || !CLOUD.anonKey) return;
+  if (!Account.enabled) return;
   $("acctBtn").hidden = false;
-  initGsi();
-  // A sign-in link that failed (expired, already used) comes back with the reason in the address.
-  const h = new URLSearchParams(location.hash.slice(1));
-  const linkError = h.get("error_description");
-  if (linkError) history.replaceState(null, "", location.pathname + location.search);
+  $("acctBtn").addEventListener("click", Account.open);
   renderAcct();
-  const s = document.createElement("script");
-  s.src = SUPABASE_JS; s.async = true;
-  s.onload = () => {
-    try { sb = window.supabase.createClient(CLOUD.url, CLOUD.anonKey); } catch { return; }
-    sb.auth.onAuthStateChange((event, session) => {
-      const u = session ? session.user : null;
-      const changed = (u && u.id) !== (user && user.id);
-      user = u;
-      if (!changed && !!u === !!db.cloud) { renderAcct(); return; }
-      // Don't wait on Supabase inside this callback (it can deadlock); do the work just after.
-      setTimeout(() => {
-        if (!u){ if (db.cloud){ delete db.cloud; save(); refreshStats(); } renderAcct(); return; }
-        const first = !db.cloud || db.cloud.uid !== u.id;
-        if (first && db.cloud){ delete db.cloud; save(); refreshStats(); }   // a different player signed in here
-        renderAcct();
-        cloudSync({first}).then(() => { if (first && db.cloud) acctMsg("You’re signed in. Your stats are saved to your account."); });
-      }, 0);
-    });
+  Account.onChange(u => {
+    if (!u){ if (db.cloud){ delete db.cloud; save(); refreshStats(); } renderAcct(); return; }
+    const first = !db.cloud || db.cloud.uid !== u.id;
+    if (first && db.cloud){ delete db.cloud; save(); refreshStats(); }   // a different player signed in here
     renderAcct();
-    if (linkError){ openAcct(); acctMsg("That sign-in link didn’t work. It may have expired or already been used. Ask for a new one below.", true); }
-  };
-  s.onerror = () => acctMsg("Sign-in couldn’t load right now. Your stats are still saved in this browser.", true);
-  document.head.appendChild(s);
-
-  $("acctBtn").addEventListener("click", openAcct);
-  $("acctClose").addEventListener("click", () => $("acct").close());
-  $("acct").addEventListener("click", e => { if (e.target === $("acct")) $("acct").close(); });   // click on the backdrop
-  $("acct").addEventListener("close", () => acctMsg(""));
-  const redirectTo = location.origin + location.pathname;
-  $("emailForm").addEventListener("submit", async e => {
-    e.preventDefault();
-    if (!sb) return;
-    const email = $("email").value.trim();
-    $("emailBtn").disabled = true; acctMsg("Sending…");
-    const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
-    $("emailBtn").disabled = false;
-    if (!error) acctMsg(`Check ${email} for a sign-in link. It opens Hen Pecks signed in.`);
-    else acctMsg(error.status === 429 ? "Too many sign-in emails just now. Try again in a few minutes." : "Couldn’t send the link. Check the email address and try again.", true);
-  });
-  $("gBtn").addEventListener("click", async () => {
-    if (!sb) return;
-    const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
-    if (error) acctMsg("Couldn’t start Google sign-in. Try the email link instead.", true);
-  });
-  $("signOut").addEventListener("click", async () => {
-    if (!sb) return;
-    $("signOut").disabled = true;
-    await sb.auth.signOut().catch(() => {});
-    user = null;
-    if (db.cloud){ delete db.cloud; save(); }
-    renderAcct(); refreshStats(); acctMsg("Signed out.");
+    cloudSync({first}).then(() => { if (first && db.cloud) Account.message("You’re signed in. Your stats are saved to your account."); });
   });
 }
 
