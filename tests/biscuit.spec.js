@@ -330,3 +330,20 @@ test("How to play has pictures for splitting words, the last swap and stars, wit
   // Tips for when a player is stuck, at the end
   await expect(how.locator(".stuck")).toContainText("Stuck?");
 });
+
+test("yellow looks along the whole row and column, across gaps", async ({ page }) => {
+  // Thursday 2026-10-01, the Zig-zag. The U at the top of the middle column and the M below it both
+  // belong in GUM, further down the same column past a gap, so both are yellow.
+  await page.clock.setFixedTime(new Date("2026-10-01T10:00:00"));
+  await page.goto("/biscuit.html");
+  await expect(page.locator("#puzzleNo")).toContainText("Zig-zag");
+  const cols = await page.evaluate(() => window.BISCUIT_PUZZLES.list[1].s[0].length);
+  for (const [r, c, letter] of [
+    [0, 2, "U"],
+    [3, 2, "M"],
+  ]) {
+    const t = tile(page, r * cols + c);
+    await expect(t).toHaveText(letter);
+    await expect(t).toHaveClass(/\by\b/);
+  }
+});

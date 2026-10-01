@@ -27,19 +27,14 @@ const isAnimal = (ch) => ch === "1" || ch === "2" || ch === "3";
 const isLetter = (ch) => /[A-Z]/.test(ch);
 const CELLS = [...SOL].map((ch, i) => i).filter((i) => SOL[i] !== ".");
 const rc = (i) => [Math.floor(i / COLS), i % COLS];
-// Every unbroken stretch of squares along a row or column (holes break them; Biscuit, Marshmallow and
-// the yarn don't, since players can't know where they'll end up). Colors are worked out along these.
+// Every row and column of squares, read straight across any gaps (a letter's row is its whole row, as
+// How to play says). Biscuit, Marshmallow and the yarn don't break them either, since players can't know
+// where they'll end up. Colors are worked out along these.
 const LINES = (() => {
   const out = [];
-  const scan = (idx) => {
-    let cur = [];
-    for (const i of idx) {
-      if (SOL[i] === ".") { if (cur.length > 1) out.push(cur); cur = []; } else cur.push(i);
-    }
-    if (cur.length > 1) out.push(cur);
-  };
-  for (let r = 0; r < ROWS; r++) scan(Array.from({ length: COLS }, (_, c) => r * COLS + c));
-  for (let c = 0; c < COLS; c++) scan(Array.from({ length: ROWS }, (_, r) => r * COLS + c));
+  const add = (idx) => { const line = idx.filter((i) => SOL[i] !== "."); if (line.length > 1) out.push(line); };
+  for (let r = 0; r < ROWS; r++) add(Array.from({ length: COLS }, (_, c) => r * COLS + c));
+  for (let c = 0; c < COLS; c++) add(Array.from({ length: ROWS }, (_, r) => r * COLS + c));
   return out;
 })();
 
