@@ -125,10 +125,9 @@ test("solving the board reunites the animals, shows the result and survives a re
   await open(page);
   await solve(page);
   await expect(page.getByRole("link", { name: "Read today’s story →" })).toHaveAttribute("href", "./");
-  // The last storybook panel now shows the two of them together (on phones it's in the fold-out).
+  // The story panels stay the same after the win (on phones they're in the fold-out).
   if (await page.locator("#storyBook").isVisible()) await page.locator("#storyBook summary").click();
-  await expect(page.locator("figcaption:visible").filter({ hasText: "Together again!" })).toHaveCount(1);
-  await expect(page.locator("figcaption:visible").filter({ hasText: "lead her home" })).toHaveCount(0);
+  await expect(page.locator("figcaption:visible").filter({ hasText: "lead Biscuit home" })).toHaveCount(1);
   await expect(page.locator("#summary")).toContainText("Solved in");
   await expect(page.locator("#stats")).toContainText("1 solved");
   const n = await swaps(page).textContent();
@@ -218,8 +217,9 @@ test("the story shows beside the game on wide screens, and folds out on phones",
   const captions = page.locator("figcaption:visible");
   if (wide) {
     await expect(page.locator("#storyBook")).toBeHidden();
-    await expect(captions).toHaveCount(4);
-    await expect(captions.first()).toContainText("gives chase");
+    await expect(captions).toHaveCount(6);
+    await expect(captions.first()).toContainText("sleepy morning");
+    await expect(captions.nth(4)).toContainText("MISSING posters");
     return;
   }
   // Folded on a first visit, then it stays however the player left it.
@@ -228,7 +228,8 @@ test("the story shows beside the game on wide screens, and folds out on phones",
   await expect(captions).toHaveCount(0);
   await book.locator("summary").click();
   await expect(book).toHaveJSProperty("open", true);
-  await expect(captions.first()).toContainText("gives chase");
+  await expect(captions.first()).toContainText("sleepy morning");
+  await expect(page.locator("#storyStrip .sb-plate")).toHaveCount(6);
   await page.reload();
   await expect(book).toHaveJSProperty("open", true);
   await book.locator("summary").click();

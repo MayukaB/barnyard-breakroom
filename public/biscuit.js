@@ -166,20 +166,20 @@ function render() {
 }
 
 /* ---------- The story ----------
-   Biscuit chased a ball of yarn into the woods and got lost; Marshmallow is searching for her.
-   Four storybook panels tell it, beside the game on wide screens and in the #storyBook fold-out on
-   narrower ones. The last panel changes to the two of them together once the board is solved. */
-let storyShown = null;
+   Biscuit wakes up early, chases a ball of yarn into the woods and gets lost, while Marshmallow searches
+   for her. Six storybook panels tell it: three on each side of the game on wide screens, and all six in
+   the #storyBook fold-out on narrower ones. They don't change when the board is solved. */
+let storyShown = false;
 function renderStory() {
-  if (storyShown === S.done) return;
-  storyShown = S.done;
+  if (storyShown) return;
+  storyShown = true;
   // `where` keeps the two copies' gradient ids apart.
   const plate = ([draw, caption, alt], n, where) =>
     `<figure class="sb-plate"><svg viewBox="0 0 200 170" role="img" aria-label="${alt}">${draw(where + n)}</svg>` +
     `<figcaption><span class="n" aria-hidden="true">${n + 1}</span>${caption}</figcaption></figure>`;
-  const panels = ART.panels(S.done);
-  $("storyLeft").innerHTML = panels.slice(0, 2).map((p, n) => plate(p, n, "side")).join("");
-  $("storyRight").innerHTML = panels.slice(2).map((p, n) => plate(p, n + 2, "side")).join("");
+  const panels = ART.panels();
+  $("storyLeft").innerHTML = panels.slice(0, 3).map((p, n) => plate(p, n, "side")).join("");
+  $("storyRight").innerHTML = panels.slice(3).map((p, n) => plate(p, n + 3, "side")).join("");
   $("storyStrip").innerHTML = panels.map((p, n) => plate(p, n, "fold")).join("");
 }
 

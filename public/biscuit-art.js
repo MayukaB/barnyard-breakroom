@@ -3,11 +3,14 @@
    Each face is drawn around (0, 0) to fit a viewBox of "-24 -24 48 48". The watercolor
    filters (#wc2, #wc3) are defined once in biscuit.html.
    mood: "calm" (open eyes), "happy" (closed, smiling eyes, for the reunion), "sad" (worried brows,
-   a frown and, for Biscuit, a tear) or "worried" (brows and a frown, no tear). */
+   a frown and, for Biscuit, a tear), "worried" (brows and a frown, no tear), "sleep" (eyes gently
+   shut) or, for Biscuit, "yawn" (eyes squeezed shut, mouth open). */
 window.BISCUIT_ART = (() => {
   const eyes = (x, y, mood, r = 2.4) =>
     mood === "happy"
       ? `<path d="M${-x - 2.6} ${y + 0.8} q2.6 -3.2 5.2 0 M${x - 2.6} ${y + 0.8} q2.6 -3.2 5.2 0" fill="none" stroke="#2C2A28" stroke-width="1.5" stroke-linecap="round"/>`
+      : mood === "sleep" || mood === "yawn"
+      ? `<path d="M${-x - 2.6} ${y - 0.4} q2.6 2.8 5.2 0 M${x - 2.6} ${y - 0.4} q2.6 2.8 5.2 0" fill="none" stroke="#2C2A28" stroke-width="1.5" stroke-linecap="round"/>`
       : `<ellipse cx="${-x}" cy="${y}" rx="${r}" ry="${r * 1.08}" fill="#2C2A28"/><ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r * 1.08}" fill="#2C2A28"/>` +
         `<circle cx="${-x + 0.8}" cy="${y - 0.9}" r="${r * 0.34}" fill="#fff"/><circle cx="${x + 0.8}" cy="${y - 0.9}" r="${r * 0.34}" fill="#fff"/>`;
   const glum = (mood) => mood === "sad" || mood === "worried";
@@ -29,6 +32,8 @@ window.BISCUIT_ART = (() => {
       `<path d="M-2 5.4 h4 l-2 2.4Z" fill="#E27A8A" stroke="#C45F70" stroke-width=".6" stroke-linejoin="round"/>` +
       (glum(mood)
         ? `<path d="M-3 10.6 q3 -2.6 6 0" fill="none" stroke="#8A5230" stroke-width="1.1" stroke-linecap="round"/>` + brows(6.6, 1) + (mood === "sad" ? tear(-7.4, 4) : "")
+        : mood === "yawn"
+        ? `<ellipse cx="0" cy="10.6" rx="2.2" ry="2.8" fill="#B5566A"/>`
         : `<path d="M0 7.8 q-1.6 2.2 -3.4 1 M0 7.8 q1.6 2.2 3.4 1" fill="none" stroke="#8A5230" stroke-width="1" stroke-linecap="round"/>`) +
       `<path d="M-7.5 8 l-9 -1.4 M-7.5 10 l-8.6 1.8 M7.5 8 l9 -1.4 M7.5 10 l8.6 1.8" stroke="#8A5230" stroke-width=".8" stroke-linecap="round" opacity=".75"/></g>`
     );
@@ -75,15 +80,17 @@ window.BISCUIT_ART = (() => {
       (tailOnTop ? t : "")
     );
   }
-  // Marshmallow lying down: a cloud of wool with two hooves tucked under.
-  function woolBody(cx, cy, rx, ry) {
+  // Marshmallow's body: a cloud of wool, with two hooves tucked under when she's lying down.
+  function woolBody(cx, cy, rx, ry, hooves = true) {
     let wool = "";
     for (let k = 0; k < 16; k++) {
       const a = (k / 16) * Math.PI * 2;
       wool += `<circle cx="${(cx + Math.cos(a) * rx).toFixed(1)}" cy="${(cy + Math.sin(a) * ry).toFixed(1)}" r="9"/>`;
     }
     return (
-      `<ellipse cx="${cx - 14}" cy="${cy + ry + 2}" rx="4.5" ry="2.6" fill="#7A6656"/><ellipse cx="${cx + 20}" cy="${cy + ry + 2}" rx="4.5" ry="2.6" fill="#7A6656"/>` +
+      (hooves
+        ? `<ellipse cx="${cx - 14}" cy="${cy + ry + 2}" rx="4.5" ry="2.6" fill="#7A6656"/><ellipse cx="${cx + 20}" cy="${cy + ry + 2}" rx="4.5" ry="2.6" fill="#7A6656"/>`
+        : "") +
       `<g fill="#FFFDF7" stroke="#CFC3AE" stroke-width="1.3" filter="url(#wc2)">${wool}</g><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#FFFDF7"/>`
     );
   }
@@ -98,8 +105,8 @@ window.BISCUIT_ART = (() => {
   const yarnTile = () =>
     yarnBall(-2, 0, 15, 15) + `<path d="M11 8 q7 5 3 11 q-3 4 3 7" fill="none" stroke="#E27A8A" stroke-width="1.8" stroke-linecap="round"/>`;
 
-  // Biscuit curled up in front of Marshmallow, nestled into his wool with her tail wrapped around
-  // her paws and her ball of yarn beside them, while he leans in over her. For the result card and
+  // Biscuit curled up in front of Marshmallow, nestled into Marshmallow's wool with her tail wrapped
+  // around her paws and her ball of yarn beside them, while Marshmallow leans in over her. For the result card and
   // the link preview: viewBox "0 0 160 120".
   function snuggle() {
     return (
@@ -155,7 +162,48 @@ window.BISCUIT_ART = (() => {
     return `<g fill="#D9B98A" stroke="#9A7A4A" stroke-width="1.1" stroke-linejoin="round" filter="url(#wc3)">${posts}<path d="M-6 ${y - 17} h220 v3 h-220Z M-6 ${y - 9} h220 v3 h-220Z"/></g>`;
   };
 
-  // 1. A sunny morning: Biscuit bounds after a ball of yarn that unravels as it rolls away.
+  // Marshmallow's nightcap, in the same box as her face: floppy and striped, with a pom-pom.
+  const nightcap = () =>
+    `<g filter="url(#wc3)"><path d="M-12 -9 C-10 -24 6 -30 20 -24 C26 -21 27 -12 22 -8 C16 -16 8 -16 10 -9Z" fill="#8FB0E0" stroke="#5E7FB3" stroke-width="1.1" stroke-linejoin="round"/>` +
+    `<path d="M-4 -21 q4 -3 9 -3 M5 -25 q5 0 9 2" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" opacity=".85"/>` +
+    `<rect x="-13" y="-12" width="25" height="6" rx="3" fill="#FFFFFF" stroke="#C9CFD3" stroke-width="1"/><circle cx="22" cy="-6" r="4" fill="#FFFFFF" stroke="#C9CFD3" stroke-width="1"/></g>`;
+  const zzz = (x, y) =>
+    `<g font-family="Caveat, cursive" font-weight="700" fill="#7487B8"><text x="${x}" y="${y}" font-size="11">z</text><text x="${x + 7}" y="${y - 8}" font-size="14">z</text><text x="${x + 16}" y="${y - 19}" font-size="18">Z</text></g>`;
+  // Biscuit sitting up: body, cream chest, front paws and her tail curled round. Her head goes on top.
+  const sittingCat = (x, y) =>
+    limb(`M${x + 14} ${y + 5} C${x + 26} ${y + 7} ${x + 26} ${y + 17} ${x + 14} ${y + 17}`, 5.2) +
+    `<ellipse cx="${x}" cy="${y}" rx="17" ry="14" fill="${ORANGE}" stroke="${LINE}" stroke-width="1.4" filter="url(#wc3)"/>` +
+    `<path d="M${x + 11} ${y - 8} q-3 4 0 8 M${x + 14} ${y} q-3 4 0 7" fill="none" stroke="${STRIPE}" stroke-width="2" stroke-linecap="round"/>` +
+    `<ellipse cx="${x - 4}" cy="${y + 2}" rx="7" ry="8" fill="${CREAM}"/>` + pawTip(x - 8, y + 13) + pawTip(x + 3, y + 14);
+
+  // 1. Inside the barn at sunrise: round, fluffy Marshmallow asleep against a hay bale in her nightcap,
+  //    and Biscuit sitting up on the straw beside her, yawning.
+  function waking(key) {
+    let planks = "";
+    for (let x = 20; x < 200; x += 22) planks += `M${x} 14 V132 `;
+    let straw = "";
+    for (let k = 0; k < 26; k++) straw += `M${((k * 37) % 196) + 2} ${136 + ((k * 13) % 30)} l${(k % 3) * 3 - 3} -3 `;
+    return (
+      `<rect width="200" height="132" fill="#C99A6B"/><path d="${planks}" stroke="#B0835A" stroke-width="1.6" fill="none"/>` +
+      `<rect width="200" height="15" fill="#8E643F"/><path d="M0 15 H200" stroke="#6E4A30" stroke-width="2"/>` +
+      // the window, with the sunrise outside
+      `<defs><linearGradient id="sky-${key}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F3C3B3"/><stop offset="1" stop-color="#FBE6CC"/></linearGradient></defs>` +
+      `<rect x="128" y="30" width="52" height="46" fill="url(#sky-${key})"/>` +
+      `<circle cx="160" cy="63" r="8" fill="#F7C873"/><path d="M128 64 C140 60 168 62 180 58 V76 H128Z" fill="#CFE3B8"/>` +
+      `<path d="M128 30 h52 v46 h-52Z M154 30 v46 M128 53 h52" fill="none" stroke="#7A5236" stroke-width="3" stroke-linejoin="round"/>` +
+      `<path d="M130 76 L178 76 L150 150 L60 150Z" fill="#FFF3D6" opacity=".38"/>` +
+      // straw floor and a hay bale
+      `<rect y="130" width="200" height="40" fill="#E3C67E"/><path d="M0 131 H200" stroke="#C9A24F" stroke-width="1.6"/>` +
+      `<path d="${straw}" stroke="#C29A45" stroke-width="1.2" stroke-linecap="round" fill="none"/>` +
+      `<rect x="6" y="100" width="62" height="34" rx="6" fill="#E8CB7E" stroke="#C29A45" stroke-width="1.3" filter="url(#wc3)"/>` +
+      `<path d="M10 110 h54 M10 122 h54 M24 102 v30 M50 102 v30" stroke="#C9A24F" stroke-width="1.1" opacity=".8"/>` +
+      woolBody(58, 132, 26, 19) +
+      `<g transform="translate(40 112) scale(1.15) rotate(-8)">${sheep("sleep")}${nightcap()}</g>` + zzz(58, 80) +
+      sittingCat(142, 147) + `<g transform="translate(140 122) scale(1.05) rotate(6)">${kitten("yawn")}</g>`
+    );
+  }
+
+  // 2. A sunny morning: Biscuit bounds after a ball of yarn that unravels as it rolls away.
   function chasing(key) {
     return (
       sky(key, "#CFE4F0", "#F6EBD3") + sun(34, 30, 13) + cloud(150, 30, 1) + cloud(96, 52, 0.6) +
@@ -177,7 +225,7 @@ window.BISCUIT_ART = (() => {
     );
   }
 
-  // 2. Night in the woods: Biscuit crouched small and scared, tangled in yarn. A kindly owl watches.
+  // 3. Night in the woods: Biscuit crouched small and scared, tangled in yarn. A kindly owl watches.
   function scared(key) {
     const owl =
       `<g transform="translate(160 52)"><path d="M-22 12 h40" stroke="#6B4E3A" stroke-width="4" stroke-linecap="round"/>` +
@@ -207,7 +255,7 @@ window.BISCUIT_ART = (() => {
     );
   }
 
-  // 3. Back home in the sunny meadow: Marshmallow, worried, calling for Biscuit.
+  // 4. Back home in the sunny meadow: Marshmallow, worried, calling for Biscuit.
   function searching(key) {
     let wool = "";
     for (let k = 0; k < 16; k++) {
@@ -224,12 +272,40 @@ window.BISCUIT_ART = (() => {
       `<g fill="#FFFDF7" stroke="#CFC3AE" stroke-width="1.3" filter="url(#wc2)">${wool}</g><ellipse cx="112" cy="112" rx="30" ry="16" fill="#FFFDF7"/>` +
       `<g transform="translate(80 92) scale(1.2) rotate(-8)">${sheep("worried")}</g>` +
       sweat(96, 70, 1.2) + sweat(62, 84, 0.9) +
-      `<g transform="translate(40 40)"><path d="M-30 -16 h60 a8 8 0 0 1 8 8 v14 a8 8 0 0 1 -8 8 h-30 l-10 9 l2 -9 h-22 a8 8 0 0 1 -8 -8 v-14 a8 8 0 0 1 8 -8Z" fill="#FFFFFF" stroke="#C9CFD3" stroke-width="1.2" filter="url(#wc3)"/>` +
+      `<g transform="translate(40 40)"><path d="M-30 -16 h60 a8 8 0 0 1 8 8 v14 a8 8 0 0 1 -8 8 h-6 l10 12 l-20 -12 h-44 a8 8 0 0 1 -8 -8 v-14 a8 8 0 0 1 8 -8Z" fill="#FFFFFF" stroke="#C9CFD3" stroke-width="1.2" filter="url(#wc3)"/>` +
       `<text x="0" y="4" text-anchor="middle" font-family="Caveat, cursive" font-weight="700" font-size="16" fill="#5B4A3E">Biscuit?!</text></g>`
     );
   }
 
-  // 4, before the win: at the edge of the woods, Biscuit spots the yarn trail winding toward the barn far away.
+  // 5. Marshmallow, worried, walking to a post with a new MISSING poster hanging from her mouth. One is
+  //    already pinned to the post and another is up on the fence.
+  const poster = (x, y, rot, s) =>
+    `<g transform="translate(${x} ${y}) rotate(${rot}) scale(${s})">` +
+    `<rect x="-18" y="-22" width="36" height="44" rx="1.5" fill="#FFFDF4" stroke="#C9BFA8" stroke-width="1" filter="url(#wc3)"/>` +
+    `<circle cx="0" cy="-20" r="1.6" fill="#A8433A"/>` +
+    `<text x="0" y="-11" text-anchor="middle" font-family="Caveat, cursive" font-weight="700" font-size="10" fill="#B5473A">MISSING</text>` +
+    `<g transform="translate(0 2) scale(.42)">${kitten("calm")}</g>` +
+    `<text x="0" y="18" text-anchor="middle" font-family="Caveat, cursive" font-weight="700" font-size="8.5" fill="#5B4A3E">Biscuit</text></g>`;
+  function missing(key) {
+    const legs = `<path d="M54 124 l-4 20 M62 124 l3 20 M76 124 l-3 20 M84 124 l4 20" stroke="#6E5A4E" stroke-width="5.4" stroke-linecap="round"/>`;
+    return (
+      sky(key, "#CFE4F0", "#F6EBD3") + sun(34, 28, 11) +
+      `<path d="M0 108 C60 94 140 100 200 92 V140 H0Z" fill="#D3E6BE" filter="url(#wc)"/>` +
+      `<g fill="#D9B98A" stroke="#9A7A4A" stroke-width="1.1" stroke-linejoin="round" filter="url(#wc3)"><path d="M10 124 v-22 l3 -3 l3 3 v22Z M34 124 v-22 l3 -3 l3 3 v22Z M-6 107 h56 v3 h-56Z M-6 115 h56 v3 h-56Z"/></g>` +
+      poster(25, 104, -6, 0.48) +
+      ground("#BFD9A2") + grass(160, 164) + grass(20, 166) + flower(186, 158, "#F7D154") +
+      `<path d="M150 150 V40" stroke="#8A6A52" stroke-width="7" stroke-linecap="round"/><path d="M150 150 V40" stroke="#A9835F" stroke-width="4" stroke-linecap="round"/>` +
+      poster(150, 76, 3, 0.85) +
+      legs + woolBody(68, 118, 24, 17, false) +
+      `<g transform="translate(94 98) scale(1) rotate(4)">${sheep("worried")}</g>` +
+      // the new poster, hanging from her mouth by its top edge
+      poster(95, 124, 5, 0.58) +
+      `<ellipse cx="94.5" cy="110.4" rx="3.2" ry="1.6" fill="#F4E4D2"/>` +
+      sweat(82, 74, 1.1)
+    );
+  }
+
+  // 6. At the edge of the woods, Biscuit spots the yarn trail winding toward the barn far away.
   function wayHome(key) {
     return (
       sky(key, "#9FB0D6", "#F4D9B0") + sun(160, 64, 10) +
@@ -250,23 +326,16 @@ window.BISCUIT_ART = (() => {
     );
   }
 
-  // 4, after the win: home together.
-  function together(key) {
-    return (
-      sky(key, "#CFE4F0", "#F8E2BE") + sun(30, 26, 12) + cloud(160, 26, 0.8) + ground("#BFD9A2") +
-      `<g transform="translate(12 34) scale(1.1)">${snuggle()}</g>`
-    );
-  }
-
-  // The four panels in order: [draw, caption, description for screen readers].
-  function panels(won) {
+  // The six panels in order: [draw, caption, description for screen readers]. They're the same before
+  // and after the win; the reunion picture is in the win screen.
+  function panels() {
     return [
-      [chasing, "Biscuit spots a ball of yarn and gives chase…", "Biscuit the kitten happily leaps after a ball of yarn in a sunny meadow."],
+      [waking, "One sleepy morning, Biscuit wakes up before Marshmallow…", "Inside the barn at sunrise, Marshmallow sleeps in a nightcap while Biscuit sits up beside her, yawning."],
+      [chasing, "…then she spots a ball of yarn and gives chase…", "Biscuit the kitten happily leaps after a ball of yarn in a sunny meadow."],
       [scared, "…all the way into the woods. Now she’s lost!", "At night in the woods, Biscuit crouches, scared and teary, tangled in yarn."],
       [searching, "Back home, Marshmallow searches everywhere.", "In the meadow by the barn, Marshmallow the sheep looks worried and calls out “Biscuit?!”"],
-      won
-        ? [together, "Together again!", "Biscuit and Marshmallow snuggle together in the meadow, with hearts above them."]
-        : [wayHome, "Swap the letters to lead her home!", "At the edge of the woods, Biscuit spots a yarn trail leading to the barn far away."],
+      [missing, "She puts up MISSING posters all over the farm…", "Marshmallow, worried, walks to a post carrying a MISSING poster with Biscuit’s picture in her mouth."],
+      [wayHome, "Swap the letters to lead Biscuit home!", "At the edge of the woods, Biscuit spots a yarn trail leading to the barn far away."],
     ];
   }
 
