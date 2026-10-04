@@ -93,6 +93,15 @@ test("keeps going after a paused turn", () => {
   assert.equal(r.stories[0].id, "kiwi-return-to-wellington");
 });
 
+test("gives up when the turn is still paused after five rounds", () => {
+  const paused = { text: "", stop_reason: "pause_turn" };
+  const r = run({ replies: Array(5).fill(paused) });
+  assert.equal(r.code, 1, r.out);
+  assert.equal(r.requests.length, 5);
+  assert.match(r.out, /still working after 5 rounds/);
+  assert.ok(r.unchanged);
+});
+
 test("a quiet day changes nothing and still succeeds", () => {
   const r = run({ replies: [reply({ new: false, reason: "nothing new" })] });
   assert.equal(r.code, 0, r.out);
@@ -110,7 +119,11 @@ test("a story that's already on the site isn't added twice", () => {
 // Replies that must be refused. With one source, a refused reply means every source failed,
 // which exits with 1 so the alert issue opens.
 const refused = {
-  "a reply that isn't JSON": [{ text: "Sorry, the page returned 403." }, /wasn't valid JSON/],
+  "a reply that isn't JSON": [{ text: "Sorry, the page returned 403." }, /wasn't valid JSON \(stop_reason end_turn/],
+  "a reply cut off at the token limit": [
+    { text: JSON.stringify(story()).slice(0, 300), stop_reason: "max_tokens" },
+    /cut off at the 16000-token limit \(stop_reason max_tokens/,
+  ],
   "a link to another site": [reply(story({ url: "https://evil.example/kiwi" })), /Unexpected article URL/],
   "a missing summary": [reply(story({ summary: " " })), /Story is missing: summary/],
   "a painting with too few shapes": [reply(story({ scene: "<circle/>" })), /Painting rejected/],
