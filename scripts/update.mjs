@@ -81,6 +81,9 @@ Reply with only this JSON, nothing else:
 const CALL_TIMEOUT_MS = 5 * 60 * 1000;
 const RETRY_STATUSES = new Set([408, 429, 500, 502, 503, 504, 529]);
 const MAX_ATTEMPTS = 3;
+const MAX_TOKENS = 16000;
+// Server tools can pause a long turn; it's resent up to this many times.
+const MAX_ROUNDS = 5;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function callClaude(messages, src) {
@@ -119,7 +122,7 @@ function postMessages(messages, src) {
     },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 16000,
+      max_tokens: MAX_TOKENS,
       messages,
       tools: [
         {
@@ -136,10 +139,10 @@ function postMessages(messages, src) {
 // Asks Claude for the source's newest animal story. Returns the checked story,
 // or null when there's nothing new. Throws when the reply is unusable.
 async function fromSource(src) {
-  // Server tools can pause a long turn; resend until Claude finishes.
+  // Resend paused turns until Claude finishes.
   const messages = [{ role: "user", content: prompt(src) }];
   let reply;
-  for (let round = 0; round < 5; round++) {
+  for (let round = 0; round < MAX_ROUNDS; round++) {
     reply = await callClaude(messages, src);
     if (reply.stop_reason !== "pause_turn") break;
     messages.push({ role: "assistant", content: reply.content });
@@ -149,12 +152,20 @@ async function fromSource(src) {
     .filter((b) => b.type === "text")
     .map((b) => b.text)
     .join("");
+  // A reply that didn't finish is cut off mid-painting, so say why rather than "not JSON".
+  const why = `stop_reason ${reply.stop_reason}, ${reply.usage?.output_tokens ?? "?"} output tokens`;
+  if (reply.stop_reason === "max_tokens") {
+    throw new Error(`Claude's reply was cut off at the ${MAX_TOKENS}-token limit (${why}).`);
+  }
+  if (reply.stop_reason === "pause_turn") {
+    throw new Error(`Claude was still working after ${MAX_ROUNDS} rounds (${why}).`);
+  }
   const json = text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1);
   let story;
   try {
     story = JSON.parse(json);
   } catch {
-    throw new Error("Claude's reply wasn't valid JSON:\n" + text);
+    throw new Error(`Claude's reply wasn't valid JSON (${why}):\n` + text);
   }
 
   if (!story.new) {
