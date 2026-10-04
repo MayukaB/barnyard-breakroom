@@ -17,9 +17,10 @@ import { WORDS } from "./biscuit-words.mjs";
 
 const OUT = fileURLToPath(new URL("../public/biscuit-puzzles.js", import.meta.url));
 const START_DATE = "2026-09-30";
-// Par is the swaps this script needs to solve a board, plus this many to spare, so par is in reach
-// without a perfect run.
+// Par is the swaps this script needs to solve a board, plus about 30% more, plus this many to
+// spare, so par is in reach without a perfect run, and bigger boards get more room.
 const PAR_LEEWAY = 3;
+const parFor = (swaps) => swaps + Math.round(swaps * 0.3) + PAR_LEEWAY;
 
 /* ---------- The weekly shapes ---------- */
 // Indexed by day of the week, Sunday first (as Date.getUTCDay() counts).
@@ -279,7 +280,7 @@ function scramble(shape, sol, rand) {
     if (par < shape.par[0] || par > shape.par[1]) continue;
     const rows = [];
     for (let r = 0; r < shape.R; r++) rows.push(start.slice(r * shape.C, r * shape.C + shape.C).join(""));
-    return { rows, par: par + PAR_LEEWAY };
+    return { rows, par: parFor(par) };
   }
   return null;
 }
@@ -337,7 +338,7 @@ function check(p, n) {
   if (new Set(words).size !== words.length) say("a word appears twice");
   if ([...sol].filter(isTile).sort().join("") !== [...start].filter(isTile).sort().join(""))
     say("the start doesn't use the same tiles as the solution");
-  if (swapsNeeded(start, sol) + PAR_LEEWAY !== par) say(`par should be ${swapsNeeded(start, sol) + PAR_LEEWAY}`);
+  if (parFor(swapsNeeded(start, sol)) !== par) say(`par should be ${parFor(swapsNeeded(start, sol))}`);
   return errs;
 }
 
@@ -358,7 +359,7 @@ function write(data) {
    scripts/make-biscuit.mjs (run it to add more; boards already here never change) and checked by
    npm run check. Each weekday has its own shape (k). A board is a list of rows: "." is a hole,
    1 is the kitten, 2 is the sheep, 3 is the ball of yarn.
-   s: the solution. b: how the board starts. par: the swaps it takes to solve, plus 3 to spare. */
+   s: the solution. b: how the board starts. par: the swaps it takes to solve, plus about 30% more, plus 3 to spare. */
 window.BISCUIT_PUZZLES = {
   startDate: ${JSON.stringify(data.startDate)},
   list: [
