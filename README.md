@@ -26,7 +26,7 @@ Everything in `public/` goes live as it is, so a new page, script or image only 
 - `scripts/check-pecks.mjs` checks the phrase list: duplicates, stray characters, missing hints, meanings or origin notes, hints that give away a word of the answer, and phrases without a picture. `.github/workflows/checks.yml` runs it with the other checks (see **Tests**). Run it yourself with `node scripts/check-pecks.mjs` after adding phrases.
 - `og-story.png`, `og-pecks.png` and `og-biscuit.png` are the link preview images (what shows up when someone shares a link). Their source is `scripts/og-cards.html`. The preview tags point at barnyardbreakroom.com, so update them if the domain changes.
 - `pecks-art.js` draws the Hen Pecks pictures: a small kit of watercolor animals and props, one scene per phrase (shown on a win) and a sad hen (shown on a loss). A new phrase without a scene falls back to the happy hen.
-- `scripts/update.mjs` asks Claude (Anthropic API, with its web fetch tool) for the newest animal story from the sources below (currently just Mongabay), gets a painting, and adds it to `stories.json`. With more than one source, each day starts with a different one; if that one has nothing new or can't be read, the next one gets a turn. Only stories mainly about an animal count, and only from the last 14 days. Sad stories (deaths, disease, culls) are included and painted cute but gently sad, never graphic.
+- `scripts/update.mjs` reads the animals feed of each source below (currently just Mongabay), gives Claude (Anthropic API) the recent articles that aren't on the site yet, and asks it to pick the newest one about an animal and paint it. Claude opens the chosen article with its web fetch tool for the whole story, and works from the feed's opening paragraphs if the page is blocked. The script then and adds it to `stories.json`. With more than one source, each day starts with a different one; if that one has nothing new or can't be read, the next one gets a turn. Only stories mainly about an animal count, and only from the last 14 days. Sad stories (deaths, disease, culls) are included and painted cute but gently sad, never graphic.
 - `404.html` is the page GitHub Pages shows for any address that doesn't exist. Its links start with `/` so it works at any depth.
 - `.github/workflows/daily.yml` runs the update every morning, commits the new story, and deploys `public/` to GitHub Pages. It also redeploys on every push to `main`.
 - `scripts/alert.sh` runs at the end of each daily run. If the run fails, or no new story has arrived for 4 days, it opens a GitHub issue labelled `daily-story-alert` (GitHub emails you about it). The issue closes itself after the next run that works.
@@ -38,7 +38,7 @@ Everything in `public/` goes live as it is, so a new page, script or image only 
 3. Optional: add a repository **variable** `ANTHROPIC_MODEL` to change the model (default `claude-sonnet-5`).
 4. Actions → "Paint today's story" → **Run workflow** to test it once.
 
-Each run is one API call with a couple of page fetches. On days when the top story hasn't changed, nothing gets committed.
+Each run is one feed download and one API call with one page fetch. On days when the top story hasn't changed, nothing gets committed.
 
 ## Accounts (Supabase)
 
@@ -70,7 +70,7 @@ npm run format                    # Prettier: formats the scripts, tests and con
 
 `tests/pecks.spec.js` covers pecking, winning, losing, wrong tries, hard mode and peeking, reloading mid-game, the story page's Hen Pecks card and upgrading old saved data. `tests/biscuit.spec.js` plays Biscuit and Marshmallow: tapping, dragging and keyboard swaps, green tiles staying put, solving the board and reloading mid-game. `tests/site.spec.js` covers the top bar: the menu, the light/dark switch, opening sign-in from every page, and the 404 page. The tests pin the date, so they always play the same puzzle, and they block the sign-in services so they run offline. If port 4173 is busy, run them on another port: `PORT=4180 npm test` in Git Bash or macOS/Linux, or `$env:PORT=4180; npm test` in PowerShell.
 
-`tests/update.test.mjs` runs `scripts/update.mjs` on a copy of a small story list, with the Anthropic API replaced by `tests/fixtures/fake-anthropic.mjs`. It checks that a good story is added, that quiet days and repeats change nothing, and that bad replies (not JSON, links to other sites, missing fields, paintings too small or too big, API errors) are refused without touching the list.
+`tests/update.test.mjs` runs `scripts/update.mjs` on a copy of a small story list, with the Anthropic API and the feed replaced by `tests/fixtures/fake-anthropic.mjs`. It checks that a good story is added with its title, link and date from the feed, that old articles, repeats and links to other sites are left out, that quiet days change nothing, and that blocked feeds and bad replies (not JSON, cut off, an article not in the list, missing fields, paintings too small or too big, API errors) are refused without touching the list.
 
 `.github/workflows/checks.yml` runs the phrase check, the lint and formatting checks, the daily script's tests, a syntax check of the Node scripts, and the browser tests on every push and pull request that touches the site, its scripts or its workflows.
 
@@ -87,9 +87,9 @@ The scripts need Node 22 or newer.
 
 ## Story sources
 
-| Key        | Source   | News page                      | Why it's allowed                                                          |
-| ---------- | -------- | ------------------------------ | ------------------------------------------------------------------------- |
-| `mongabay` | Mongabay | news.mongabay.com/list/animals | CC BY-ND: summary in our own words plus a link, article text never copied |
+| Key        | Source   | Feed                                  | Why it's allowed                                                          |
+| ---------- | -------- | ------------------------------------- | ------------------------------------------------------------------------- |
+| `mongabay` | Mongabay | news.mongabay.com/topic/animals/feed/ | CC BY-ND: summary in our own words plus a link, article text never copied |
 
 Stories link back to the original articles. The summaries are written in Claude's own words.
 
@@ -97,4 +97,4 @@ Stories link back to the original articles. The summaries are written in Claude'
 
 To try one source on its own: Actions → "Paint today's story" → **Run workflow**, and type its key in the source box. Locally: `node scripts/update.mjs mongabay`.
 
-Before adding a source, check its terms and its robots.txt, not just robots.txt: National Geographic's robots.txt allowed Claude even though its terms don't. The Guardian's API terms forbid using its articles with AI, and The Conversation and the BBC block Claude in robots.txt. Mongabay sits behind bot protection that turns away plain requests; if Claude's fetch is turned away too, the run log says so and that source is skipped.
+Before adding a source, check its terms and its robots.txt, not just robots.txt: National Geographic's robots.txt allowed Claude even though its terms don't. The Guardian's API terms forbid using its articles with AI, and The Conversation and the BBC block Claude in robots.txt. Mongabay sits behind bot protection that often turns away scripted page loads, but not its feed. That's why the list of articles comes from the feed, and why Claude falls back to the feed's opening paragraphs when it can't open an article. If the feed itself is ever turned away, the run fails with `Feed 403` and the alert issue opens.

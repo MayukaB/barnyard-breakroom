@@ -1,6 +1,6 @@
 // Tests for scripts/update.mjs, the daily story pipeline. Run: npm run test:scripts
-// Each test runs the real script on a copy of a small story list, with the Anthropic API
-// replaced by tests/fixtures/fake-anthropic.mjs, so nothing is sent anywhere and no key is needed.
+// Each test runs the real script on a copy of a small story list, with the Anthropic API and the
+// source's feed replaced by tests/fixtures/fake-anthropic.mjs, so nothing is sent anywhere and no key is needed.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -14,12 +14,31 @@ const FAKE = new URL("fixtures/fake-anthropic.mjs", import.meta.url).href;
 
 const OLD_STORY = { id: "old-story", title: "An old story", addedAt: "2026-09-01", scene: "<rect/>" };
 const SCENE = '<circle cx="200" cy="150" r="20" fill="#E3B98A"/>'.repeat(20);
+const daysAgo = (n) => new Date(Date.now() - n * 864e5);
+
+// One feed entry, written the way Mongabay's feed writes them.
+const item = ({
+  slug = "kiwi-return-to-wellington",
+  title = "Kiwi&#8217;s return to Wellington",
+  url = `https://news.mongabay.com/2026/09/${slug}/`,
+  date = daysAgo(1),
+  tags = "Animals, Birds",
+  text = "<p>Kiwi are back in the hills &amp; valleys.</p>",
+} = {}) => `<item>
+  <title>${title}</title>
+  <link>${url}</link>
+  <pubDate>${date.toUTCString()}</pubDate>
+  <topic-tags><![CDATA[${tags}]]></topic-tags>
+  <description><![CDATA[Kiwi are back [&#8230;]]]></description>
+  <content:encoded><![CDATA[${text}]]></content:encoded>
+</item>`;
+const feed = (...items) =>
+  `<?xml version="1.0"?><rss><channel><title>News on Animals</title>${items.join("")}</channel></rss>`;
+
+// Claude's side: which article it picked, and the painting.
 const story = (overrides = {}) => ({
   new: true,
   id: "kiwi-return-to-wellington",
-  title: "  Kiwi return to Wellington  ",
-  url: "https://news.mongabay.com/2026/09/kiwi-return-to-wellington/",
-  published: "2026-09-29",
   animal: "Kiwi",
   summary: "Kiwi are back.",
   caption: "Home at last",
@@ -29,8 +48,8 @@ const story = (overrides = {}) => ({
 });
 const reply = (obj) => ({ text: JSON.stringify(obj) });
 
-// Runs the script and returns its exit code, output, the story list afterwards and the requests it sent.
-function run({ replies = [], args = [], env = {} } = {}) {
+// Runs the script and returns its exit code, output, the story list afterwards and the API requests it sent.
+function run({ replies = [], items = [item()], feedStatus = 200, args = [], env = {} } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "update-test-"));
   const file = join(dir, "stories.json");
   const log = join(dir, "requests.jsonl");
@@ -44,6 +63,8 @@ function run({ replies = [], args = [], env = {} } = {}) {
       ONLY_SOURCE: "",
       STORIES_FILE: file,
       FAKE_REPLIES: JSON.stringify(replies),
+      FAKE_FEED: feed(...items),
+      FAKE_FEED_STATUS: String(feedStatus),
       FAKE_LOG: log,
       ...env,
     },
@@ -59,31 +80,56 @@ function run({ replies = [], args = [], env = {} } = {}) {
   };
 }
 
-test("adds a new story to the top of the list, tidied and credited", () => {
+test("adds a new story to the top of the list, with its title, link and date from the feed", () => {
   const r = run({ replies: [reply(story())] });
   assert.equal(r.code, 0, r.out);
-  assert.match(r.out, /Added from Mongabay: Kiwi return to Wellington \(Kiwi\)/);
+  assert.match(r.out, /Added from Mongabay: Kiwi’s return to Wellington \(Kiwi\)/);
   assert.equal(r.stories.length, 2);
   const [added, old] = r.stories;
   assert.equal(old.id, "old-story");
   assert.equal(added.id, "kiwi-return-to-wellington");
-  assert.equal(added.title, "Kiwi return to Wellington");
+  assert.equal(added.title, "Kiwi’s return to Wellington");
+  assert.equal(added.url, "https://news.mongabay.com/2026/09/kiwi-return-to-wellington/");
+  assert.equal(added.published, daysAgo(1).toISOString().slice(0, 10));
   assert.equal(added.source, "Mongabay");
-  assert.equal(added.published, "2026-09-29");
   assert.equal(added.addedAt, new Date().toISOString().slice(0, 10));
   assert.equal("new" in added, false);
 });
 
-test("asks for an animal story from Mongabay only, with the sad-story rules", () => {
+test("gives Claude the feed's articles as plain text, with the sad-story rules", () => {
   const r = run({ replies: [reply(story())] });
   assert.equal(r.requests.length, 1);
   const [req] = r.requests;
   assert.deepEqual(req.tools[0].allowed_domains, ["news.mongabay.com"]);
   const prompt = req.messages[0].content;
-  assert.match(prompt, /news\.mongabay\.com\/list\/animals/);
+  assert.match(prompt, /id="kiwi-return-to-wellington"/);
+  assert.match(prompt, /tags="Animals, Birds"/);
+  assert.match(prompt, /Kiwi are back in the hills & valleys\./, "HTML tags and entities are removed");
   assert.match(prompt, /main subject is an animal/);
   assert.match(prompt, /Sad stories: the animal stays cute/);
-  assert.match(prompt, /"old-story"/, "the prompt lists the stories already on the site");
+  assert.match(prompt, /If it can't be fetched, work from its opening paragraphs/);
+});
+
+test("leaves out old articles, ones already on the site and links to other sites", () => {
+  const items = [
+    item({ slug: "old-story" }),
+    item({ slug: "two-weeks-ago", date: daysAgo(20) }),
+    item({ slug: "elsewhere", url: "https://evil.example/elsewhere/" }),
+    item(),
+  ];
+  const r = run({ items, replies: [reply(story())] });
+  assert.equal(r.code, 0, r.out);
+  const prompt = r.requests[0].messages[0].content;
+  assert.doesNotMatch(prompt, /old-story|two-weeks-ago|elsewhere/);
+  assert.match(prompt, /kiwi-return-to-wellington/);
+});
+
+test("doesn't call Claude when the feed has nothing new", () => {
+  const r = run({ items: [item({ slug: "old-story" })] });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /Mongabay: nothing new/);
+  assert.equal(r.requests.length, 0);
+  assert.ok(r.unchanged);
 });
 
 test("keeps going after a paused turn", () => {
@@ -103,36 +149,31 @@ test("gives up when the turn is still paused after five rounds", () => {
 });
 
 test("a quiet day changes nothing and still succeeds", () => {
-  const r = run({ replies: [reply({ new: false, reason: "nothing new" })] });
+  const r = run({ replies: [reply({ new: false, reason: "no animal stories" })] });
   assert.equal(r.code, 0, r.out);
-  assert.match(r.out, /Mongabay: nothing new \(nothing new\)/);
+  assert.match(r.out, /Mongabay: nothing new \(no animal stories\)/);
   assert.ok(r.unchanged);
 });
 
-test("a story that's already on the site isn't added twice", () => {
-  const r = run({ replies: [reply(story({ id: "old-story" }))] });
-  assert.equal(r.code, 0, r.out);
-  assert.match(r.out, /old-story is already on the site/);
-  assert.ok(r.unchanged);
-});
-
-// Replies that must be refused. With one source, a refused reply means every source failed,
+// Feeds and replies that must be refused. With one source, a refusal means every source failed,
 // which exits with 1 so the alert issue opens.
 const refused = {
-  "a reply that isn't JSON": [{ text: "Sorry, the page returned 403." }, /wasn't valid JSON \(stop_reason end_turn/],
+  "a feed that's blocked": [{ feedStatus: 403 }, /Feed 403/],
+  "a feed with no articles": [{ items: [] }, /Feed had no articles/],
+  "a reply that isn't JSON": [{ replies: [{ text: "Sorry." }] }, /wasn't valid JSON \(stop_reason end_turn/],
   "a reply cut off at the token limit": [
-    { text: JSON.stringify(story()).slice(0, 300), stop_reason: "max_tokens" },
+    { replies: [{ text: JSON.stringify(story()).slice(0, 300), stop_reason: "max_tokens" }] },
     /cut off at the 16000-token limit \(stop_reason max_tokens/,
   ],
-  "a link to another site": [reply(story({ url: "https://evil.example/kiwi" })), /Unexpected article URL/],
-  "a missing summary": [reply(story({ summary: " " })), /Story is missing: summary/],
-  "a painting with too few shapes": [reply(story({ scene: "<circle/>" })), /Painting rejected/],
-  "a painting that's too big": [reply(story({ scene: "<circle/>".repeat(201) })), /Painting rejected/],
-  "an API error": [{ status: 401, body: "invalid x-api-key" }, /Anthropic API 401/],
+  "an article that isn't in the list": [{ replies: [reply(story({ id: "made-up" }))] }, /isn't in the list: made-up/],
+  "a missing summary": [{ replies: [reply(story({ summary: " " }))] }, /Story is missing: summary/],
+  "a painting with too few shapes": [{ replies: [reply(story({ scene: "<circle/>" }))] }, /Painting rejected/],
+  "a painting that's too big": [{ replies: [reply(story({ scene: "<circle/>".repeat(201) }))] }, /Painting rejected/],
+  "an API error": [{ replies: [{ status: 401, body: "invalid x-api-key" }] }, /Anthropic API 401/],
 };
-for (const [name, [answer, message]] of Object.entries(refused)) {
+for (const [name, [options, message]] of Object.entries(refused)) {
   test(`refuses ${name} and leaves the list alone`, () => {
-    const r = run({ replies: [answer] });
+    const r = run(options);
     assert.equal(r.code, 1, r.out);
     assert.match(r.out, message);
     assert.match(r.out, /Every source failed/);
