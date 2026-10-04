@@ -67,8 +67,8 @@ const touching = (i, j) => { const [a, b] = [rc(i), rc(j)]; return Math.max(Math
 const biscuitHome = (b) => touching(b.indexOf("1"), b.indexOf("2")) && touching(b.indexOf("1"), b.indexOf("3"));
 // Solved: every letter green, and Biscuit touching both Marshmallow and her yarn.
 const solved = (b) => lettersDone(b) && biscuitHome(b);
-// Green: right place. Yellow: the letter is still needed somewhere else in one of this tile's full
-// rows or columns (each missing letter can make only one tile yellow, left to right, top to bottom).
+// Green: right place. Yellow: the letter is still needed somewhere else along one of this tile's
+// lines (see LINES) (each missing letter can make only one tile yellow, left to right, top to bottom).
 function colors(b) {
   const out = {};
   for (const i of CELLS) if (isLetter(b[i])) out[i] = isGreen(b, i) ? "g" : "w";
