@@ -109,6 +109,25 @@ test("three wrong tries loses and shows the sad hen", async ({ page }) => {
   expect(await bg(".tile.answer")).not.toBe(await bg(".tile.shown"));
 });
 
+test("Enter checks the answer after clicking the on-screen keys", async ({ page }) => {
+  await open(page);
+  await peckAll(page);
+  const slots = await page.locator(".tile.slot").evaluateAll((els) => els.map((e) => Number(e.dataset.i)));
+  for (const i of slots) await page.locator(`#kb .key[data-letter="${ANSWER[i]}"]`).click();
+  await submit(page);
+  await expect(page.locator("#verdict")).toHaveText("Egg-cellent!");
+});
+
+test("Enter checks the answer after ticking hard mode and pecking with the keyboard", async ({ page }) => {
+  await open(page);
+  await page.locator("#hard").check();
+  for (const k of ["A", "O", "I", "U", "Y", "D", "G"]) await page.keyboard.press(k);
+  await expect(page.locator("#solvePad")).toBeVisible();
+  await fill(page);
+  await submit(page);
+  await expect(page.locator("#verdict")).toBeVisible();
+});
+
 test("hard mode hides the hint; winning without peeking earns the badge", async ({ page }) => {
   await open(page);
   await page.locator("#hard").check();

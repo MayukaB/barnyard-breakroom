@@ -231,6 +231,9 @@ function buildPad(){
     }
     $("kb").appendChild(row);
   }
+  // Clicking an on-screen key shouldn't focus it, or the next Enter would press that key again
+  // instead of checking the answer. Tabbing to a key still focuses it as usual.
+  $("kb").addEventListener("mousedown", e => { if (e.target.closest("button")) e.preventDefault(); });
 }
 
 // Cross out keyboard letters that were pecked: every one of them is already showing on the board.
