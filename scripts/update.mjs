@@ -234,6 +234,19 @@ async function fromSource(src) {
   // The title, link and date come from the feed, so Claude can't misquote them.
   const article = articles.find((a) => a.id === story.id.trim());
   if (!article) throw new Error(`Claude picked an article that isn't in the list: ${story.id}`);
+  // A shape whose position or size isn't a single number (say cx="280,268", an x,y pair from path
+  // data) can't be drawn, and the browser logs an error for it. Leave it out rather than lose the story.
+  const badShape = (tag) =>
+    [...tag.matchAll(/\s(?:cx|cy|r|rx|ry|x|y|x1|y1|x2|y2|width|height)="([^"]*)"/g)].some(
+      ([, v]) => !/^\s*[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?\s*$/i.test(v),
+    );
+  let dropped = 0;
+  story.scene = story.scene.replace(
+    /<(path|circle|ellipse|rect|line|polyline|polygon)\b[^>]*?(?:\/>|>\s*<\/\1>)/g,
+    (tag) => (badShape(tag) ? (dropped++, "") : tag),
+  );
+  if (dropped)
+    console.log(`${src.name}: left out ${dropped} shape${dropped === 1 ? "" : "s"} with a bad position or size.`);
   // The prompt asks for 70-130 shapes (older paintings are ~4 KB with ~40 shapes).
   // Refuse anything far outside that so one bad reply can't bloat stories.json.
   const MAX_SCENE_CHARS = 30000;
