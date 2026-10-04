@@ -181,6 +181,15 @@ for (const [name, [options, message]] of Object.entries(refused)) {
   });
 }
 
+test("leaves out shapes whose position or size isn't a single number, and keeps the rest", () => {
+  const bad = '<ellipse cx="280,268" rx="7" ry="4" fill="#b3a483"/>';
+  const alsoBad = '<rect x="10" y="" width="5" height="5"></rect>';
+  const r = run({ replies: [reply(story({ scene: SCENE + bad + alsoBad }))] });
+  assert.equal(r.code, 0, r.out);
+  assert.equal(r.stories[0].scene, SCENE);
+  assert.match(r.out, /left out 2 shapes/);
+});
+
 test("the source can be chosen, and unknown ones are refused", () => {
   assert.equal(run({ replies: [reply(story())], args: ["mongabay"] }).code, 0);
   const r = run({ args: ["natgeo"] });
