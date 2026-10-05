@@ -259,7 +259,9 @@ test("green letters aren't enough: Biscuit has to touch both Marshmallow and her
   await page.reload();
   await expect(page.locator("#board .tile.g")).toHaveCount(26);
   await expect(page.locator("#result")).toBeHidden();
-  await expect(page.locator("#msg")).toContainText("Now move Biscuit next to both");
+  await expect(page.locator("#msg")).toContainText("One more swap");
+  await expect(page.locator("#msg")).toHaveClass(/nudge/);
+  await expect(page.locator("#board")).toHaveClass(/last-swap/);
   // One swap of the special tiles puts her home.
   const kitten = await page.locator('#board .tile[data-ch="1"]').getAttribute("data-i");
   const target = sol.indexOf("1");
@@ -267,6 +269,8 @@ test("green letters aren't enough: Biscuit has to touch both Marshmallow and her
   await tile(page, target).click();
   await expect(page.locator("#result")).toBeVisible();
   await expect(swaps(page)).toHaveText("6");
+  await expect(page.locator("#msg")).not.toHaveClass(/nudge/);
+  await expect(page.locator("#board")).not.toHaveClass(/last-swap/);
 });
 
 test("each day of the week has its own board shape, and it fits the screen", async ({ page }) => {

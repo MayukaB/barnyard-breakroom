@@ -111,6 +111,9 @@ details.how .stuck li{margin:3px 0}
 .heart{position:absolute;z-index:3;width:30px;height:30px;pointer-events:none;animation:floatUp 1.8s ease-out forwards}
 @keyframes floatUp{0%{opacity:0;transform:translateY(0) scale(.4)}20%{opacity:1}100%{opacity:0;transform:translateY(-70px) scale(1.2)}}
 .msg{margin:-6px 0 0;min-height:24px;text-align:center;font-size:15px;color:var(--ink-soft)}
+.msg.nudge{justify-self:center;max-width:46ch;padding:10px 14px;border-radius:10px;background:var(--lilac);border:1.5px solid var(--lilac-line);color:var(--ink);font-weight:700}
+.board.last-swap .tile.animal{box-shadow:0 0 0 3px var(--lilac-line);animation:bob 1.2s ease-in-out 3}
+.board.last-swap .tile.animal.picked{box-shadow:0 0 0 3px var(--cobalt);animation:none}
 
 /* Result */
 .result{display:grid;grid-template-columns:190px 1fr;gap:22px;align-items:start;border-top:1px solid var(--rule);padding-top:22px}
@@ -190,4 +193,4 @@ details.how .stuck li{margin:3px 0}
 @media (prefers-reduced-motion:reduce){.sb-col .sb-plate{transform:none!important}}
 
 canvas#confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:10}
-@media (prefers-reduced-motion:reduce){.tile.dance,.tile.hug,.tile.nope,.stars .lost,.heart,.result.won .pic svg,.result .hearts{animation:none}.heart{display:none}.result .pic,.ghost{transform:none}}
+@media (prefers-reduced-motion:reduce){.tile.dance,.tile.hug,.tile.nope,.board.last-swap .tile.animal,.stars .lost,.heart,.result.won .pic svg,.result .hearts{animation:none}.heart{display:none}.result .pic,.ghost{transform:none}}
