@@ -162,6 +162,8 @@ function render() {
     t.setAttribute("aria-label", `Row ${r + 1}, column ${c + 1}: ${what}${picked === i ? ", picked up" : ""}`);
     t.setAttribute("aria-disabled", String(!canMove(i)));
   }
+  // The same moment: the three of them bob so it's clear they're the only tiles left to swap.
+  $("board").classList.toggle("last-swap", !S.done && lettersDone(b));
   $("moves").textContent = S.moves;
   $("par").textContent = `· par ${PAR}`;
   const n = starsFor(S.moves);
@@ -188,13 +190,17 @@ function renderStory() {
   $("storyStrip").innerHTML = panels.map((p, n) => plate(p, n, "fold")).join("");
 }
 
-function say(text) { $("msg").textContent = text; }
+function say(text) {
+  $("msg").textContent = text;
+  // All the letters are green but the game isn't over: make the last step hard to miss.
+  $("msg").classList.toggle("nudge", !S.done && lettersDone(board()));
+}
 function statusLine() {
   if (S.done) return "";
   const greens = CELLS.filter((i) => isGreen(board(), i)).length, letters = CELLS.filter((i) => isLetter(SOL[i])).length;
   if (picked != null) return "Now pick a tile to swap it with.";
   // Every letter can be green with the three of them in the right squares but Biscuit in the wrong one.
-  if (lettersDone(board())) return "Every letter is green! Now move Biscuit next to both Marshmallow and her yarn.";
+  if (lettersDone(board())) return "Every letter is green! One more swap: move Biscuit so she touches both Marshmallow and her yarn.";
   return `${greens} of ${letters} letters in place`;
 }
 
@@ -231,7 +237,7 @@ function tap(i) {
   if (S.done) return;
   if (!canMove(i)) {
     if (!reduced && CELLS.includes(i)) { tiles[i].classList.remove("nope"); void tiles[i].offsetWidth; tiles[i].classList.add("nope"); }
-    say(isGreen(board(), i) ? "Green letters are already in the right place." : statusLine());
+    say(isGreen(board(), i) && !lettersDone(board()) ? "Green letters are already in the right place." : statusLine());
     return;
   }
   focusAt = i;
