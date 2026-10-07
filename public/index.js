@@ -55,8 +55,14 @@ function show(id){
   $("summary").classList.remove("empty");
   const meta = $("meta"); meta.textContent = "";
   const b = document.createElement("b"); b.textContent = s.animal || "Animals"; meta.appendChild(b);
-  const d = document.createElement("span"); d.textContent = fmtDate(s.published); meta.appendChild(d);
-  const src = document.createElement("span"); src.textContent = s.source || "National Geographic"; meta.appendChild(src);
+  // The same painted date as the archive cards; the article's own date goes with its source when they differ.
+  const d = document.createElement("span"); d.textContent = "Painted " + fmtDate(painted(s)); meta.appendChild(d);
+  // A story without a source name is credited to the site its link goes to.
+  let from = s.source;
+  if (!from) try { from = new URL(s.url).hostname.replace(/^www\./, ""); } catch {}
+  const src = document.createElement("span"); src.textContent = from || "";
+  if (s.published && s.published !== painted(s)) src.textContent += `${from ? " story" : "Story"} from ${fmtDate(s.published)}`;
+  if (src.textContent) meta.appendChild(src);
   if (/^https:\/\//.test(s.url||"")) $("read").href = s.url;
   $("note").textContent = "";
   // An earlier story says so, with a way back to today's.

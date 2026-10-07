@@ -295,6 +295,9 @@ test("an earlier story says when it was painted and links back to today's", asyn
   await page.goto("/");
   await expect(page.locator("#headline")).toHaveText("Today's story");
   await expect(page.locator("#earlier")).toBeHidden();
+  // The story shows the day it was painted, the same as its card, and the article's own date by its source.
+  await expect(page.locator("#meta")).toContainText("Painted September 29, 2026");
+  await expect(page.locator("#meta")).toContainText("story from September 28, 2026");
   // Cards show the day each story was painted.
   const card = page.locator("#grid .card");
   await expect(card).toContainText("September 20, 2026");
@@ -303,10 +306,21 @@ test("an earlier story says when it was painted and links back to today's", asyn
   await expect(page.locator("#headline")).toHaveText("An older story");
   await expect(page.locator("#headline")).toBeFocused();
   await expect(page.locator("#earlier")).toContainText("An earlier page, painted September 20, 2026.");
+  await expect(page.locator("#meta")).toContainText("Painted September 20, 2026");
   await page.getByRole("button", { name: "Back to today’s story" }).click();
   await expect(page.locator("#headline")).toHaveText("Today's story");
   await expect(page.locator("#headline")).toBeFocused();
   await expect(page.locator("#earlier")).toBeHidden();
+});
+
+test("a story without a source name is credited to the site it links to", async ({ page }) => {
+  const real = await (await page.request.get("/stories.json")).json();
+  const { source, ...story } = real[0]; // eslint-disable-line no-unused-vars
+  const stories = [{ ...story, url: "https://www.example.org/news/1", addedAt: "2026-09-29", published: "2026-09-29" }];
+  await page.route("**/stories.json", (r) => r.fulfill({ json: stories }));
+  await page.goto("/");
+  await expect(page.locator("#meta")).toContainText("example.org");
+  await expect(page.locator("#meta")).not.toContainText("National Geographic");
 });
 
 test("with only a few stories there's no Show more button", async ({ page }) => {
