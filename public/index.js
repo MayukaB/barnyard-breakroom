@@ -68,7 +68,7 @@ function show(id){
   // An earlier story says so, with a way back to today's.
   const earlier = s.id !== stories[0].id;
   $("earlier").hidden = !earlier;
-  if (earlier) $("earlierText").textContent = `An earlier page, painted ${fmtDate(painted(s))}.`;
+  if (earlier) $("earlierText").textContent = "This is an earlier page.";
   renderGrid();
 }
 // Paintings are dated by the day they were painted: a source's top story can be days old by then.
@@ -183,4 +183,12 @@ function markUnfinished(name, href){
   if (!stories.length) { $("headline").textContent = "No stories yet"; $("summary").textContent = "The first painting arrives with the next morning's story."; $("caption").textContent = ""; return; }
   const want = location.hash.slice(1);
   show(stories.some(s => s.id === want) ? want : stories[0].id);
+  // A story link opened while the page is already up (show() itself uses replaceState, which doesn't fire this).
+  addEventListener("hashchange", () => {
+    const id = location.hash.slice(1);
+    if (id === currentId) return;
+    show(stories.some(s => s.id === id) ? id : stories[0].id);
+    focusHeadline();
+    window.scrollTo({ top: 0 });
+  });
 })();

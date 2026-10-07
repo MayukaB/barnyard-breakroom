@@ -305,12 +305,24 @@ test("an earlier story says when it was painted and links back to today's", asyn
   await card.click();
   await expect(page.locator("#headline")).toHaveText("An older story");
   await expect(page.locator("#headline")).toBeFocused();
-  await expect(page.locator("#earlier")).toContainText("An earlier page, painted September 20, 2026.");
+  await expect(page.locator("#earlier")).toContainText("This is an earlier page.");
   await expect(page.locator("#meta")).toContainText("Painted September 20, 2026");
   await page.getByRole("button", { name: "Back to today’s story" }).click();
   await expect(page.locator("#headline")).toHaveText("Today's story");
   await expect(page.locator("#headline")).toBeFocused();
   await expect(page.locator("#earlier")).toBeHidden();
+  // A story link opened while the page is already up switches to that story.
+  await page.evaluate(() => (location.hash = "older"));
+  await expect(page.locator("#headline")).toHaveText("An older story");
+});
+
+test("archive pictures are all the same size, however long the titles", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("#grid .card").nth(3)).toBeVisible();
+  const heights = await page
+    .locator("#grid .card .mini")
+    .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
+  expect(new Set(heights).size).toBe(1);
 });
 
 test("a story without a source name is credited to the site it links to", async ({ page }) => {
