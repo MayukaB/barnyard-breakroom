@@ -76,6 +76,10 @@
 .btn{font:700 15px/1 Karla,sans-serif;padding:11px 16px;border-radius:999px;border:1.5px solid var(--cobalt);color:var(--cobalt);background:transparent;text-decoration:none;cursor:pointer;display:inline-flex;gap:8px;align-items:center}
 .btn[disabled]{opacity:.55;cursor:progress}
 .note{font-size:14px;color:var(--ink-soft);min-height:1.4em}
+/* Shown above an earlier story, with the way back to today's */
+.earlier{margin:0;padding:8px 12px;border-radius:10px;background:var(--wash);font-size:14px;color:var(--ink-soft)}
+.earlier button{padding:0;border:0;background:none;color:var(--cobalt);font:inherit;font-weight:700;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.earlier button:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
 
 .shelf h3{font:400 22px/1.2 "Young Serif",Georgia,serif;margin:0 0 16px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:22px}
@@ -271,6 +275,7 @@
       <figcaption id="caption">Warming up the brushes…</figcaption>
     </figure>
     <div class="story">
+      <p class="earlier" id="earlier" hidden><span id="earlierText"></span> <button type="button" id="backToday">Back to today’s story</button></p>
       <div class="meta" id="meta"></div>
       <h2 id="headline">Opening today's page</h2>
       <p id="summary" class="empty">The latest story will appear here in a moment.</p>

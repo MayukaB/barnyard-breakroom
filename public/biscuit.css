@@ -169,6 +169,7 @@ details.how .stuck li{margin:3px 0}
 @media (max-width:560px){.actions{justify-content:center}}
 .btn{font:700 15px/1 Karla,sans-serif;padding:11px 18px;border-radius:999px;border:1.5px solid var(--cobalt);color:var(--cobalt);background:transparent;text-decoration:none;cursor:pointer;display:inline-flex;gap:8px;align-items:center}
 .next{font-size:14px;color:var(--ink-soft);margin-top:12px}
+.both-done{margin:12px 0 0;font-weight:700;color:var(--ok)}
 
 /* Ground strip along the bottom of the card */
 .ground{margin:0 -28px -28px;border-radius:0 0 6px 6px;overflow:hidden;line-height:0}

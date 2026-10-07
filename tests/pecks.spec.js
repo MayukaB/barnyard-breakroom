@@ -285,10 +285,51 @@ test("the story archive shows 12 paintings at a time", async ({ page }) => {
   await expect(cards).toHaveCount(29);
 });
 
+test("an earlier story says when it was painted and links back to today's", async ({ page }) => {
+  const real = await (await page.request.get("/stories.json")).json();
+  const stories = [
+    { ...real[0], id: "today", title: "Today's story", addedAt: "2026-09-29", published: "2026-09-28" },
+    { ...real[0], id: "older", title: "An older story", addedAt: "2026-09-20", published: "2026-09-12" },
+  ];
+  await page.route("**/stories.json", (r) => r.fulfill({ json: stories }));
+  await page.goto("/");
+  await expect(page.locator("#headline")).toHaveText("Today's story");
+  await expect(page.locator("#earlier")).toBeHidden();
+  // Cards show the day each story was painted.
+  const card = page.locator("#grid .card");
+  await expect(card).toContainText("September 20, 2026");
+
+  await card.click();
+  await expect(page.locator("#headline")).toHaveText("An older story");
+  await expect(page.locator("#headline")).toBeFocused();
+  await expect(page.locator("#earlier")).toContainText("An earlier page, painted September 20, 2026.");
+  await page.getByRole("button", { name: "Back to today’s story" }).click();
+  await expect(page.locator("#headline")).toHaveText("Today's story");
+  await expect(page.locator("#headline")).toBeFocused();
+  await expect(page.locator("#earlier")).toBeHidden();
+});
+
 test("with only a few stories there's no Show more button", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#grid .card").first()).toBeVisible();
   await expect(page.locator("#more")).toBeHidden();
+});
+
+test("the end screen points to Biscuit and Marshmallow, or says both games are done", async ({ page }) => {
+  await open(page);
+  await peckAll(page);
+  await fill(page);
+  await submit(page);
+  await expect(page.getByRole("link", { name: "Play Biscuit and Marshmallow →" })).toBeVisible();
+  await expect(page.locator("#bothDone")).toBeHidden();
+
+  await page.evaluate(() => {
+    const db = { version: 1, days: { "2026-09-29": { p: 0, b: "", moves: 20, done: true } }, log: {} };
+    localStorage.setItem("biscuit:v1", JSON.stringify(db));
+  });
+  await page.reload();
+  await expect(page.locator("#bothDone")).toHaveText("That’s both of today’s games done. See you tomorrow!");
+  await expect(page.locator("#otherGame")).toBeHidden();
 });
 
 test.describe("security policy", () => {

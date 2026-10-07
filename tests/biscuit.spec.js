@@ -337,3 +337,24 @@ test("How to play has pictures for splitting words, the last swap and stars, wit
   // Tips for when a player is stuck, at the end
   await expect(how.locator(".stuck")).toContainText("Stuck?");
 });
+
+test("the end screen points to Hen Pecks, or says both games are done", async ({ page }) => {
+  // Today's board already solved, so the end screen shows on load.
+  await open(page);
+  const sol = await solution(page);
+  await page.evaluate((b) => {
+    const db = { version: 1, days: { "2026-09-30": { p: 0, b, moves: 20, done: true } }, log: {} };
+    localStorage.setItem("biscuit:v1", JSON.stringify(db));
+  }, sol);
+  await page.reload();
+  await expect(page.locator("#result")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Play Hen Pecks →" })).toBeVisible();
+  await expect(page.locator("#bothDone")).toBeHidden();
+
+  await page.evaluate(() =>
+    localStorage.setItem("henpecks:v1", JSON.stringify({ days: { "2026-09-30": { phase: "won" } } })),
+  );
+  await page.reload();
+  await expect(page.locator("#bothDone")).toBeVisible();
+  await expect(page.locator("#otherGame")).toBeHidden();
+});
