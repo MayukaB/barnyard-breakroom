@@ -546,11 +546,12 @@ function initCloud() {
 
 /* ---------- Start ---------- */
 // The animals in the How to play pictures
-for (const el of document.querySelectorAll("#how [data-a]")) el.innerHTML = animalSvg(el.dataset.a, el.dataset.mood || "happy");
+for (const el of document.querySelectorAll("#how [data-a], #howto [data-a]")) el.innerHTML = animalSvg(el.dataset.a, el.dataset.mood || "happy");
 document.querySelector("#titlePeek .peek-k").innerHTML = ART.kitten();
 document.querySelector("#titlePeek .peek-s").innerHTML = ART.sheep();
+document.querySelector('#howto [data-art="kitten"]').innerHTML = ART.kitten("happy");
+document.querySelector('#howto [data-art="sheep"]').innerHTML = ART.sheep("happy");
 $("puzzleNo").textContent = `No. ${DAY_INDEX + 1} · ${new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} · ${SHAPE}`;
-try { if (!localStorage.getItem(STORE + ":seen")) { $("how").open = true; localStorage.setItem(STORE + ":seen", "1"); } } catch { $("how").open = true; }
 // The story fold-out (narrow screens) starts folded, so the board is in view; once a player opens or
 // closes it, it stays that way.
 try { $("storyBook").open = localStorage.getItem(STORE + ":story") === "open"; } catch {}

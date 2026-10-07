@@ -16,6 +16,8 @@ test.beforeEach(async ({ page, context }) => {
   page.on("pageerror", (e) => errors.push(e.message));
   // Keep tests offline and fast: no sign-in services, fonts or CDNs.
   await context.route(/supabase|jsdelivr|accounts\.google|fonts\.(googleapis|gstatic)/, (r) => r.abort());
+  // The how-to-play pop-up opens on a first visit; howto.spec.js tests it. Here it would cover the page.
+  await context.addInitScript(() => ["biscuit", "pecks"].forEach((g) => localStorage.setItem("bb:howto:" + g, "1")));
   await page.clock.setFixedTime(DAY);
 });
 test.afterEach(() => expect(errors, "no script errors on the page").toEqual([]));

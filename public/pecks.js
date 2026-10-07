@@ -662,7 +662,6 @@ document.addEventListener("keydown", e => {
 
 /* ---------- Start ---------- */
 $("puzzleNo").textContent = `No. ${DAY_INDEX + 1} · ${new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"})}`;
-try { if (!localStorage.getItem(STORE + ":seen")) { $("how").open = true; localStorage.setItem(STORE + ":seen","1"); } } catch { $("how").open = true; }
 save();
 $("hard").addEventListener("change", e => { dispatch({ type: "setHard", on: e.target.checked }); renderPad(); });
 $("peek").addEventListener("click", () => dispatch({ type: "peek" }));
