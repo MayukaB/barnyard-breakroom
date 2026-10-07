@@ -67,6 +67,9 @@ function show(id){
   $("note").textContent = "";
   // An earlier story says so, with a way back to today's.
   const earlier = s.id !== stories[0].id;
+  // Visit counts: which paintings get looked at (the page view alone is "/" for every story), and who goes on to the article.
+  window.Stats?.event("story-" + s.id, `${earlier ? "Earlier" : "Today’s"} story: ${s.title}`);
+  $("read").dataset.countTitle = `Read the source article: ${s.title}`;
   $("earlier").hidden = !earlier;
   if (earlier) $("earlierText").textContent = "This is an earlier page.";
   renderGrid();

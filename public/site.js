@@ -7,8 +7,17 @@
      itself the first time someone visits that game, unless they already have a game saved there
      (the dialog's data-saved names that game's storage key). A visit that arrives to sign in, where
      account.js may open its own dialog, saves the pop-up for the next visit instead.
+   - Visit counts: each page view, and a few game moments the games report through window.Stats.event,
+     go to GoatCounter (anonymous, no cookies). Nothing is sent until GOATCOUNTER below is filled in,
+     and never from a local copy of the site or an automated browser (the tests).
+     Open any page with #nocount on the end to stop counting your own visits on that browser
+     (#count turns it back on).
    Signing in (the chip's contents, the menu's Account card and the sign-in dialog) is account.js. */
 (() => {
+  // The site code from goatcounter.com, e.g. "barnyard" for barnyard.goatcounter.com. Each page's
+  // Content-Security-Policy must allow https://<code>.goatcounter.com in connect-src and img-src.
+  const GOATCOUNTER = "barnyardbreakroom";
+  const NOCOUNT_KEY = "bb:nocount";
   const THEME_KEY = "bb:theme";
   const root = document.documentElement;
   const systemDark = matchMedia("(prefers-color-scheme: dark)");
@@ -41,6 +50,69 @@
     renderThemeButtons();
   }
   applyTheme(savedTheme());
+
+  /* ---------- Visit counts ---------- */
+  if (location.hash === "#nocount" || location.hash === "#count") {
+    try {
+      if (location.hash === "#nocount") localStorage.setItem(NOCOUNT_KEY, "1");
+      else localStorage.removeItem(NOCOUNT_KEY);
+    } catch {}
+  }
+  function counting() {
+    if (!GOATCOUNTER || navigator.webdriver || location.protocol === "file:") return false;
+    if (/^(localhost|127\.0\.0\.1|\[::1\])$|\.(localhost|test)$/.test(location.hostname)) return false;
+    try {
+      return !localStorage.getItem(NOCOUNT_KEY);
+    } catch {
+      return true;
+    }
+  }
+  // `path` is the page's address, or for an event its name (GoatCounter shows events separately).
+  function send(params) {
+    if (!counting()) return;
+    const url =
+      `https://${GOATCOUNTER}.goatcounter.com/count?` +
+      new URLSearchParams({
+        ...params,
+        s: `${screen.width},${screen.height},${devicePixelRatio || 1}`,
+        rnd: Math.random().toString(36).slice(2),
+      });
+    if (!(navigator.sendBeacon && navigator.sendBeacon(url))) new Image().src = url;
+  }
+  function countPage() {
+    if (document.visibilityState === "prerender") return;
+    send({ p: location.pathname, t: document.title, r: document.referrer });
+  }
+  function countEvent(name, title) {
+    send({ p: name, t: title || name, e: "true" });
+  }
+  // Script errors in the site's own files, so a page that breaks on some phone shows up on the dashboard:
+  // the page and the first line of the message as the event, where it happened as its title.
+  // Up to 3 different ones a page view; other sites' scripts and browser extensions are left out.
+  const errorsSent = new Set();
+  function countError(message, file, line) {
+    if (errorsSent.size >= 3 || (file && !file.startsWith(location.origin))) return;
+    const text = String(message || "unknown error")
+      .split("\n")[0]
+      .replace(/^Uncaught /, "")
+      .replace(/https?:\/\/\S+/g, "…")
+      .slice(0, 100);
+    if (errorsSent.has(text)) return;
+    errorsSent.add(text);
+    const page = location.pathname.replace(/^\/|\.html$/g, "") || "index";
+    const where = file ? `${file.slice(location.origin.length + 1)}:${line || "?"}` : "an unknown file";
+    countEvent(`error-${page}: ${text}`, `Script error in ${where}`);
+  }
+  addEventListener("error", (e) => {
+    // Resource load failures (an image, a blocked script) arrive here too, without a message; skip those.
+    if (e.message) countError(e.message, e.filename, e.lineno);
+  });
+  addEventListener("unhandledrejection", (e) => {
+    // A rejected promise has no file of its own; the top of its stack says where it came from.
+    const r = e.reason;
+    const [, file, line] = String(r?.stack || "").match(/(https?:\/\/[^\s()]+?):(\d+):\d+/) || [];
+    countError(r?.message ?? r, file, line);
+  });
 
   /* ---------- Menu ---------- */
   function openMenu() {
@@ -85,13 +157,17 @@
         localStorage.setItem(seenKey, "1");
       } catch {}
     };
-    $("howtoBtn").addEventListener("click", () => open(true));
+    $("howtoBtn").addEventListener("click", () => {
+      countEvent(`${dialog.dataset.game}-howto-reopened`, "Reopened how to play");
+      open(true);
+    });
     dialog.addEventListener("click", (e) => {
       if (onBackdrop(dialog, e) || e.target.closest(".howto-x, .howto-go")) dialog.close();
     });
     // "full rules" in the pop-up: close it and open the page's How to play section instead.
     dialog.querySelector(".howto-more button").addEventListener("click", () => {
       dialog.close();
+      countEvent(`${dialog.dataset.game}-howto-full-rules`, "Went to the full rules");
       const how = $("how");
       how.open = true;
       how.scrollIntoView({
@@ -112,6 +188,12 @@
   }
 
   function init() {
+    countPage();
+    // A click on anything marked data-count="name" counts as that event (it still sends as the page changes).
+    document.addEventListener("click", (e) => {
+      const el = e.target.closest("[data-count]");
+      if (el) countEvent(el.dataset.count, el.dataset.countTitle);
+    });
     initHowto();
     const menu = $("menu");
     if (!menu) return;
@@ -143,6 +225,7 @@
   }
 
   window.SiteMenu = Object.freeze({ open: openMenu, close: closeMenu });
+  window.Stats = Object.freeze({ event: countEvent });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();
 })();
