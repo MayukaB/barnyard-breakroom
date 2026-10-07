@@ -39,6 +39,21 @@ details.how summary::before{content:"+ ";color:var(--ochre)}
 details.how[open] summary::before{content:"– "}
 details.how ol{margin:8px 0 4px;padding-left:20px}
 details.how li{margin:2px 0}
+/* How-to-play pop-up pictures (the layout is in site.css) */
+.hz-t{width:20px;height:24px;display:grid;place-items:center;border:1.5px solid var(--tile-line);border-radius:4px;background:var(--tile);color:var(--ink);font:400 13px/1 "Young Serif",Georgia,serif;font-style:normal}
+.hz-t.shown{background:var(--hit);border-color:var(--ochre);color:var(--hit-ink)}
+.hz-t.locked{background:var(--good);border-color:var(--good);color:#fff}
+.hz-t.slot{border-style:dashed;color:var(--cobalt)}
+.hz-t.pecked{border-color:var(--ochre)}
+.hz-hen{width:54px;height:48px;margin:0 -6px -10px 0;align-self:flex-end;transform:rotate(22deg);transform-origin:50% 90%;overflow:visible}
+.hz-phrase{display:flex;gap:10px}
+.hz-phrase .hz-row{gap:3px}
+.hz-key{min-width:30px;padding:6px;border-radius:6px;border:1.5px solid var(--ochre);background:var(--hit);color:var(--hit-ink);font:400 13px/1 "Young Serif",Georgia,serif;letter-spacing:.06em;text-align:center}
+.hz-eggs{display:flex;gap:4px}
+.hz-eggs i{width:11px;height:14px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;border:1.5px solid var(--tile-line);background:var(--tile)}
+.hz-eggs i.used{background:var(--hit);border-color:var(--ochre)}
+.hz-note{max-width:120px;padding:3px 7px;border-radius:3px;background:var(--plate);color:#3F4A44;font:700 13px/1.15 Caveat,cursive;transform:rotate(-1.5deg);box-shadow:0 1px 4px var(--shadow)}
+.hz-note b{display:block;font:700 8px/1 Karla,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#9A6A12}
 
 /* Ground strip along the bottom of the card */
 .ground{margin:0 -28px -28px;border-radius:0 0 6px 6px;overflow:hidden;line-height:0}

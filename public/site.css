@@ -160,3 +160,46 @@ dialog.acct .fine{font-size:13px;line-height:1.5;color:var(--ink-soft);max-width
   @keyframes acctUp{from{transform:translateY(100%)}to{transform:none}}
   .acct-hero{width:80px;height:64px}
 }
+
+/* How-to-play pop-up (site.js): a short version of the rules, one picture per step. Each game page has
+   its own <dialog class="howto">; the pictures' tiles are styled in that game's CSS. */
+.howto-btn{position:relative;width:30px;height:30px;flex:none;display:inline-grid;place-items:center;padding:0;border-radius:50%;border:1.5px solid var(--rule);background:var(--sheet);color:var(--ink-soft);font:700 16px/1 Karla,sans-serif;cursor:pointer}
+/* A 44px tap area around the small circle */
+.howto-btn::after{content:"";position:absolute;inset:-7px;border-radius:50%}
+.howto-btn:hover{border-color:var(--cobalt);color:var(--cobalt)}
+.howto-btn:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
+.title-line{display:flex;align-items:center;gap:10px}
+dialog.howto{border:1px solid var(--rule);border-radius:18px;background:var(--dialog);color:var(--ink);width:min(500px,calc(100vw - 24px));max-width:none;max-height:calc(100dvh - 24px);overflow:auto;padding:24px 24px 20px;box-shadow:0 30px 80px -24px rgba(0,0,0,.6)}
+dialog.howto[open]{animation:acctIn .22s cubic-bezier(.2,.9,.3,1.1)}
+dialog.howto::backdrop{background:var(--scrim);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+@media (prefers-reduced-motion:reduce){dialog.howto[open]{animation:none}}
+html:has(dialog.howto[open]){overflow:hidden}
+.howto-x{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:50%;border:0;background:transparent;color:var(--ink-soft);font-size:24px;line-height:1;cursor:pointer}
+.howto-x:hover{background:var(--wash)}
+.howto-x:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
+.howto-head{display:flex;align-items:center;gap:12px;margin:0 36px 16px 0}
+.howto-head svg{width:52px;height:44px;flex:none;overflow:visible}
+.howto-head h3{font:400 24px/1.15 "Young Serif",Georgia,serif;margin:0}
+.howto-head p{margin:2px 0 0;font-size:14px;color:var(--ink-soft)}
+.howto-steps{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.howto-steps li{display:grid;grid-template-columns:180px 1fr;gap:14px;align-items:center}
+.howto-steps p{margin:0;font-size:15px;line-height:1.45;color:var(--ink-soft)}
+.howto-steps b,.howto-more b{color:var(--ink)}
+/* Each picture is drawn at full tile size and scaled down to fit its box. */
+.howto-pic{height:96px;border-radius:12px;background:color-mix(in srgb,var(--paper) 75%,var(--dialog));display:flex;align-items:center;justify-content:center;overflow:hidden}
+.howto-pic .hz{transform:scale(.86)}
+/* Phones: each picture above its text, at full width, so the tiles stay readable. */
+@media (max-width:480px){.howto-steps{gap:16px}.howto-steps li{grid-template-columns:1fr;gap:6px}.howto-pic{height:74px}.howto-pic .hz{transform:scale(.86)}}
+.hz{flex:none;display:flex;align-items:center;justify-content:center;gap:6px}
+.hz-col{display:grid;gap:4px;justify-items:center}
+.hz-row{display:flex;gap:4px;position:relative}
+.hz-lab{font:700 11.5px/1.1 Karla,sans-serif;letter-spacing:.04em;color:var(--ink-soft);text-align:center;text-transform:uppercase}
+.hz-arrow{color:var(--ink-soft);font:700 16px/1 Karla,sans-serif}
+.howto-more{margin:0;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--paper) 75%,var(--dialog));font-size:14px;line-height:1.45;color:var(--ink-soft);text-align:center}
+.howto-more button{padding:0;border:0;background:none;color:var(--cobalt);font:inherit;font-weight:700;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.howto-go{display:block;width:100%;margin-top:16px;padding:13px 18px;border:0;border-radius:999px;background:var(--cobalt);color:var(--sheet);font:700 16px/1 Karla,sans-serif;cursor:pointer}
+.howto-go:hover{filter:brightness(1.08)}
+.howto-go:focus-visible,.howto-more button:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
+/* The closing note and Let's play stay in view at the bottom while the steps scroll on short screens. */
+.howto-end{position:sticky;bottom:-20px;margin:16px -24px -20px;padding:0 24px 20px;background:var(--dialog)}
+.howto-end::before{content:"";position:absolute;left:0;right:0;top:-16px;height:16px;background:linear-gradient(transparent,var(--dialog));pointer-events:none}

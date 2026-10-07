@@ -55,6 +55,28 @@ details.how li{margin:3px 0 12px}
 .mgrid{display:grid;grid-template-columns:repeat(3,26px);gap:4px;padding:6px;border-radius:8px;background:var(--well)}
 .mgrid.five{grid-template-columns:repeat(5,26px)}
 .mt.h{visibility:hidden}
+.mt.y{background:var(--near);border-color:var(--near-line);color:var(--near-ink)}
+/* How-to-play pop-up pictures (the layout is in site.css) */
+.hz-arc{position:absolute;left:0;top:-15px;width:100%;height:16px;color:var(--cobalt);overflow:visible}
+.hz-grid{display:grid;grid-template-columns:repeat(3,26px);gap:4px}
+/* The swap picture plays the swap: T and C trade places (two tiles and their gaps apart) and turn green.
+   With reduced motion it stays a still "before → after" pair. */
+@media (prefers-reduced-motion:no-preference){
+  .hz-swap .hz-arrow,.hz-swap .hz-after{display:none}
+  .hz-swap .hz-row{transform:scale(1.15)}
+  dialog[open] .hz-swap .hz-s1{animation:hzSwapR .55s .7s ease-in-out both}
+  dialog[open] .hz-swap .hz-s2{animation:hzSwapL .55s .7s ease-in-out both}
+  dialog[open] .hz-swap .hz-arc{animation:hzFade .3s 1.25s both}
+}
+@keyframes hzSwapR{50%{transform:translate(30px,-8px)}to{transform:translateX(60px);background:var(--good);border-color:var(--good-line);color:#fff}}
+@keyframes hzSwapL{50%{transform:translate(-30px,8px)}to{transform:translateX(-60px);background:var(--good);border-color:var(--good-line);color:#fff}}
+@keyframes hzFade{to{opacity:0}}
+.hz-hug{position:relative}
+.hz-hug::after{content:"♥";position:absolute;top:-14px;left:50%;transform:translateX(-50%);color:#E0607E;font:13px/1 Karla,sans-serif}
+.hz-stars{display:grid;gap:5px;font:500 13px/1.2 Karla,sans-serif;color:var(--ink-soft)}
+.hz-stars>span{display:flex;gap:6px;align-items:center}
+.hz-stars b{width:50px;color:var(--star);letter-spacing:1px;font-size:15px}
+.hz-stars i{font-style:normal;color:var(--star-off)}
 .mt.a.pk{box-shadow:0 0 0 2px var(--cobalt)}
 .mboard{position:relative;flex:none;margin-left:14px}
 .mswap{position:absolute;inset:0;width:100%;height:100%;overflow:visible;color:var(--cobalt);pointer-events:none}

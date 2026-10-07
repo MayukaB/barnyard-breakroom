@@ -125,7 +125,7 @@ grant execute on function public.pecks_sync(jsonb, jsonb, text, jsonb, boolean) 
 
 
 -- ---------------------------------------------------------------------------------------------
--- Biscuit and Marshmallow: the same idea for the word swap puzzle (biscuit.js).
+-- Biscuit and Marshmallow: the same idea for the word grid puzzle (biscuit.js).
 --   log: one solved board per day, {"2026-09-30": {"moves": 16, "stars": 2}, ...}. Stats are worked
 --        out from this, so merging two devices can never count the same day twice.
 create table if not exists public.biscuit_players (
