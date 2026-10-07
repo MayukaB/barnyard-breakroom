@@ -12,7 +12,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Barnyard Breakroom">
 <meta property="og:title" content="Barnyard Breakroom">
-<meta property="og:description" content="A new animal news story each morning, painted as a cute storybook watercolor. Plus Hen Pecks, a daily phrase puzzle.">
+<meta property="og:description" content="A new animal news story each morning, painted as a cute storybook watercolor. Plus two daily puzzles to play.">
 <meta property="og:url" content="https://barnyardbreakroom.com/">
 <meta property="og:image" content="https://barnyardbreakroom.com/og-story.png">
 <meta property="og:image:width" content="1200">
@@ -90,6 +90,14 @@
 .card svg{display:block;width:100%;height:auto;aspect-ratio:4/3}
 .card strong{font:400 15px/1.3 "Young Serif",Georgia,serif}
 .card small{color:var(--ink-soft);font-size:13px}
+/* Phones: two smaller cards a row, so the archive isn't one long column */
+@media (max-width:520px){
+  .grid{grid-template-columns:1fr 1fr;gap:14px}
+  .card{align-content:start;gap:6px;padding:6px 6px 10px}
+  .card .mini{padding:4px}
+  .card strong{font-size:13.5px}
+  .card small{font-size:12px}
+}
 .empty{color:var(--ink-soft);font-style:italic}
 .more{display:flex;justify-content:center;margin-top:22px}
 .more:has(#more[hidden]){display:none}
