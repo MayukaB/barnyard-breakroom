@@ -404,7 +404,19 @@ function confetti() {
   })(t0);
 }
 
+// The end screen points to Hen Pecks, or says both games are done once today's phrase is won or lost too.
+function showOtherGame() {
+  let done = false;
+  try {
+    const day = ((JSON.parse(localStorage.getItem("henpecks:v1")) || {}).days || {})[TODAY];
+    done = !!day && (day.phase === "won" || day.phase === "lost");
+  } catch {}
+  $("otherGame").hidden = done;
+  $("bothDone").hidden = !done;
+}
+
 function showResult(animate) {
+  showOtherGame();
   const r = $("result");
   r.hidden = false;
   r.classList.toggle("won", animate);

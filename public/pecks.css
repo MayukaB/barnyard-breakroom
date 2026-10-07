@@ -190,6 +190,7 @@ details.how li{margin:2px 0}
 .result .actions{justify-content:flex-start}
 @media (max-width:560px){.result .actions{justify-content:center}}
 .next{font-size:14px;color:var(--ink-soft);margin-top:12px}
+.both-done{margin:12px 0 0;font-weight:700;color:var(--ok)}
 
 /* Account: the "Sign in to save stats" link and note. The sign-in dialog itself is in site.css. */
 .acct-btn{margin-right:auto;display:inline-flex;align-items:center;gap:7px;font:700 14px/1.2 Karla,sans-serif;color:var(--cobalt);background:none;border:0;padding:4px 0;cursor:pointer}

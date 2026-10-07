@@ -59,8 +59,17 @@ function show(id){
   const src = document.createElement("span"); src.textContent = s.source || "National Geographic"; meta.appendChild(src);
   if (/^https:\/\//.test(s.url||"")) $("read").href = s.url;
   $("note").textContent = "";
+  // An earlier story says so, with a way back to today's.
+  const earlier = s.id !== stories[0].id;
+  $("earlier").hidden = !earlier;
+  if (earlier) $("earlierText").textContent = `An earlier page, painted ${fmtDate(painted(s))}.`;
   renderGrid();
 }
+// Paintings are dated by the day they were painted: a source's top story can be days old by then.
+const painted = s => s.addedAt || s.published || "";
+// After switching stories, put keyboard focus on the new headline (the card or button clicked is gone).
+function focusHeadline(){ const h = $("headline"); h.tabIndex = -1; h.focus({preventScroll: true}); }
+$("backToday").addEventListener("click", () => { show(stories[0].id); focusHeadline(); });
 
 /* Earlier pages: the archive shows PAGE_SIZE paintings at first and PAGE_SIZE more per click,
    so the page stays quick however many stories pile up. */
@@ -73,8 +82,8 @@ function makeCard(s){
   const svg = document.createElementNS("http://www.w3.org/2000/svg","svg"); svg.setAttribute("viewBox","0 0 400 300");
   mini.appendChild(svg); btn.appendChild(mini); paint(svg, s.scene);
   const t=document.createElement("strong"); t.textContent=s.title; btn.appendChild(t);
-  const d=document.createElement("small"); d.textContent=(s.animal? s.animal+" · ":"")+fmtDate(s.published); btn.appendChild(d);
-  btn.onclick = () => { show(s.id); window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}); };
+  const d=document.createElement("small"); d.textContent=(s.animal? s.animal+" · ":"")+fmtDate(painted(s)); btn.appendChild(d);
+  btn.onclick = () => { show(s.id); focusHeadline(); window.scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}); };
   return btn;
 }
 
@@ -157,8 +166,7 @@ function markUnfinished(name, href){
   try {
     const res = await fetch("stories.json", { cache: "no-cache" });
     if (!res.ok) throw new Error(res.status);
-    // Newest painting first: a source's top story can be days old when it's painted.
-    const painted = s => s.addedAt || s.published || "";
+    // Newest painting first.
     stories = (await res.json()).sort((a, b) => painted(b).localeCompare(painted(a)) || (b.published || "").localeCompare(a.published || ""));
   } catch {
     $("headline").textContent = "The storybook couldn't open";

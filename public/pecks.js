@@ -455,7 +455,16 @@ function runEffect(f){
   }
 }
 
+// The end screen points to Biscuit and Marshmallow, or says both games are done once it's solved too.
+function showOtherGame(){
+  let done = false;
+  try { const day = ((JSON.parse(localStorage.getItem("biscuit:v1")) || {}).days || {})[TODAY]; done = !!(day && day.done); } catch {}
+  $("otherGame").hidden = done;
+  $("bothDone").hidden = !done;
+}
+
 function showResult(animate){
+  showOtherGame();
   const won = S.phase === "won";
   const r = $("result"); r.hidden = false;
   r.classList.toggle("won", won && animate);
