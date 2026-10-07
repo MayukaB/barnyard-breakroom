@@ -9,6 +9,10 @@ on:
         description: "Only try this source (mongabay). Leave empty to try every source."
         required: false
         default: ""
+      extra:
+        description: "Add a story even if today's is already up."
+        type: boolean
+        default: false
   push:
     branches: [main]
 
@@ -37,6 +41,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ANTHROPIC_MODEL: ${{ vars.ANTHROPIC_MODEL }}
           ONLY_SOURCE: ${{ inputs.source }}
+          EXTRA_STORY: ${{ inputs.extra && '1' || '' }}
         run: node scripts/update.mjs
       - name: Commit if something changed
         run: |

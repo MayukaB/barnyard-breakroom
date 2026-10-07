@@ -2,6 +2,7 @@
 // watercolor painting drawn by Claude.
 // Usage: ANTHROPIC_API_KEY=... node scripts/update.mjs [source]
 // With a source key (see SOURCES) it only tries that source.
+// It adds at most one story a day (UTC); set EXTRA_STORY=1 to add another.
 import { readFile, writeFile } from "node:fs/promises";
 
 const API_KEY = process.env.ANTHROPIC_API_KEY;
@@ -42,6 +43,13 @@ if (only && !SOURCES.some((s) => s.key === only)) {
 const stories = JSON.parse(await readFile(FILE, "utf8"));
 const known = new Set(stories.map((s) => s.id));
 const today = new Date().toISOString().slice(0, 10);
+
+// One story a day. The workflow can be started more than once a day (a backup schedule, an outside
+// timer, a manual run), so later runs stop here. EXTRA_STORY=1 (the workflow's "extra" box) adds one anyway.
+if (stories.some((s) => s.addedAt === today) && process.env.EXTRA_STORY !== "1") {
+  console.log(`Today's story is already up (${today}).`);
+  process.exit(0);
+}
 
 // Feed text arrives as escaped HTML; this turns it into plain text.
 const ENTITIES = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };

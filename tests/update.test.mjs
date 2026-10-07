@@ -49,11 +49,11 @@ const story = (overrides = {}) => ({
 const reply = (obj) => ({ text: JSON.stringify(obj) });
 
 // Runs the script and returns its exit code, output, the story list afterwards and the API requests it sent.
-function run({ replies = [], items = [item()], feedStatus = 200, args = [], env = {} } = {}) {
+function run({ replies = [], items = [item()], feedStatus = 200, args = [], env = {}, list = [OLD_STORY] } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "update-test-"));
   const file = join(dir, "stories.json");
   const log = join(dir, "requests.jsonl");
-  const before = JSON.stringify([OLD_STORY], null, 2) + "\n";
+  const before = JSON.stringify(list, null, 2) + "\n";
   writeFileSync(file, before);
   const result = spawnSync(process.execPath, ["--import", FAKE, SCRIPT, ...args], {
     encoding: "utf8",
@@ -61,6 +61,7 @@ function run({ replies = [], items = [item()], feedStatus = 200, args = [], env 
       ...process.env,
       ANTHROPIC_API_KEY: "test-key",
       ONLY_SOURCE: "",
+      EXTRA_STORY: "",
       STORIES_FILE: file,
       FAKE_REPLIES: JSON.stringify(replies),
       FAKE_FEED: feed(...items),
@@ -130,6 +131,23 @@ test("doesn't call Claude when the feed has nothing new", () => {
   assert.match(r.out, /Mongabay: nothing new/);
   assert.equal(r.requests.length, 0);
   assert.ok(r.unchanged);
+});
+
+const TODAYS_STORY = { ...OLD_STORY, id: "todays-story", addedAt: new Date().toISOString().slice(0, 10) };
+
+test("stops without calling Claude when today's story is already up", () => {
+  const r = run({ list: [TODAYS_STORY, OLD_STORY], replies: [reply(story())] });
+  assert.equal(r.code, 0, r.out);
+  assert.match(r.out, /Today's story is already up/);
+  assert.equal(r.requests.length, 0);
+  assert.ok(r.unchanged);
+});
+
+test("EXTRA_STORY adds a second story on the same day", () => {
+  const r = run({ list: [TODAYS_STORY, OLD_STORY], replies: [reply(story())], env: { EXTRA_STORY: "1" } });
+  assert.equal(r.code, 0, r.out);
+  assert.equal(r.stories.length, 3);
+  assert.equal(r.stories[0].id, "kiwi-return-to-wellington");
 });
 
 test("keeps going after a paused turn", () => {
