@@ -111,10 +111,35 @@
     if (changed) for (const fn of listeners) fn(user);
   }
 
+  /* ---------- Visit counts ----------
+     Each step of signing in is counted (site.js, window.Stats), never who: no email address or user id is sent.
+     A sign-in that completes after leaving the page (an email link, Google's redirect) is counted when the
+     player comes back signed in; VIA_KEY remembers how they started, in case it was in this browser. */
+  const VIA_KEY = "bb:signin-via";
+  const count = (name, title) => window.Stats?.event(name, title);
+  let pendingVia = null; // set while a sign-in is on its way back: "email", "google"
+  function startVia(via) {
+    try {
+      localStorage.setItem(VIA_KEY, via);
+    } catch {}
+  }
+  function returnedVia() {
+    try {
+      const via = localStorage.getItem(VIA_KEY);
+      localStorage.removeItem(VIA_KEY);
+      return via === "google" ? "google" : "email";
+    } catch {
+      return "email";
+    }
+  }
+
   function open() {
     if (!enabled) return;
     window.SiteMenu?.close();
-    if (!$("acct").open) $("acct").showModal();
+    if (!$("acct").open) {
+      $("acct").showModal();
+      count("signin-opened", "Opened sign-in");
+    }
     drawGsiButton();
   }
 
@@ -186,8 +211,13 @@
       return;
     }
     message("Signing you in…");
+    pendingVia = "google";
     const { error } = await sb.auth.signInWithIdToken({ provider: "google", token: res.credential, nonce: gsiNonce });
-    if (error) message("Google sign-in didn’t work. Try again, or use the email link.", true);
+    if (error) {
+      pendingVia = null;
+      count("signin-failed-google", "Google sign-in failed");
+      message("Google sign-in didn’t work. Try again, or use the email link.", true);
+    }
   }
 
   /* ---------- Start ---------- */
@@ -199,6 +229,9 @@
     const h = new URLSearchParams(location.hash.slice(1));
     const linkError = h.get("error_description");
     const wantsDialog = location.hash === "#account";
+    // Back from an email link or Google's redirect page: Supabase reads these and tidies them away.
+    if (/access_token=/.test(location.hash) || /[?&]code=/.test(location.search)) pendingVia = returnedVia();
+    if (linkError) count("signin-link-failed", "Sign-in link expired or already used");
     if (linkError || wantsDialog) history.replaceState(null, "", location.pathname + location.search);
 
     const s = document.createElement("script");
@@ -213,6 +246,10 @@
         return;
       }
       sb.auth.onAuthStateChange((event, session) => {
+        if (session && pendingVia && (event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+          count(`signed-in-${pendingVia}`, `Signed in with ${pendingVia === "google" ? "Google" : "an email link"}`);
+          pendingVia = null;
+        }
         // Don't wait on Supabase inside this callback (it can deadlock); do the work just after.
         setTimeout(() => setUser(session ? session.user : null), 0);
       });
@@ -248,19 +285,29 @@
       message("Sending…");
       const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
       $("emailBtn").disabled = false;
-      if (!error) message(`Check ${email} for a sign-in link. It brings you back here, signed in.`);
-      else
+      if (!error) {
+        startVia("email");
+        count("signin-email-sent", "Sent a sign-in email");
+        message(`Check ${email} for a sign-in link. It brings you back here, signed in.`);
+      } else {
+        count(error.status === 429 ? "signin-email-too-many" : "signin-email-failed", "Sign-in email didn’t send");
         message(
           error.status === 429
             ? "Too many sign-in emails just now. Try again in a few minutes."
             : "Couldn’t send the link. Check the email address and try again.",
           true,
         );
+      }
     });
     $("gBtn").addEventListener("click", async () => {
       if (!sb) return;
+      startVia("google");
+      count("signin-google-redirect", "Started Google sign-in (fallback button)");
       const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
-      if (error) message("Couldn’t start Google sign-in. Try the email link instead.", true);
+      if (error) {
+        count("signin-failed-google", "Google sign-in failed");
+        message("Couldn’t start Google sign-in. Try the email link instead.", true);
+      }
     });
 
     if (wantsDialog) open();

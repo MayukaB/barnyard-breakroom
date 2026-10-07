@@ -338,6 +338,7 @@ function update(a){
       if (S.phase !== "peck" || S.pecks.includes(a.key)) return null;
       const before = new Set(LETTER_POS.filter(isShown));
       S.pecks.push(a.key);
+      if (S.pecks.length === 1) window.Stats?.event("pecks-started", "Started today’s Hen Pecks");
       const hits = CHARS.filter(c => a.key.includes(c)).length;
       S.hitsPerPeck.push(hits);
       const fx = [{ pop: LETTER_POS.filter(i => isShown(i) && !before.has(i)), henPeck: true }];
@@ -363,6 +364,7 @@ function update(a){
     case "peek":
       if (S.phase !== "solve" || !S.hard || S.hintUsed) return null;
       S.hintUsed = true;
+      window.Stats?.event("pecks-hard-peeked", "Peeked at the hint in hard mode");
       return [{ say: ["Hint revealed. This one won’t count as a hard-mode win."] }];
     case "select":
       if (S.phase !== "solve" || busy || isShown(a.pos)) return null;
@@ -434,6 +436,10 @@ function endRound(won){
   if (!S.counted){
     S.counted = true;
     if (!db.log[TODAY]) db.log[TODAY] = S.outcome;
+    // pecks-won-pecks (pecks alone), pecks-won-t1 to t3 (on that try) or pecks-lost; -hard when the hint stayed hidden.
+    const hard = S.hard && !S.hintUsed ? "-hard" : "";
+    window.Stats?.event(won ? `pecks-won-${S.outcome}${hard}` : `pecks-lost${hard}`,
+      won ? `Won Hen Pecks (${S.outcome === "pecks" ? "pecks alone" : "try " + S.solvedOnTry})${hard && ", hard mode"}` : `Lost Hen Pecks${hard && ", hard mode"}`);
   }
   return [{ say: [""] }, { sync: true }, { result: true }];
 }
@@ -531,6 +537,7 @@ function shareText(){
   return `Hen Pecks #${DAY_INDEX + 1}${hard}\nPecks: ${eggs}\n${end}\n${location.origin}${location.pathname}`;
 }
 $("share").addEventListener("click", async () => {
+  window.Stats?.event("pecks-shared", "Copied a Hen Pecks result");
   const text = shareText();
   let ok = false;
   try { await navigator.clipboard.writeText(text); ok = true; }

@@ -213,6 +213,7 @@ function swap(i, j, from) {
   [b[i], b[j]] = [b[j], b[i]];
   S.b = b.join("");
   S.moves++;
+  if (S.moves === 1) window.Stats?.event("biscuit-started", "Started today’s Biscuit and Marshmallow");
   picked = null;
   focusAt = j;
   // Slide each tile in from where it came from.
@@ -342,6 +343,9 @@ function win() {
   S.done = true;
   picked = null;
   if (!db.log[TODAY]) db.log[TODAY] = { moves: S.moves, stars: starsFor(S.moves), p: DAY_INDEX };
+  // e.g. biscuit-solved-3-stars-zig-zag, so a hard day's shape stands out.
+  const stars = starsFor(S.moves), shape = SHAPE.toLowerCase().replace(/[^a-z]+/g, "-");
+  window.Stats?.event(`biscuit-solved-${stars}-star${stars === 1 ? "" : "s"}-${shape}`, `Solved Biscuit and Marshmallow (${SHAPE}): ${stars} star${stars === 1 ? "" : "s"}`);
   save();
   cloudSync();
   render();
@@ -471,6 +475,7 @@ function shareText() {
   return `Biscuit and Marshmallow #${DAY_INDEX + 1} · ${SHAPE}\n${"⭐".repeat(n)}${"☆".repeat(3 - n)} ${S.moves} swaps (par ${PAR})\n🐱🧶🐑\n${location.origin}${location.pathname}`;
 }
 $("share").addEventListener("click", async () => {
+  window.Stats?.event("biscuit-shared", "Copied a Biscuit and Marshmallow result");
   const text = shareText();
   let ok = false;
   try { await navigator.clipboard.writeText(text); ok = true; }

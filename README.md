@@ -50,6 +50,26 @@ Each run is one feed download and one API call with one page fetch. On days when
 
 Free Supabase projects pause after about a week without any requests. If that happens, sign-in stops working (the game itself keeps going) until you restore the project from the dashboard.
 
+## Visit counts (GoatCounter)
+
+`site.js` counts page views and a few game moments with [GoatCounter](https://www.goatcounter.com): anonymous, no cookies, so no consent banner. It sends a plain request to GoatCounter itself rather than loading GoatCounter's script, so the pages' script list stays the same. Nothing is counted until `GOATCOUNTER` at the top of `site.js` has a site code, and never on `localhost` or in the browser tests.
+
+1. Sign up at goatcounter.com and choose a site code (the `<code>` in `<code>.goatcounter.com`). Put it in `GOATCOUNTER`.
+2. Add `https://<code>.goatcounter.com` to `connect-src` and `img-src` in the Content-Security-Policy of `index.html`, `pecks.html`, `biscuit.html` and `404.html` (404.html has no `connect-src` yet; add one).
+3. To leave your own visits out, open any page with `#nocount` on the end, once per browser (`#count` undoes it).
+
+Besides page views, the dashboard lists these events:
+
+- `pecks-started`, `biscuit-started`: the first peck or swap of a day's game.
+- `pecks-won-pecks` (solved by pecks alone), `pecks-won-t1` to `-t3` (on that try), `pecks-lost`; `-hard` on the end when hard mode's hint stayed hidden. `pecks-hard-peeked`: peeked at the hint in hard mode.
+- `biscuit-solved-<stars>-star(s)-<shape>`, e.g. `biscuit-solved-2-stars-zig-zag`.
+- `pecks-shared`, `biscuit-shared`: copied a result.
+- `pecks-howto-reopened`, `biscuit-howto-reopened`: opened how-to-play from the "?"; `…-howto-full-rules`: went from the pop-up to the full rules.
+- `story-<id>`: a story shown on the story page (today's, or an earlier one from the archive or a story link; the title says which). The page view is just `/` for every story. `story-read-source`: clicked "Read the story" through to the article (the title names the story).
+- Links between pages: `story-to-pecks`, `story-to-biscuit` (the story page's game cards), `pecks-to-story`, `biscuit-to-story`, `pecks-to-biscuit`, `biscuit-to-pecks` (the end screens). Any link or button with `data-count="name"` is counted the same way.
+- Signing in (`account.js`), never who: `signin-opened`; `signin-email-sent`, or `signin-email-failed` / `signin-email-too-many`; `signin-google-redirect` (the fallback Google button); `signed-in-email`, `signed-in-google` once the player is back and signed in; `signin-link-failed` (an expired or used link); `signin-failed-google`.
+- `error-<page>: <message>`: a script error in the site's own files (up to 3 different ones a page view; the title says which file and line). Worth a look whenever one shows up.
+
 ## Security policy
 
 Both pages set a Content-Security-Policy in a `<meta>` tag (GitHub Pages can't send headers). It lists what each page may load, so an injected script can't run. Inline scripts are blocked; that's why the story page's code lives in `index.js`. Inline styles are allowed because the pages and paintings use `style` attributes.
