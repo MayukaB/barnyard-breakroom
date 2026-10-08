@@ -15,10 +15,15 @@ export default defineConfig({
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "phone", use: { ...devices["Pixel 7"] } },
   ],
-  webServer: {
-    command: "node tests/serve.mjs",
-    url: `http://localhost:${port}/pecks.html`,
-    env: { PORT: String(port) },
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: [
+    {
+      command: "node tests/serve.mjs",
+      url: `http://localhost:${port}/pecks.html`,
+      env: { PORT: String(port) },
+      reuseExistingServer: !process.env.CI,
+    },
+    // A stand-in for the Discord app, for tests/discord-client.spec.js. Always port 3333: Discord's SDK
+    // only accepts messages from Discord's own addresses, and http://localhost:3333 is one of them.
+    { command: "node tests/discord-host.mjs", url: "http://localhost:3333/", reuseExistingServer: !process.env.CI },
+  ],
 });
