@@ -72,3 +72,15 @@ test("in Discord, Hen Pecks connects, signs in and posts the result", async ({ p
     .poll(async () => (await rpc(page)).find((m) => m.cmd === "SHARE_LINK")?.args?.message)
     .toMatch(/^Hen Pecks #3\n/);
 });
+
+test("in Discord, Biscuit and Marshmallow connects and signs in", async ({ page }) => {
+  const BISCUIT_APP = "1557569562411667456"; // DISCORD_APPS.biscuit in public/site.js
+  const url = `http://${BISCUIT_APP}.discordsays.com:${port}/${LAUNCH}`;
+  await page.goto(`http://localhost:3333/?activity=${encodeURIComponent(url)}`);
+  await expect(page.frameLocator("#activity").locator("#puzzleNo")).toContainText("No.");
+  expect(new URL(page.frames()[1].url()).pathname).toBe("/biscuit.html");
+  await expect
+    .poll(async () => (await rpc(page)).find((m) => m.cmd === "AUTHORIZE")?.args?.client_id)
+    .toBe(BISCUIT_APP);
+  await expect.poll(() => sent[0]).toEqual(["token", { game: "biscuit", code: "the-code" }]);
+});

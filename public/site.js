@@ -21,7 +21,7 @@
 (() => {
   // Each game's Discord application ID (Developer Portal → General Information → Application ID).
   // Public, like the address of a page. Leave one empty until that game's app is set up.
-  const DISCORD_APPS = { pecks: "1557552863746461736", biscuit: "" };
+  const DISCORD_APPS = { pecks: "1557552863746461736", biscuit: "1557569562411667456" };
   // The URL mapping prefixes set in each Discord app (Activities → URL Mappings).
   const PROXY = { goatcounter: "/x/goatcounter", gfonts: "/x/gfonts", gstatic: "/x/gstatic" };
   // The site code from goatcounter.com, e.g. "barnyard" for barnyard.goatcounter.com. Each page's
