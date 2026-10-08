@@ -32,3 +32,6 @@ desktop.ini
 
 # Claude's local dev-server preview config.
 .claude/launch.json
+
+# The Supabase CLI's local state (which project it last deployed to).
+supabase/.temp/
