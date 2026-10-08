@@ -14,5 +14,6 @@ public/biscuit-puzzles.js
 public/stories.json
 public/vendor/
 scripts/og-cards.html
+scripts/discord-icon.html
 package-lock.json
 supabase/

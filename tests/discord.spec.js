@@ -97,8 +97,12 @@ test("winning Hen Pecks in Discord signs in with Discord and posts the result", 
   expect(sent.filter(([p]) => p === "result")).toHaveLength(2);
 });
 
-test("in Discord, sign-in and the other game are hidden, and Share uses Discord's dialog", async ({ page }) => {
+test("in Discord, the menu, sign-in and the other game are hidden, and Share uses Discord's dialog", async ({
+  page,
+}) => {
   await winPecks(page);
+  await expect(page.locator("#menuBtn")).toBeHidden();
+  await expect(page.locator(".brand a")).not.toHaveAttribute("href");
   await expect(page.locator("#acctChip")).toBeHidden();
   await expect(page.locator("#otherGame")).toBeHidden();
   await page.getByRole("button", { name: "Share in Discord" }).click();

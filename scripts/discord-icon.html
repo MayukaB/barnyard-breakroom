@@ -1,0 +1,25 @@
+<!doctype html><meta charset="utf-8">
+<!-- Source for the Hen Pecks Discord app icon (1024x1024; Discord shows it in a circle, so the hen stays in
+     the middle). Serve the repo root (npx serve .), open /scripts/discord-icon.html, and screenshot #pecks.
+     Upload it in the Developer Portal → General Information → App Icon. -->
+<style>
+body{margin:0;background:#999}
+.icon{width:1024px;height:1024px;overflow:hidden}
+.icon svg{display:block;width:100%;height:100%}
+</style>
+<svg width="0" height="0" style="position:absolute"><defs>
+<filter id="wc" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation="0.2"/></filter>
+</defs></svg>
+
+<div class="icon" id="pecks"><svg viewBox="0 0 100 100" id="hen"></svg></div>
+
+<script src="../public/pecks-art.js"></script>
+<script>
+const { A, P } = PECKS_ART.kit;
+document.getElementById("hen").innerHTML =
+  '<rect width="100" height="100" fill="#F3D9A4"/>' +
+  '<ellipse cx="50" cy="98" rx="80" ry="22" fill="#B5D493" filter="url(#wc)"/>' +
+  A("hen", 48, 80, 1.9, { mood: "happy2" }) +
+  P("nest", 50, 85, 2, { eggs: [] }) +
+  '';
+</script>

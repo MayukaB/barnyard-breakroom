@@ -14,8 +14,9 @@
      (#count turns it back on).
    - Discord: inside a Discord Activity the page runs at <app id>.discordsays.com, where Discord's proxy
      only lets it reach the addresses in the app's URL mappings (README, Discord Activities). There this
-     marks <html class="discord">, sends visit counts and Google Fonts through those mappings, and sends
-     the Activity's first page (the story page) on to that app's game. discord.js does the rest.
+     marks <html class="discord">, keeps the Activity on its game (no menu, and the site's name isn't a
+     link), sends visit counts and Google Fonts through those mappings, and sends the Activity's first
+     page (the story page) on to that app's game. discord.js does the rest.
    Signing in (the chip's contents, the menu's Account card and the sign-in dialog) is account.js. */
 (() => {
   // Each game's Discord application ID (Developer Portal → General Information → Application ID).
@@ -151,7 +152,7 @@
   /* ---------- Menu ---------- */
   function openMenu() {
     const menu = $("menu");
-    if (menu.open) return;
+    if (menu.open || inDiscord) return; // an Activity stays on its game (the menu button is hidden there)
     menu.showModal();
     $("menuBtn").setAttribute("aria-expanded", "true");
   }
@@ -223,6 +224,8 @@
 
   function init() {
     countPage();
+    // In Discord the site's name isn't a link either, so the Activity stays on its game.
+    if (inDiscord) document.querySelector(".brand a")?.removeAttribute("href");
     // A click on anything marked data-count="name" counts as that event (it still sends as the page changes).
     document.addEventListener("click", (e) => {
       const el = e.target.closest("[data-count]");

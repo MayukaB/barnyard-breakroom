@@ -204,7 +204,7 @@ html:has(dialog.howto[open]){overflow:hidden}
 .howto-end{position:sticky;bottom:-20px;margin:16px -24px -20px;padding:0 24px 20px;background:var(--dialog)}
 .howto-end::before{content:"";position:absolute;left:0;right:0;top:-16px;height:16px;background:linear-gradient(transparent,var(--dialog));pointer-events:none}
 
-/* Inside a Discord Activity (site.js sets html.discord; discord.js adds the note). The other game is a
-   separate Activity, so its button would only open the website. */
-.discord #otherGame{display:none}
+/* Inside a Discord Activity (site.js sets html.discord; discord.js adds the note). The Activity stays on
+   its game: no menu, and the other game (a separate Activity) has no button. */
+.discord #menuBtn,.discord #otherGame{display:none}
 .discord-note{font-size:14px;color:var(--ink-soft);margin:-4px 0 14px}
