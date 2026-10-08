@@ -74,7 +74,10 @@ function recap(game: Game, date: string, players: any[]) {
     if (i === 0 || rank(p.result) !== rank(players[i - 1].result)) place = i + 1;
     const won = !(p.result.game === "pecks" && p.result.outcome === "miss");
     const medal = won && place <= 3 ? ["🥇", "🥈", "🥉"][place - 1] + " " : "";
-    const line = `${place}\\. ${medal}**${plain(p.display_name)}** ${describe(p.result)}\n`;
+    // An @mention, which shows the player's name in that server and is clickable. message() turns off
+    // pings, so nobody is notified. Their saved name stands in if the ID somehow isn't one.
+    const who = /^\d{17,20}$/.test(p.user_id) ? `<@${p.user_id}>` : `**${plain(p.display_name)}**`;
+    const line = `${place}\\. ${medal}${who} ${describe(p.result)}\n`;
     if (text.length + line.length + footer.length > LIMIT) {
       text += `…and ${n - i} more\n`;
       break;
