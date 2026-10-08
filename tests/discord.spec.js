@@ -105,15 +105,20 @@ test("in Discord, the menu, sign-in and the other game are hidden, and Share use
   await expect(page.locator(".brand a")).not.toHaveAttribute("href");
   await expect(page.locator("#acctChip")).toBeHidden();
   await expect(page.locator("#otherGame")).toBeHidden();
+  await expect(page.getByRole("link", { name: "Read today’s story →" })).toBeHidden();
   await page.getByRole("button", { name: "Share in Discord" }).click();
   await expect.poll(() => calls(page, "shareLink")).toHaveLength(1);
   const [{ message }] = await calls(page, "shareLink");
   expect(message).toMatch(/^Hen Pecks #3\nPecks: [🐣🥚]{7}\nCracked on try 1\/3 🐔$/u);
 });
 
-test("in Discord, links open in the browser, at the website's address", async ({ page }) => {
+test("in Discord, any link to another page opens in the browser, at the website's address", async ({ page }) => {
   await winPecks(page);
-  await page.getByRole("link", { name: "Read today’s story →" }).click();
+  // The game has no such links in Discord now, so add one, as a later change might.
+  await page.evaluate(() =>
+    document.querySelector("#result").insertAdjacentHTML("beforeend", '<a href="./">Story</a>'),
+  );
+  await page.getByRole("link", { name: "Story" }).click();
   await expect.poll(() => calls(page, "openExternalLink")).toEqual([{ url: "https://barnyardbreakroom.com/" }]);
   expect(new URL(page.url()).pathname).toBe("/pecks.html");
 });

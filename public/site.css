@@ -205,6 +205,6 @@ html:has(dialog.howto[open]){overflow:hidden}
 .howto-end::before{content:"";position:absolute;left:0;right:0;top:-16px;height:16px;background:linear-gradient(transparent,var(--dialog));pointer-events:none}
 
 /* Inside a Discord Activity (site.js sets html.discord; discord.js adds the note). The Activity stays on
-   its game: no menu, and the other game (a separate Activity) has no button. */
-.discord #menuBtn,.discord #otherGame{display:none}
+   its game: no menu, and no end-screen buttons to the other game (a separate Activity) or the story. */
+.discord #menuBtn,.discord #otherGame,.discord [data-count$="-to-story"]{display:none}
 .discord-note{font-size:14px;color:var(--ink-soft);margin:-4px 0 14px}
