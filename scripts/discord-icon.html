@@ -1,7 +1,8 @@
 <!doctype html><meta charset="utf-8">
-<!-- Source for the Hen Pecks Discord app icon (1024x1024; Discord shows it in a circle, so the hen stays in
-     the middle). Serve the repo root (npx serve .), open /scripts/discord-icon.html, and screenshot #pecks.
-     Upload it in the Developer Portal → General Information → App Icon. -->
+<!-- Source for the Discord app icons (1024x1024; Discord shows them in a circle, so the animals stay in the
+     middle). Serve the repo root (npx serve .), open /scripts/discord-icon.html, and screenshot #pecks (Hen
+     Pecks) and #biscuit (Biscuit and Marshmallow). Upload each in its app's Developer Portal → General
+     Information → App Icon. -->
 <style>
 body{margin:0;background:#999}
 .icon{width:1024px;height:1024px;overflow:hidden}
@@ -9,11 +10,15 @@ body{margin:0;background:#999}
 </style>
 <svg width="0" height="0" style="position:absolute"><defs>
 <filter id="wc" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation="0.2"/></filter>
+<filter id="wc2" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.6" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation="0.15"/></filter>
+<filter id="wc3" x="-15%" y="-15%" width="130%" height="130%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.3" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation="0.1"/></filter>
 </defs></svg>
 
 <div class="icon" id="pecks"><svg viewBox="0 0 100 100" id="hen"></svg></div>
+<div class="icon" id="biscuit"><svg viewBox="12 -10 136 136" id="snuggle"></svg></div>
 
 <script src="../public/pecks-art.js"></script>
+<script src="../public/biscuit-art.js"></script>
 <script>
 const { A, P } = PECKS_ART.kit;
 document.getElementById("hen").innerHTML =
@@ -22,4 +27,9 @@ document.getElementById("hen").innerHTML =
   A("hen", 48, 80, 1.9, { mood: "happy2" }) +
   P("nest", 50, 85, 2, { eggs: [] }) +
   '';
+document.getElementById("snuggle").innerHTML =
+  '<rect x="0" y="-20" width="160" height="160" fill="#DCEBF2"/>' +
+  '<path d="M0 84 C40 72 80 78 160 68 V140 H0Z" fill="#CFE3B8"/>' +
+  '<path d="M0 98 C50 90 110 96 160 90 V140 H0Z" fill="#BFD9A2"/>' +
+  BISCUIT_ART.snuggle();
 </script>
