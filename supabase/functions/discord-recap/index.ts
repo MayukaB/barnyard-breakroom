@@ -1,8 +1,9 @@
 // The daily recap: for each game, one message per channel listing everyone who finished the day's puzzle
-// there, best first. Started once a day by .github/workflows/discord-recap.yml with the RECAP_SECRET secret
-// (deployed with --no-verify-jwt, so that header is what keeps anyone else from starting it).
+// there, best first. Started once a day at 4:00 UTC by a cron-job.org job (see README), or by hand with
+// .github/workflows/discord-recap.yml, with the RECAP_SECRET secret (deployed with --no-verify-jwt, so that
+// header is what keeps anyone else from starting it).
 //   POST …/discord-recap   header x-recap-secret   optional body { date: "YYYY-MM-DD" }  → what it posted
-// The date defaults to yesterday in UTC. The workflow runs at 4:00 UTC, when the Americas are still on
+// The date defaults to yesterday in UTC. It runs at 4:00 UTC, when the Americas are still on
 // that day, so results finished there afterwards miss the recap. Each channel gets a day's recap once,
 // even if this runs again.
 // Posting needs the game's bot in that server; channels where it isn't are skipped.

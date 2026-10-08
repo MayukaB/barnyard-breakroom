@@ -1,12 +1,10 @@
 name: Discord recap
 
-# Posts yesterday's results in each Discord channel where the games were played
-# (supabase/functions/discord-recap), at 4:00 UTC. That's evening in the Americas (midnight in
-# New York in summer), so players there who finish "yesterday" after it runs aren't in its recap.
-# Does nothing until both secrets are set.
+# Posts a day's results in each Discord channel where the games were played
+# (supabase/functions/discord-recap). The daily run comes from cron-job.org (see README), because
+# GitHub's schedules are often late by an hour or more. This is for running it by hand, such as to
+# redo a day. Does nothing until both secrets are set.
 on:
-  schedule:
-    - cron: "0 4 * * *"
   workflow_dispatch:
     inputs:
       date:
