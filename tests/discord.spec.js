@@ -149,7 +149,7 @@ test("the Activity opens on the home page and goes on to its game, keeping Disco
 }) => {
   // As if DISCORD_APPS in site.js had this app's ID for Hen Pecks.
   await page.route("**/site.js", async (r) => {
-    const body = (await readFile("public/site.js", "utf8")).replace('pecks: ""', 'pecks: "111"');
+    const body = (await readFile("public/site.js", "utf8")).replace(/pecks: "\d*"/, 'pecks: "111"');
     await r.fulfill({ contentType: "text/javascript", body });
   });
   await page.goto(`${ACTIVITY}/${LAUNCH}`);
