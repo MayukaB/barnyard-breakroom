@@ -8,7 +8,7 @@ A new animal news story each morning, painted as a cute storybook watercolor.
 public/      the website: exactly what gets published to GitHub Pages
 scripts/     the daily story update, its failure alert, the phrase check and the link-preview card source
 tests/       browser tests (*.spec.js, Playwright), the daily script's tests (*.test.mjs) and a tiny local server
-supabase/    the database setup for accounts (Hen Pecks and Biscuit and Marshmallow stats)
+supabase/    the database setup for accounts (Hen Pecks and Biscuit and Marshmallow stats), and the Discord functions
 .github/     the daily story workflow and the checks that run on every push
 ```
 
@@ -27,6 +27,7 @@ Everything in `public/` goes live as it is, so a new page, script or image only 
 - `og-story.png`, `og-pecks.png` and `og-biscuit.png` are the link preview images (what shows up when someone shares a link). Their source is `scripts/og-cards.html`. The preview tags point at barnyardbreakroom.com, so update them if the domain changes.
 - `pecks-art.js` draws the Hen Pecks pictures: a small kit of watercolor animals and props, one scene per phrase (shown on a win) and a sad hen (shown on a loss). A new phrase without a scene falls back to the happy hen.
 - `scripts/update.mjs` reads the animals feed of each source below (currently just Mongabay), gives Claude (Anthropic API) the recent articles that aren't on the site yet, and asks it to pick the newest one about an animal and paint it. Claude opens the chosen article with its web fetch tool for the whole story, and works from the feed's opening paragraphs if the page is blocked. The script then and adds it to `stories.json`. With more than one source, each day starts with a different one; if that one has nothing new or can't be read, the next one gets a turn. Only stories mainly about an animal count, and only from the last 14 days. Sad stories (deaths, disease, culls) are included and painted cute but gently sad, never graphic. It adds at most one story a day (by UTC date): if one was already added today, it stops before calling Claude, so starting the workflow more than once a day is safe. To add a second story anyway, tick **Add a story even if today's is already up** when running the workflow by hand.
+- `discord.js` runs the games inside Discord (see **Discord Activities**), using Discord's SDK from `vendor/discord-sdk.js`. On the website it does nothing.
 - `404.html` is the page GitHub Pages shows for any address that doesn't exist. Its links start with `/` so it works at any depth.
 - `.github/workflows/daily.yml` runs the update every morning, commits the new story, and deploys `public/` to GitHub Pages. It also redeploys on every push to `main`.
 - `scripts/alert.sh` runs at the end of each daily run. If the run fails, or no new story has arrived for 4 days, it opens a GitHub issue labelled `daily-story-alert` (GitHub emails you about it). The issue closes itself after the next run that works.
@@ -42,7 +43,7 @@ Each run is one feed download and one API call with one page fetch. On days when
 
 ## Accounts (Supabase)
 
-1. **Database:** in your Supabase project, open SQL Editor → New query, paste all of `supabase/schema.sql`, and run it. It creates the `pecks_players` and `biscuit_players` tables (each player can only read and change their own row) and the `pecks_sync` and `biscuit_sync` functions the games call. After pulling a change to it, run the whole file again; it's safe to re-run.
+1. **Database:** in your Supabase project, open SQL Editor → New query, paste all of `supabase/schema.sql`, and run it. It creates the `pecks_players` and `biscuit_players` tables (each player can only read and change their own row) and the `pecks_sync` and `biscuit_sync` functions the games call. It also creates the Discord Activities' tables (`discord_launches`, `discord_results`, `discord_recaps`), which only the Discord functions can use. After pulling a change to it, run the whole file again; it's safe to re-run.
 2. **Keys:** Project Settings → API. Copy the Project URL and the `anon` public key into `CLOUD` at the top of `account.js`. The anon key is safe to publish; never put the `service_role` key in the site.
 3. **Redirects:** Authentication → URL Configuration. Set Site URL to `https://barnyardbreakroom.com/pecks.html`. Sign-in links bring players back to the page they signed in from, so add every page to Redirect URLs: `https://barnyardbreakroom.com/`, `https://barnyardbreakroom.com/pecks.html`, `https://barnyardbreakroom.com/biscuit.html`, and the same three on `http://localhost:3000` (for `npx serve`). A page that isn't listed falls back to the Site URL.
 4. **Emails:** Supabase's built-in email sender only allows a few emails an hour and is meant for testing. Before sharing widely, add your own sender under Authentication → Emails → SMTP Settings (Resend, Postmark and Brevo all have free tiers). You can reword the "Magic Link" email under Authentication → Emails → Templates.
@@ -70,6 +71,58 @@ Besides page views, the dashboard lists these events:
 - Signing in (`account.js`), never who: `signin-opened`; `signin-email-sent`, or `signin-email-failed` / `signin-email-too-many`; `signin-google-redirect` (the fallback Google button); `signed-in-email`, `signed-in-google` once the player is back and signed in; `signin-link-failed` (an expired or used link); `signin-failed-google`.
 - `error-<page>: <message>`: a script error in the site's own files (up to 3 different ones a page view; the title says which file and line). Worth a look whenever one shows up.
 
+## Discord Activities
+
+Each game is also a Discord Activity, like Wordle on Discord: players start it in a channel, and when they finish, their result is posted there. Each day, every channel also gets a recap of the day before. There are two Discord apps, one per game. Each app shows the same page as the website, through Discord's proxy.
+
+**How it works**
+
+1. A player starts the game: from the App Launcher, by typing `/pecks` or `/biscuit`, or by pressing **Play** on one of the game's messages. Discord sends that to the `discord-interactions` function. The function tells Discord to open the Activity, then posts "**Name** is playing Hen Pecks…" with a Play button. It keeps the interaction's token, which can edit that message for 15 minutes.
+2. The Activity opens at `<app id>.discordsays.com/`, which Discord's proxy fetches from barnyardbreakroom.com. `site.js` recognises the address, sends the page on to that app's game (`DISCORD_APPS` at the top of `site.js`), and fetches visit counts and fonts through the proxy. Sign-in is hidden, because players are already signed in to Discord.
+3. `discord.js` connects to Discord, and the player allows the game to know who they are (the `identify` scope, asked once). When the game ends, it sends the result (`window.GameResult` in `pecks.js` and `biscuit.js`) to the `discord-activity` function.
+4. The function checks the player with Discord and saves their first result of the day. It then edits their "is playing" message into the result, like "🐔 **Name** played Hen Pecks #12 / 🐣🥚🐣 cracked on try 2/3". After 15 minutes the token has expired, so it posts a new message as the app's bot instead. That only works where the bot has been added to the server. The function only ever posts in a channel where that player started the game. If it can't post, the game says so, and **Share in Discord** (which replaces "Copy my result") opens Discord's own share dialog.
+5. Each day at 4:00 UTC, `.github/workflows/discord-recap.yml` runs the `discord-recap` function. For each game and channel, it posts everyone's results for the day before, best first, with a 🏆 for the best. Results go under the player's own date, the same day the game showed them. At 4:00 UTC it's still that day in the Americas (8pm to midnight across the US), so results finished there after the recap runs aren't in it. Recaps need the bot in the server too.
+
+Inside Discord, links to other pages open in the player's browser, on barnyardbreakroom.com. The other game's button is hidden, because it's a separate Activity. Visit counts show up under `/discord/pecks.html` and `/discord/biscuit.html`, and Share in Discord counts as `pecks-shared-discord` or `biscuit-shared-discord`.
+
+Results are whatever the game sends. The function checks that they're believable, but someone could still send a made-up score for their own name. Nothing is won, so that's accepted.
+
+Files: `public/discord.js`, `public/vendor/discord-sdk.js` (how to upgrade it is at its top), `supabase/functions/` (`discord-interactions`, `discord-activity`, `discord-recap`, and `_shared/discord.ts` with the message wording), the Discord tables at the end of `supabase/schema.sql`, `scripts/discord-commands.mjs`, and `.github/workflows/discord-recap.yml`.
+
+**Setup** (once per game, except steps 1, 5 and 8). Below, `<ref>` is the Supabase project reference, `tgqwamamqcbrwpheldpi`, and `<game>` is `pecks` or `biscuit`.
+
+1. **Database:** run all of `supabase/schema.sql` again (see **Accounts**).
+2. **The app:** at [discord.com/developers/applications](https://discord.com/developers/applications), **New Application**, named after the game.
+   - **General Information:** copy the **Application ID** into `DISCORD_APPS` at the top of `public/site.js`, and note the **Public Key**.
+   - **OAuth2:** **Reset Secret** and note the client secret. Under Redirects, add `https://127.0.0.1`. Discord asks for one, though Activities don't use it.
+   - **Bot:** **Reset Token** and note the bot token.
+   - **Installation:** tick **User Install** and **Guild Install**. For Guild Install, choose the scopes `applications.commands` and `bot`, and the permissions **View Channels**, **Send Messages** and **Send Messages in Threads**.
+   - **Activities → Settings:** turn on **Enable Activities**.
+   - **Activities → URL Mappings:** add these, in this order (the root, `/`, has to be last):
+
+     | Prefix           | Target                              |
+     | ---------------- | ----------------------------------- |
+     | `/x/supabase`    | `<ref>.supabase.co`                 |
+     | `/x/goatcounter` | `barnyardbreakroom.goatcounter.com` |
+     | `/x/gfonts`      | `fonts.googleapis.com`              |
+     | `/x/gstatic`     | `fonts.gstatic.com`                 |
+     | `/`              | `barnyardbreakroom.com`             |
+
+3. **Secrets:** in Supabase → Edge Functions → Secrets, add `DISCORD_PECKS_APP_ID`, `DISCORD_PECKS_PUBLIC_KEY`, `DISCORD_PECKS_CLIENT_SECRET` and `DISCORD_PECKS_BOT_TOKEN`, or the same with `BISCUIT`. Never put these in the site.
+4. **Functions:** deploy them with the Supabase CLI. The first time, run `npx supabase login`. Then:
+   ```sh
+   npx supabase functions deploy discord-interactions --no-verify-jwt --project-ref <ref>
+   npx supabase functions deploy discord-activity --no-verify-jwt --project-ref <ref>
+   npx supabase functions deploy discord-recap --no-verify-jwt --project-ref <ref>
+   ```
+   `--no-verify-jwt` is needed because these functions are called by Discord, and by players who aren't signed in to the site. Discord's signature, the player's Discord token and the recap secret protect them instead. Redeploy after changing anything in `supabase/functions/`.
+5. **Recap secret:** make up a long random string. Add it as `RECAP_SECRET` in Supabase's Edge Function secrets and in GitHub (Settings → Secrets and variables → Actions). In GitHub, also add `DISCORD_RECAP_URL` with the value `https://<ref>.supabase.co/functions/v1/discord-recap`.
+6. **Interactions:** in the app's **General Information**, set **Interactions Endpoint URL** to `https://<ref>.supabase.co/functions/v1/discord-interactions?game=<game>` and save. Discord checks it straight away.
+7. **Commands:** `DISCORD_APP_ID=... DISCORD_BOT_TOKEN=... node scripts/discord-commands.mjs <game>` (the PowerShell form is at the top of the script). This sets up the App Launcher entry and `/pecks` or `/biscuit`, both handled by the function.
+8. **Publish** the `DISCORD_APPS` change in `site.js`, then add the app to a server with the **Install Link** from **Installation**, choosing a server. Type `/pecks` in a channel to try it.
+
+Until a game's ID is in `DISCORD_APPS`, its Activity opens on the story page instead of the game. To open an Activity that's still in development, turn on Developer Mode in Discord first (User Settings → Advanced).
+
 ## Security policy
 
 Both pages set a Content-Security-Policy in a `<meta>` tag (GitHub Pages can't send headers). It lists what each page may load, so an injected script can't run. Inline scripts are blocked; that's why the story page's code lives in `index.js`. Inline styles are allowed because the pages and paintings use `style` attributes.
@@ -88,7 +141,7 @@ npm run lint                      # ESLint: catches mistakes like undefined name
 npm run format                    # Prettier: formats the scripts, tests and config files
 ```
 
-`tests/pecks.spec.js` covers pecking, winning, losing, wrong tries, hard mode and peeking, reloading mid-game, the story page's Hen Pecks card and upgrading old saved data. `tests/biscuit.spec.js` plays Biscuit and Marshmallow: tapping, dragging and keyboard swaps, green tiles staying put, solving the board and reloading mid-game. `tests/site.spec.js` covers the top bar: the menu, the light/dark switch, opening sign-in from every page, and the 404 page. The tests pin the date, so they always play the same puzzle, and they block the sign-in services so they run offline. If port 4173 is busy, run them on another port: `PORT=4180 npm test` in Git Bash or macOS/Linux, or `$env:PORT=4180; npm test` in PowerShell.
+`tests/pecks.spec.js` covers pecking, winning, losing, wrong tries, hard mode and peeking, reloading mid-game, the story page's Hen Pecks card and upgrading old saved data. `tests/biscuit.spec.js` plays Biscuit and Marshmallow: tapping, dragging and keyboard swaps, green tiles staying put, solving the board and reloading mid-game. `tests/discord.spec.js` plays both games as a Discord Activity, with stand-ins for Discord and the server: signing in with Discord, sending the result, Share, links opening in the browser and the first page going on to its game. `tests/site.spec.js` covers the top bar: the menu, the light/dark switch, opening sign-in from every page, and the 404 page. The tests pin the date, so they always play the same puzzle, and they block the sign-in services so they run offline. If port 4173 is busy, run them on another port: `PORT=4180 npm test` in Git Bash or macOS/Linux, or `$env:PORT=4180; npm test` in PowerShell.
 
 `tests/update.test.mjs` runs `scripts/update.mjs` on a copy of a small story list, with the Anthropic API and the feed replaced by `tests/fixtures/fake-anthropic.mjs`. It checks that a good story is added with its title, link and date from the feed, that old articles, repeats and links to other sites are left out, that quiet days change nothing, and that blocked feeds and bad replies (not JSON, cut off, an article not in the list, missing fields, paintings too small or too big, API errors) are refused without touching the list.
 

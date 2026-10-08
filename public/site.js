@@ -12,8 +12,17 @@
      and never from a local copy of the site or an automated browser (the tests).
      Open any page with #nocount on the end to stop counting your own visits on that browser
      (#count turns it back on).
+   - Discord: inside a Discord Activity the page runs at <app id>.discordsays.com, where Discord's proxy
+     only lets it reach the addresses in the app's URL mappings (README, Discord Activities). There this
+     marks <html class="discord">, sends visit counts and Google Fonts through those mappings, and sends
+     the Activity's first page (the story page) on to that app's game. discord.js does the rest.
    Signing in (the chip's contents, the menu's Account card and the sign-in dialog) is account.js. */
 (() => {
+  // Each game's Discord application ID (Developer Portal → General Information → Application ID).
+  // Public, like the address of a page. Leave one empty until that game's app is set up.
+  const DISCORD_APPS = { pecks: "", biscuit: "" };
+  // The URL mapping prefixes set in each Discord app (Activities → URL Mappings).
+  const PROXY = { goatcounter: "/x/goatcounter", gfonts: "/x/gfonts", gstatic: "/x/gstatic" };
   // The site code from goatcounter.com, e.g. "barnyard" for barnyard.goatcounter.com. Each page's
   // Content-Security-Policy must allow https://<code>.goatcounter.com in connect-src and img-src.
   const GOATCOUNTER = "barnyardbreakroom";
@@ -51,6 +60,30 @@
   }
   applyTheme(savedTheme());
 
+  /* ---------- Discord ---------- */
+  const inDiscord = /\.discordsays\.com$/.test(location.hostname);
+  if (inDiscord) {
+    root.classList.add("discord");
+    // An Activity always opens on "/", so send it on to its game, keeping Discord's launch details.
+    const appId = location.hostname.split(".")[0];
+    const game = Object.keys(DISCORD_APPS).find((g) => DISCORD_APPS[g] === appId);
+    if (game && /^\/(index\.html)?$/.test(location.pathname)) location.replace(`/${game}.html${location.search}`);
+    // Google Fonts' stylesheet (just above this script) can't load here, so fetch it through the proxy and
+    // point its font files at the proxy too.
+    const fonts = document.querySelector('link[rel="stylesheet"][href^="https://fonts.googleapis.com/"]');
+    if (fonts) {
+      fetch(fonts.href.replace("https://fonts.googleapis.com", PROXY.gfonts))
+        .then((r) => (r.ok ? r.text() : Promise.reject()))
+        .then((css) => {
+          const style = document.createElement("style");
+          style.textContent = css.replaceAll("https://fonts.gstatic.com", PROXY.gstatic);
+          document.head.append(style);
+        })
+        .catch(() => {});
+    }
+  }
+  window.InDiscord = inDiscord;
+
   /* ---------- Visit counts ---------- */
   if (location.hash === "#nocount" || location.hash === "#count") {
     try {
@@ -71,7 +104,7 @@
   function send(params) {
     if (!counting()) return;
     const url =
-      `https://${GOATCOUNTER}.goatcounter.com/count?` +
+      (inDiscord ? `${PROXY.goatcounter}/count?` : `https://${GOATCOUNTER}.goatcounter.com/count?`) +
       new URLSearchParams({
         ...params,
         s: `${screen.width},${screen.height},${devicePixelRatio || 1}`,
@@ -81,7 +114,8 @@
   }
   function countPage() {
     if (document.visibilityState === "prerender") return;
-    send({ p: location.pathname, t: document.title, r: document.referrer });
+    // Plays inside Discord show up as /discord/pecks.html and so on.
+    send({ p: (inDiscord ? "/discord" : "") + location.pathname, t: document.title, r: document.referrer });
   }
   function countEvent(name, title) {
     send({ p: name, t: title || name, e: "true" });

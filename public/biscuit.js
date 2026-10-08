@@ -352,6 +352,7 @@ function win() {
   say("Every letter is green. Biscuit followed the yarn home to Marshmallow!");
   celebrate();
   setTimeout(() => showResult(true), reduced ? 0 : 1300);
+  document.dispatchEvent(new Event("game:finished")); // discord.js posts the result in Discord
 }
 
 function celebrate() {
@@ -474,6 +475,8 @@ function shareText() {
   const n = starsFor(S.moves);
   return `Biscuit and Marshmallow #${DAY_INDEX + 1} · ${SHAPE}\n${"⭐".repeat(n)}${"☆".repeat(3 - n)} ${S.moves} swaps (par ${PAR})\n🐱🧶🐑\n${location.origin}${location.pathname}`;
 }
+// Today's solved board, for discord.js to post in the Discord channel (null until it's solved).
+window.GameResult = () => S.done ? { game: "biscuit", date: TODAY, no: DAY_INDEX + 1, shape: SHAPE, moves: S.moves, par: PAR, text: shareText() } : null;
 $("share").addEventListener("click", async () => {
   window.Stats?.event("biscuit-shared", "Copied a Biscuit and Marshmallow result");
   const text = shareText();

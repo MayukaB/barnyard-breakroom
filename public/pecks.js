@@ -441,6 +441,7 @@ function endRound(won){
     window.Stats?.event(won ? `pecks-won-${S.outcome}${hard}` : `pecks-lost${hard}`,
       won ? `Won Hen Pecks (${S.outcome === "pecks" ? "pecks alone" : "try " + S.solvedOnTry})${hard && ", hard mode"}` : `Lost Hen Pecks${hard && ", hard mode"}`);
   }
+  document.dispatchEvent(new Event("game:finished")); // discord.js posts the result in Discord
   return [{ say: [""] }, { sync: true }, { result: true }];
 }
 
@@ -536,6 +537,14 @@ function shareText(){
   const hard = S.phase === "won" && S.hard && !S.hintUsed ? " · Hard mode 🌶️" : "";
   return `Hen Pecks #${DAY_INDEX + 1}${hard}\nPecks: ${eggs}\n${end}\n${location.origin}${location.pathname}`;
 }
+// Today's finished game, for discord.js to post in the Discord channel (null until it's over).
+window.GameResult = () => S.phase === "won" || S.phase === "lost" ? {
+  game: "pecks", date: TODAY, no: DAY_INDEX + 1,
+  outcome: S.outcome || (S.phase === "lost" ? "miss" : wonByPecks() ? "pecks" : "t" + (S.solvedOnTry || 1)),
+  hits: S.pecks.map((k,n) => !!S.hitsPerPeck[n]),
+  hard: S.phase === "won" && !!S.hard && !S.hintUsed,
+  text: shareText(),
+} : null;
 $("share").addEventListener("click", async () => {
   window.Stats?.event("pecks-shared", "Copied a Hen Pecks result");
   const text = shareText();

@@ -1,0 +1,31 @@
+name: Discord recap
+
+# Posts yesterday's results in each Discord channel where the games were played
+# (supabase/functions/discord-recap), at 4:00 UTC. That's evening in the Americas (midnight in
+# New York in summer), so players there who finish "yesterday" after it runs aren't in its recap.
+# Does nothing until both secrets are set.
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Day to recap (YYYY-MM-DD). Empty: yesterday. Channels that already have it are skipped."
+        required: false
+
+permissions: {}
+
+jobs:
+  recap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      URL: ${{ secrets.DISCORD_RECAP_URL }}
+      SECRET: ${{ secrets.RECAP_SECRET }}
+      DATE: ${{ inputs.date }}
+    steps:
+      - name: Post the recaps
+        run: |
+          if [ -z "$URL" ] || [ -z "$SECRET" ]; then echo "DISCORD_RECAP_URL or RECAP_SECRET isn't set; skipping."; exit 0; fi
+          body=$(jq -n --arg date "$DATE" 'if $date == "" then {} else {date: $date} end')
+          curl --fail-with-body -sS -X POST "$URL" -H "x-recap-secret: $SECRET" -H "Content-Type: application/json" -d "$body"

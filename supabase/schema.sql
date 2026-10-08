@@ -1,5 +1,5 @@
 -- Barnyard Breakroom accounts: saves each signed-in player's game stats (Hen Pecks, and Biscuit and
--- Marshmallow at the end) so they follow them to any device.
+-- Marshmallow further down) so they follow them to any device. At the end: the Discord Activities' tables.
 -- Run this once in Supabase → SQL Editor → New query. It is safe to run again after changes.
 
 -- One row per player.
@@ -195,3 +195,54 @@ $$;
 
 revoke all on function public.biscuit_sync(jsonb) from public, anon;
 grant execute on function public.biscuit_sync(jsonb) to authenticated;
+
+-- ---------------------------------------------------------------------------------------------------
+-- Discord Activities (supabase/functions/discord-*). Only those functions use these tables, with the
+-- service_role key: row-level security is on with no policies, so the site's anon key can't read them.
+
+-- Each time someone starts a game in Discord: the interaction's token (good for 15 minutes) and the
+-- "is playing" message it posted, which becomes their result when they finish.
+create table if not exists public.discord_launches (
+  id           bigint generated always as identity primary key,
+  game         text not null,
+  user_id      text not null,
+  display_name text not null,
+  channel_id   text not null,
+  guild_id     text,
+  token        text not null,
+  message_id   text,
+  shown        boolean not null default false,   -- the message now shows their result
+  created_at   timestamptz not null default now()
+);
+create index if not exists discord_launches_player on public.discord_launches (game, user_id, channel_id, created_at desc);
+
+-- One result per player per game per day (their own date), from the channel where they finished it.
+-- The daily recap lists a channel's results for a day.
+create table if not exists public.discord_results (
+  game         text not null,
+  user_id      text not null,
+  date         date not null,
+  puzzle       int  not null,
+  display_name text not null,
+  channel_id   text not null,
+  guild_id     text,
+  result       jsonb not null,
+  posted       boolean not null default false,
+  created_at   timestamptz not null default now(),
+  primary key (game, user_id, date)
+);
+create index if not exists discord_results_day on public.discord_results (game, date, channel_id);
+
+-- Recaps already posted, so a channel gets each day's recap once.
+create table if not exists public.discord_recaps (
+  game       text not null,
+  channel_id text not null,
+  date       date not null,
+  created_at timestamptz not null default now(),
+  primary key (game, channel_id, date)
+);
+
+alter table public.discord_launches enable row level security;
+alter table public.discord_results  enable row level security;
+alter table public.discord_recaps   enable row level security;
+revoke all on public.discord_launches, public.discord_results, public.discord_recaps from anon, authenticated;

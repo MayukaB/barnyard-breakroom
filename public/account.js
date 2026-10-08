@@ -3,7 +3,8 @@
    chip and the menu's Account card. Load it after the page's markup and before any game script.
 
    Games use window.Account:
-     Account.enabled      false when CLOUD below isn't filled in (no sign-in anywhere)
+     Account.enabled      false when CLOUD below isn't filled in (no sign-in anywhere), and inside Discord,
+                          where players are already signed in to Discord (discord.js)
      Account.user         the signed-in Supabase user, or null
      Account.client       the Supabase client, or null until it has loaded
      Account.onChange(fn) fn(user or null) once the first check is done, then whenever a different
@@ -37,7 +38,7 @@
   const GOOGLE_GSI = "https://accounts.google.com/gsi/client";
   // Who was signed in last ({ id, email }), so the top bar is right before Supabase has loaded.
   const CACHE_KEY = "bb:account";
-  const enabled = !!(CLOUD.url && CLOUD.anonKey);
+  const enabled = !!(CLOUD.url && CLOUD.anonKey) && !window.InDiscord;
   const $ = (id) => document.getElementById(id);
 
   let sb = null,
