@@ -83,7 +83,7 @@ function nearToday(date: string) {
   return diff <= 864e5;
 }
 
-const stars = (r: Extract<Result, { game: "biscuit" }>) => (r.moves <= r.par ? 3 : r.moves <= r.par + 10 ? 2 : 1);
+export const stars = (r: Extract<Result, { game: "biscuit" }>) => (r.moves <= r.par ? 3 : r.moves <= r.par + 10 ? 2 : 1);
 
 // One line about a result, e.g. "🐣🥚🐣 cracked on try 2/3" or "⭐⭐☆ 23 swaps (par 18)".
 export function summary(r: Result) {
