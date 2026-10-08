@@ -7,7 +7,7 @@
 // that day, so results finished there afterwards miss the recap. Each channel gets a day's recap once,
 // even if this runs again.
 // Posting needs the game's bot in that server; channels where it isn't are skipped.
-import { app, db, discord, GAMES, json, message, plain, rank, summary, title, type Game } from "../_shared/discord.ts";
+import { app, db, discord, GAMES, json, message, plain, rank, stars, type Game, type Result } from "../_shared/discord.ts";
 
 const LIMIT = 1900; // Discord allows 2000 characters
 
@@ -56,24 +56,48 @@ function recap(game: Game, date: string, players: any[]) {
   const g = GAMES[game];
   players.sort((a, b) => rank(a.result) - rank(b.result) || Date.parse(a.created_at) - Date.parse(b.created_at));
   const day = new Date(date + "T12:00:00Z").toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
+    weekday: "short",
+    month: "short",
     day: "numeric",
     timeZone: "UTC",
   });
+  const yesterday = date === new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+  const first = players[0].result;
+  const no = first.game === "pecks" ? `#${first.no}` : `#${first.no} ${first.shape}`;
   const n = players.length;
-  let text = `${g.emoji} **${title(players[0].result)}**, ${day}: ${n} player${n === 1 ? "" : "s"}\n`;
-  // A trophy for everyone who tied for best, unless the best was a Hen Pecks phrase that got away.
-  const best = rank(players[0].result);
-  const won = (r: any) => !(r.game === "pecks" && r.outcome === "miss");
+  const footer = `\n${n} player${n === 1 ? "" : "s"} · Today's puzzle is ready, press **Play**!`;
+  let text = `${g.emoji} **${yesterday ? "Yesterday's " : ""}${g.name}** · ${no} · ${day}\n\n`;
+  // Everyone is numbered; ties share a number and the next one skips ahead (1, 1, 3). The top three places
+  // get medals, except a Hen Pecks phrase that got away. The "\." keeps Discord from renumbering it as a list.
+  let place = 0;
   for (const [i, p] of players.entries()) {
-    const top = rank(p.result) === best && won(p.result);
-    const line = `${top ? "🏆" : "▫️"}**${plain(p.display_name)}** ${summary(p.result)}\n`;
-    if (text.length + line.length > LIMIT) {
+    if (i === 0 || rank(p.result) !== rank(players[i - 1].result)) place = i + 1;
+    const won = !(p.result.game === "pecks" && p.result.outcome === "miss");
+    const medal = won && place <= 3 ? ["🥇", "🥈", "🥉"][place - 1] + " " : "";
+    const line = `${place}\\. ${medal}**${plain(p.display_name)}** ${describe(p.result)}\n`;
+    if (text.length + line.length + footer.length > LIMIT) {
       text += `…and ${n - i} more\n`;
       break;
     }
     text += line;
   }
-  return text + `Today's ${g.name} is ready. Press Play!`;
+  return text + footer;
+}
+
+// A result in words, then its emoji, e.g. "cracked it on try 2 of 3  🥚🐣🐣" or "16 swaps, 2 under par  ⭐⭐⭐".
+function describe(r: Result) {
+  if (r.game === "pecks") {
+    const eggs = r.hits.map((h) => (h ? "🐣" : "🥚")).join("");
+    const end =
+      r.outcome === "miss"
+        ? "the phrase got away 🌧️"
+        : r.outcome === "pecks"
+          ? "cracked it with pecks alone"
+          : `cracked it on try ${r.outcome.slice(1)} of 3`;
+    return `${end}${r.hard ? " 🌶️" : ""}  ${eggs}`;
+  }
+  const d = r.moves - r.par;
+  const par = d === 0 ? "on par" : `${Math.abs(d)} ${d < 0 ? "under" : "over"} par`;
+  const n = stars(r);
+  return `${r.moves} swaps, ${par}  ${"⭐".repeat(n)}${"☆".repeat(3 - n)}`;
 }
