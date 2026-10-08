@@ -26,6 +26,11 @@ async function main() {
   const appId = location.hostname.split(".")[0];
   const { DiscordSDK } = await import("./vendor/discord-sdk.js");
   step = "connecting to Discord";
+  // Put back the Discord window's address that site.js passed along (see there), or the SDK would send
+  // everything to this site's own address, where Discord never sees it.
+  const opener = new URLSearchParams(location.search).get("bb_referrer");
+  if (opener !== null && (!opener || /^https:\/\//.test(opener)) && document.referrer.startsWith(location.origin))
+    Object.defineProperty(document, "referrer", { value: opener });
   sdk = new DiscordSDK(appId);
   await Promise.race([sdk.ready(), timeout(15000, "the connection")]);
 

@@ -16,6 +16,7 @@ export class DiscordSDK {
   constructor(clientId) {
     const q = new URLSearchParams(location.search);
     this.clientId = clientId;
+    window.discordReferrer = document.referrer; // the real SDK talks to this address
     this.channelId = q.get("channel_id");
     const record = (name, reply) => async (args) => (window.discordCalls.push([name, args]), reply);
     this.commands = {
@@ -73,7 +74,7 @@ test("on the website, nothing loads from Discord", async ({ page }) => {
   await page.goto("/pecks.html");
   await expect(page.locator("#puzzleNo")).toContainText("No. 3");
   await expect(page.locator("html")).not.toHaveClass(/discord/);
-  expect(sdk.filter((u) => !u.endsWith("/discord.js"))).toEqual([]);
+  expect(sdk.filter((u) => !/\/discord\.js(\?|$)/.test(u))).toEqual([]);
 });
 
 test("winning Hen Pecks in Discord signs in with Discord and posts the result", async ({ page }) => {
@@ -168,15 +169,18 @@ test("solving Biscuit and Marshmallow in Discord posts the result", async ({ pag
   expect(body.result.par).toBeGreaterThan(0);
 });
 
-test("the Activity opens on the home page and goes on to its game, keeping Discord's launch details", async ({
-  page,
-}) => {
+test("the Activity opens on the home page and goes on to its game, still talking to Discord", async ({ page }) => {
   // As if DISCORD_APPS in site.js had this app's ID for Hen Pecks.
-  await page.route("**/site.js", async (r) => {
+  await page.route(/\/site\.js/, async (r) => {
     const body = (await readFile("public/site.js", "utf8")).replace(/pecks: "\d*"/, 'pecks: "111"');
     await r.fulfill({ contentType: "text/javascript", body });
   });
-  await page.goto(`${ACTIVITY}/${LAUNCH}`);
-  await expect(page).toHaveURL(`${ACTIVITY}/pecks.html${LAUNCH}`);
+  // Discord's window opens the Activity, so it's the referrer.
+  await page.goto(`${ACTIVITY}/${LAUNCH}`, { referer: "https://discord.com/" });
+  await expect(page).toHaveURL(/\/pecks\.html\?/);
   await expect(page.locator("#puzzleNo")).toContainText("No.");
+  // Discord's launch details came along, and the SDK still talks to Discord, not to this site.
+  const q = new URL(page.url()).searchParams;
+  expect([q.get("frame_id"), q.get("instance_id"), q.get("channel_id")]).toEqual(["f1", "i1", "c1"]);
+  await expect.poll(() => page.evaluate(() => window.discordReferrer)).toBe("https://discord.com/");
 });

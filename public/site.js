@@ -68,7 +68,13 @@
     // An Activity always opens on "/", so send it on to its game, keeping Discord's launch details.
     const appId = location.hostname.split(".")[0];
     const game = Object.keys(DISCORD_APPS).find((g) => DISCORD_APPS[g] === appId);
-    if (game && /^\/(index\.html)?$/.test(location.pathname)) location.replace(`/${game}.html${location.search}`);
+    // Discord's SDK learns which Discord window to talk to from document.referrer, which after this move
+    // would be this page instead, so pass the real one along (discord.js puts it back).
+    if (game && /^\/(index\.html)?$/.test(location.pathname)) {
+      const launch = new URLSearchParams(location.search);
+      launch.set("bb_referrer", document.referrer);
+      location.replace(`/${game}.html?${launch}`);
+    }
     // Google Fonts' stylesheet (just above this script) can't load here, so fetch it through the proxy and
     // point its font files at the proxy too.
     const fonts = document.querySelector('link[rel="stylesheet"][href^="https://fonts.googleapis.com/"]');
