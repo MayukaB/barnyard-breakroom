@@ -14,13 +14,20 @@ const SITE = "https://barnyardbreakroom.com";
 const $ = (id) => document.getElementById(id);
 let sdk = null;
 
+// How far the connection to Discord got, so a failure can say which step went wrong (on the result
+// screen, in the console, and to the visit counts as discord-failed-<step>).
+let step = "loading Discord's script";
+const STEPS = {};
+const timeout = (ms, what) => new Promise((_, no) => setTimeout(() => no(new Error(`no answer to ${what}`)), ms));
+
 async function main() {
   if (!window.InDiscord) return;
   const game = location.pathname.replace(/^\/|\.html$/g, "");
   const appId = location.hostname.split(".")[0];
   const { DiscordSDK } = await import("./vendor/discord-sdk.js");
+  step = "connecting to Discord";
   sdk = new DiscordSDK(appId);
-  await sdk.ready();
+  await Promise.race([sdk.ready(), timeout(15000, "the connection")]);
 
   // Links to anything but this page open in the browser instead (on the website, not the proxy).
   document.addEventListener("click", (e) => {
@@ -34,6 +41,8 @@ async function main() {
   });
 
   // Who's playing: Discord gives the game a one-time code, the function swaps it for a token.
+  // The first time, Discord asks the player to allow it, so there's no time limit on that step.
+  step = "asking Discord who's playing";
   const token = (async () => {
     const { code } = await sdk.commands.authorize({
       client_id: appId,
@@ -42,10 +51,12 @@ async function main() {
       prompt: "none",
       scope: ["identify"],
     });
+    step = "signing in";
     const r = await post("token", { game, code });
+    step = "signed in";
     return r.access_token;
   })();
-  token.catch(() => {}); // reported when there's a result to send
+  token.catch(failed);
 
   let sent = null; // the date already sent, so a result is only sent once per page view
   async function report() {
@@ -53,21 +64,37 @@ async function main() {
     if (!result || sent === result.date) return;
     sent = result.date;
     shareButton(result);
+    if (step !== "signed in" && !STEPS.failed) note("Waiting for Discord to say who’s playing…");
     try {
+      const access_token = await token;
+      step = "posting your result";
       const r = await post("result", {
         game,
-        access_token: await token,
+        access_token,
         channel_id: sdk.channelId,
         result: { ...result, text: undefined },
       });
-      note(r.posted ? "Your result is in the channel." : "Couldn’t post your result here. Share it instead?");
-    } catch {
+      note(
+        r.posted
+          ? "Your result is in the channel."
+          : `Couldn’t post your result in this channel (${r.reason}). Share it instead?`,
+      );
+    } catch (e) {
       sent = null;
-      note("Couldn’t post your result just now. Share it instead?");
+      failed(e);
     }
   }
   document.addEventListener("game:finished", report);
   report();
+}
+
+function failed(e) {
+  if (STEPS.failed === step) return; // once per step
+  STEPS.failed = step;
+  const why = String(e?.message || e).slice(0, 80);
+  console.warn("Discord:", step, e);
+  window.Stats?.event(`discord-failed-${step.replace(/\W+/g, "-")}`, why);
+  note(`Couldn’t post your result: something went wrong ${step} (${why}).`);
 }
 
 async function post(path, body) {
@@ -76,7 +103,7 @@ async function post(path, body) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!r.ok) throw new Error(`${path} ${r.status}`);
+  if (!r.ok) throw new Error(`${path} answered ${r.status}`);
   return r.json();
 }
 
@@ -107,4 +134,4 @@ function note(text) {
   p.textContent = text;
 }
 
-main().catch((e) => console.warn("Discord:", e));
+main().catch(failed);

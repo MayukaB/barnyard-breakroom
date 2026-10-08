@@ -27,11 +27,12 @@ export class DiscordSDK {
   ready() { return Promise.resolve(); }
 }`;
 
-let errors, sent, posted;
+let errors, sent, posted, tokenStatus;
 test.beforeEach(async ({ page, context }) => {
   errors = [];
   sent = [];
   posted = true;
+  tokenStatus = 200;
   page.on("pageerror", (e) => errors.push(e.message));
   await context.route(
     /supabase\.co|jsdelivr|accounts\.google|fonts\.(googleapis|gstatic)|\/x\/(gfonts|gstatic)\//,
@@ -41,7 +42,10 @@ test.beforeEach(async ({ page, context }) => {
   await context.route("**/x/supabase/functions/v1/discord-activity/*", async (r) => {
     const path = new URL(r.request().url()).pathname.split("/").pop();
     sent.push([path, r.request().postDataJSON()]);
-    await r.fulfill({ json: path === "token" ? { access_token: "the-token" } : { posted } });
+    if (path === "token" && tokenStatus !== 200) return r.fulfill({ status: tokenStatus, json: { error: "no" } });
+    await r.fulfill({
+      json: path === "token" ? { access_token: "the-token" } : { posted, reason: "not started here" },
+    });
   });
   await context.addInitScript(() => ["biscuit", "pecks"].forEach((g) => localStorage.setItem("bb:howto:" + g, "1")));
 });
@@ -113,8 +117,19 @@ test("in Discord, links open in the browser, at the website's address", async ({
 test("when the result can't be posted, the player is offered Share instead", async ({ page }) => {
   posted = false;
   await winPecks(page);
-  await expect(page.locator("#discordNote")).toHaveText("Couldn’t post your result here. Share it instead?");
+  await expect(page.locator("#discordNote")).toHaveText(
+    "Couldn’t post your result in this channel (not started here). Share it instead?",
+  );
   await expect(page.getByRole("button", { name: "Share in Discord" })).toBeVisible();
+});
+
+test("when signing in with Discord fails, the result screen says which step went wrong", async ({ page }) => {
+  tokenStatus = 401;
+  await winPecks(page);
+  await expect(page.locator("#discordNote")).toHaveText(
+    "Couldn’t post your result: something went wrong signing in (token answered 401).",
+  );
+  expect(sent.filter(([p]) => p === "result")).toEqual([]);
 });
 
 test("solving Biscuit and Marshmallow in Discord posts the result", async ({ page }) => {
