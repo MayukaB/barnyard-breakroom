@@ -231,7 +231,11 @@ test("asks Opus 5.5 at high effort and prints what the call cost", () => {
   assert.equal(req.stream, true);
   assert.deepEqual(req.output_config, { effort: "high" });
   assert.match(req.messages[0].content, /mix-blend-mode:multiply/);
-  assert.match(r.out, /Mongabay: 15000 input and 20000 output tokens on claude-opus-5-5, about \$0\.46\./);
+  assert.deepEqual(req.cache_control, { type: "ephemeral" });
+  assert.match(
+    r.out,
+    /Mongabay: 1 round, 0 pages fetched; 15000 input tokens \(0 read from the cache, 0 written to it\), 20000 output tokens on claude-opus-5-5, about \$0\.46\./,
+  );
 });
 
 test("refuses a reply Claude declined", () => {
@@ -349,6 +353,22 @@ test("puts a streamed reply with thinking and a web fetch back together, and sen
       { type: "web_fetch_tool_result", tool_use_id: "srv_1", content: { type: "web_fetch_result", url } },
     ],
   });
-  assert.match(r.out, /1000 input and 500 output tokens/, "both rounds count toward the cost");
+  assert.match(r.out, /2 rounds, 1 page fetched; 1000 input tokens/, "both rounds count toward the cost");
   assert.equal(r.stories[0].id, "kiwi-return-to-wellington");
+});
+
+test("prices tokens read from and written to the cache", () => {
+  const usage = {
+    input_tokens: 1000,
+    cache_creation_input_tokens: 100000,
+    cache_read_input_tokens: 200000,
+    output_tokens: 10000,
+  };
+  const r = run({ replies: [{ ...reply(story()), usage }] });
+  assert.equal(r.code, 0, r.out);
+  // 1000 x $4 + 100000 x $5 + 200000 x $0.20 + 10000 x $20, per million = $0.744
+  assert.match(
+    r.out,
+    /301000 input tokens \(200000 read from the cache, 100000 written to it\), 10000 output tokens on claude-opus-5-5, about \$0\.74\./,
+  );
 });

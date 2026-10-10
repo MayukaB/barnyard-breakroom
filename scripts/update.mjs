@@ -188,11 +188,12 @@ const MAX_ATTEMPTS = 3;
 const MAX_TOKENS = 48000;
 // Server tools can pause a long turn; it's resent up to this many times.
 const MAX_ROUNDS = 5;
-// Dollars per million tokens, to print what each run cost. A model not listed just prints its tokens.
+// Dollars per million tokens (input, output, read from the cache), to print what each run cost.
+// Writing to the cache costs 1.25 times the input price. A model not listed just prints its tokens.
 const PRICES = {
-  "claude-opus-5-5": [4, 20],
-  "claude-sonnet-5-5": [2, 10],
-  "claude-sonnet-5": [2, 10],
+  "claude-opus-5-5": [4, 20, 0.2],
+  "claude-sonnet-5-5": [2, 10, 0.2],
+  "claude-sonnet-5": [2, 10, 0.2],
 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -299,6 +300,9 @@ function postMessages(messages, src) {
       // Opus 5.5 always thinks; high effort plans the composition and light before painting.
       output_config: { effort: "high" },
       fallbacks: "default",
+      // Caches the conversation as it goes, so resending it after a paused turn (with the fetched
+      // article in it) costs a fraction of the input price. It doesn't change what Claude sees.
+      cache_control: { type: "ephemeral" },
       stream: true,
       messages,
       // Web fetch only for the source's own site, and not at all for a story from a site
@@ -314,20 +318,33 @@ function postMessages(messages, src) {
 // returns the reply's JSON. Throws when the reply is unusable.
 async function ask(content, src, label) {
   const messages = [{ role: "user", content }];
-  const used = { input: 0, output: 0 };
+  const used = { input: 0, cacheWrite: 0, cacheRead: 0, output: 0 };
   let reply;
-  for (let round = 0; round < MAX_ROUNDS; round++) {
+  let rounds = 0;
+  let fetches = 0;
+  for (; rounds < MAX_ROUNDS;) {
     reply = await callClaude(messages, src);
+    rounds++;
     const u = reply.usage || {};
-    used.input += (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0);
+    used.input += u.input_tokens || 0;
+    used.cacheWrite += u.cache_creation_input_tokens || 0;
+    used.cacheRead += u.cache_read_input_tokens || 0;
     used.output += u.output_tokens || 0;
+    fetches += reply.content.filter((b) => b.type === "web_fetch_tool_result").length;
     if (reply.stop_reason !== "pause_turn") break;
     messages.push({ role: "assistant", content: reply.content });
   }
-  if (used.input || used.output) {
-    const price = PRICES[MODEL];
-    const cost = price ? `, about $${((used.input * price[0] + used.output * price[1]) / 1e6).toFixed(2)}` : "";
-    console.log(`${label}: ${used.input} input and ${used.output} output tokens on ${MODEL}${cost}.`);
+  // Where the tokens went, to see what a call costs and why (for example, how much a fetched page adds).
+  const input = used.input + used.cacheWrite + used.cacheRead;
+  if (input || used.output) {
+    const p = PRICES[MODEL];
+    const dollars =
+      p && (used.input * p[0] + used.cacheWrite * p[0] * 1.25 + used.cacheRead * p[2] + used.output * p[1]) / 1e6;
+    console.log(
+      `${label}: ${rounds} round${rounds === 1 ? "" : "s"}, ${fetches} page${fetches === 1 ? "" : "s"} fetched; ` +
+        `${input} input tokens (${used.cacheRead} read from the cache, ${used.cacheWrite} written to it), ` +
+        `${used.output} output tokens on ${MODEL}${p ? `, about $${dollars.toFixed(2)}` : ""}.`,
+    );
   }
 
   const text = reply.content
