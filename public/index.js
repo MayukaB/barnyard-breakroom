@@ -3,10 +3,11 @@ const SAFE_TAGS = new Set(["g","path","circle","ellipse","rect","line","polyline
 // Tags whose children are cleaned too; the rest are drawn as they are.
 const CONTAINERS = new Set(["g","defs","linearGradient","radialGradient","clipPath"]);
 const SAFE_ATTRS = new Set(["d","cx","cy","r","rx","ry","x","y","x1","y1","x2","y2","width","height","points","fill","fill-opacity","stroke","stroke-width","stroke-opacity","stroke-linecap","stroke-linejoin","stroke-dasharray","opacity","transform","filter","fill-rule","clip-path","clip-rule","id","offset","stop-color","stop-opacity","gradientUnits","gradientTransform","fx","fy","fr","spreadMethod","style"]);
-const OK_FILTER = /^url\(#(wc|wash|line|bloom|dry)\)$/;
+// url(#name), also written with quotes or spaces: url('#name'), url( "#name" ).
+const REF = /^url\(\s*(['"]?)#([\w-]+)\1\s*\)$/;
+const FILTERS = new Set(["wc","wash","line","bloom","dry"]);
 // The one style a painting may use: a multiply glaze, so a layer darkens what's under it like real paint.
 const OK_STYLE = /^\s*mix-blend-mode\s*:\s*multiply\s*;?\s*$/;
-const LOCAL_REF = /^url\(#([\w-]+)\)$/;
 // Every painting on the page gets its own id prefix, so one painting's gradients can't
 // clash with (or be borrowed by) another's.
 let paintCount = 0;
@@ -29,14 +30,20 @@ function paint(svg, scene){
       for (const a of child.attributes) {
         if (!SAFE_ATTRS.has(a.name)) continue;
         let v = a.value.trim();
-        if (a.name === "filter") { if (!OK_FILTER.test(v)) continue; }
+        if (a.name === "filter") {
+          const m = v.match(REF);
+          if (!m || !FILTERS.has(m[2])) continue;
+          v = `url(#${m[2]})`;
+        }
         else if (a.name === "style") { if (!OK_STYLE.test(v)) continue; }
         else if (a.name === "id") { if (!ids.has(v)) continue; v = prefix + v; }
         else if (/url\(/i.test(v)) {
-          // Only the painting's own gradients and clip paths, by their prefixed id.
-          const m = v.match(LOCAL_REF);
-          if (!m || !ids.has(m[1]) || !["fill","stroke","clip-path"].includes(a.name)) continue;
-          v = `url(#${prefix}${m[1]})`;
+          // Only the painting's own gradients and clip paths, by their prefixed id. A fill that
+          // points anywhere else is left empty: dropping it would paint the shape solid black.
+          const m = v.match(REF);
+          const ok = m && ids.has(m[2]) && ["fill","stroke","clip-path"].includes(a.name);
+          if (!ok) { if (a.name === "fill") el.setAttribute("fill", "none"); continue; }
+          v = `url(#${prefix}${m[2]})`;
         }
         if (/javascript:/i.test(v)) continue;
         el.setAttribute(a.name, v);
