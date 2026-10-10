@@ -308,3 +308,47 @@ test("REPAINT doesn't fetch a story from a site that's no longer a source", () =
   assert.doesNotMatch(r.requests[0].messages[0].content, /web_fetch/);
   assert.equal(r.stories[0].scene, NEW_SCENE);
 });
+
+test("puts a streamed reply with thinking and a web fetch back together, and sends it back when paused", () => {
+  const url = "https://news.mongabay.com/2026/09/kiwi-return-to-wellington/";
+  const events = [
+    { type: "message_start", message: { role: "assistant", content: [], usage: { input_tokens: 900 } } },
+    { type: "content_block_start", index: 0, content_block: { type: "thinking", thinking: "", signature: "" } },
+    { type: "content_block_delta", index: 0, delta: { type: "thinking_delta", thinking: "Plan the " } },
+    { type: "content_block_delta", index: 0, delta: { type: "thinking_delta", thinking: "light." } },
+    { type: "content_block_delta", index: 0, delta: { type: "signature_delta", signature: "sig123" } },
+    { type: "content_block_stop", index: 0 },
+    {
+      type: "content_block_start",
+      index: 1,
+      content_block: { type: "server_tool_use", id: "srv_1", name: "web_fetch", input: {} },
+    },
+    { type: "content_block_delta", index: 1, delta: { type: "input_json_delta", partial_json: '{"url": "' } },
+    { type: "content_block_delta", index: 1, delta: { type: "input_json_delta", partial_json: url + '"}' } },
+    { type: "content_block_stop", index: 1 },
+    {
+      type: "content_block_start",
+      index: 2,
+      content_block: {
+        type: "web_fetch_tool_result",
+        tool_use_id: "srv_1",
+        content: { type: "web_fetch_result", url },
+      },
+    },
+    { type: "content_block_stop", index: 2 },
+    { type: "message_delta", delta: { stop_reason: "pause_turn" }, usage: { output_tokens: 300 } },
+    { type: "message_stop" },
+  ];
+  const r = run({ replies: [{ events }, { ...reply(story()), usage: { input_tokens: 100, output_tokens: 200 } }] });
+  assert.equal(r.code, 0, r.out);
+  assert.deepEqual(r.requests[1].messages[1], {
+    role: "assistant",
+    content: [
+      { type: "thinking", thinking: "Plan the light.", signature: "sig123" },
+      { type: "server_tool_use", id: "srv_1", name: "web_fetch", input: { url } },
+      { type: "web_fetch_tool_result", tool_use_id: "srv_1", content: { type: "web_fetch_result", url } },
+    ],
+  });
+  assert.match(r.out, /1000 input and 500 output tokens/, "both rounds count toward the cost");
+  assert.equal(r.stories[0].id, "kiwi-return-to-wellington");
+});
