@@ -26,7 +26,15 @@ globalThis.fetch = async (url, options) => {
   const events = reply.events || [
     {
       type: "message_start",
-      message: { role: "assistant", content: [], usage: { input_tokens: reply.usage?.input_tokens } },
+      message: {
+        role: "assistant",
+        content: [],
+        usage: {
+          input_tokens: reply.usage?.input_tokens,
+          cache_creation_input_tokens: reply.usage?.cache_creation_input_tokens,
+          cache_read_input_tokens: reply.usage?.cache_read_input_tokens,
+        },
+      },
     },
     { type: "ping" },
     { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
