@@ -42,6 +42,9 @@ jobs:
         with:
           node-version: 24
       - name: Add the newest story
+        # Stops before the job's own limit: a step that runs out of time fails (a job that does is
+        # cancelled), so the commit step below still saves the stories a repaint already finished.
+        timeout-minutes: 80
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ANTHROPIC_MODEL: ${{ vars.ANTHROPIC_MODEL }}

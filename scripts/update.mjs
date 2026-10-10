@@ -372,6 +372,9 @@ async function ask(content, src, label) {
 
 // Checks a painting and returns it cleaned up. Throws when it's unusable.
 function checkScene(scene, label) {
+  // A painting wrapped in its own <svg> tag would come out blank: the page only accepts the shapes,
+  // and drops the unknown tag along with everything in it. Keep what's inside.
+  scene = scene.replace(/^\s*<svg\b[^>]*>([\s\S]*)<\/svg>\s*$/i, "$1");
   // A shape whose position or size isn't a single number (say cx="280,268", an x,y pair from path
   // data) can't be drawn, and the browser logs an error for it. Leave it out rather than lose the story.
   const badShape = (tag) =>
