@@ -181,12 +181,12 @@ const refused = {
   "a reply that isn't JSON": [{ replies: [{ text: "Sorry." }] }, /wasn't valid JSON \(stop_reason end_turn/],
   "a reply cut off at the token limit": [
     { replies: [{ text: JSON.stringify(story()).slice(0, 300), stop_reason: "max_tokens" }] },
-    /cut off at the 16000-token limit \(stop_reason max_tokens/,
+    /cut off at the 48000-token limit \(stop_reason max_tokens/,
   ],
   "an article that isn't in the list": [{ replies: [reply(story({ id: "made-up" }))] }, /isn't in the list: made-up/],
   "a missing summary": [{ replies: [reply(story({ summary: " " }))] }, /Story is missing: summary/],
   "a painting with too few shapes": [{ replies: [reply(story({ scene: "<circle/>" }))] }, /Painting rejected/],
-  "a painting that's too big": [{ replies: [reply(story({ scene: "<circle/>".repeat(201) }))] }, /Painting rejected/],
+  "a painting that's too big": [{ replies: [reply(story({ scene: "<circle/>".repeat(401) }))] }, /Painting rejected/],
   "an API error": [{ replies: [{ status: 401, body: "invalid x-api-key" }] }, /Anthropic API 401/],
 };
 for (const [name, [options, message]] of Object.entries(refused)) {
@@ -221,4 +221,80 @@ test("stops before calling the API without a key", () => {
   assert.equal(r.code, 1);
   assert.match(r.out, /ANTHROPIC_API_KEY is not set/);
   assert.equal(r.requests.length, 0);
+});
+
+test("asks Opus 5.5 at high effort and prints what the call cost", () => {
+  const r = run({ replies: [{ ...reply(story()), usage: { input_tokens: 15000, output_tokens: 20000 } }] });
+  assert.equal(r.code, 0, r.out);
+  const [req] = r.requests;
+  assert.equal(req.model, "claude-opus-5-5");
+  assert.deepEqual(req.output_config, { effort: "high" });
+  assert.match(req.messages[0].content, /mix-blend-mode:multiply/);
+  assert.match(r.out, /Mongabay: 15000 input and 20000 output tokens on claude-opus-5-5, about \$0\.46\./);
+});
+
+test("refuses a reply Claude declined", () => {
+  const r = run({ replies: [{ text: "", stop_reason: "refusal" }] });
+  assert.equal(r.code, 1, r.out);
+  assert.match(r.out, /Claude declined/);
+  assert.ok(r.unchanged);
+});
+
+// Stories already on the site, for repainting.
+const onSite = (n) => ({
+  id: `story-${n}`,
+  title: `Story ${n}`,
+  url: `https://news.mongabay.com/2026/10/story-${n}/`,
+  animal: "Kiwi",
+  caption: "Home at last",
+  summary: "Kiwi are back.",
+  alt: "An old painting.",
+  addedAt: TODAYS_STORY.addedAt,
+  scene: "<rect/>",
+});
+const NEW_SCENE = '<ellipse cx="200" cy="150" rx="30" ry="20" fill="#8DB25E"/>'.repeat(20);
+
+test("REPAINT with a number repaints the newest stories, even on a day with a story already up", () => {
+  const list = [onSite(1), onSite(2), onSite(3)];
+  const r = run({
+    list,
+    env: { REPAINT: "2" },
+    replies: [reply({ alt: "A new painting.", scene: NEW_SCENE }), reply({ alt: "Another.", scene: NEW_SCENE })],
+  });
+  assert.equal(r.code, 0, r.out);
+  assert.equal(r.requests.length, 2);
+  assert.match(r.requests[0].messages[0].content, /url="https:\/\/news\.mongabay\.com\/2026\/10\/story-1\/"/);
+  assert.deepEqual(r.requests[0].tools[0].allowed_domains, ["news.mongabay.com"]);
+  assert.deepEqual(
+    r.stories.map((s) => [s.id, s.scene === NEW_SCENE, s.alt]),
+    [
+      ["story-1", true, "A new painting."],
+      ["story-2", true, "Another."],
+      ["story-3", false, "An old painting."],
+    ],
+  );
+  assert.equal(r.stories[0].caption, "Home at last", "only the painting and alt text change");
+  assert.match(r.out, /Repainted: Story 1/);
+});
+
+test("REPAINT with ids keeps the ones that worked and fails the run for the rest", () => {
+  const list = [onSite(1), onSite(2), onSite(3)];
+  const r = run({
+    list,
+    env: { REPAINT: "story-3 story-2" },
+    replies: [reply({ alt: "New.", scene: NEW_SCENE }), reply({ alt: "Bad.", scene: "<circle/>" })],
+  });
+  assert.equal(r.code, 1, r.out);
+  assert.equal(r.stories[2].scene, NEW_SCENE);
+  assert.equal(r.stories[1].scene, "<rect/>");
+  assert.match(r.out, /story-2: Painting rejected/);
+  assert.match(r.out, /1 of 2 couldn't be repainted/);
+});
+
+test("REPAINT refuses an id that isn't on the site, without calling Claude", () => {
+  const r = run({ list: [onSite(1)], env: { REPAINT: "nope" } });
+  assert.equal(r.code, 1);
+  assert.match(r.out, /No story with the id: nope/);
+  assert.equal(r.requests.length, 0);
+  assert.ok(r.unchanged);
 });

@@ -336,6 +336,9 @@ test("a story without a source name is credited to the site it links to", async 
 });
 
 test("with only a few stories there's no Show more button", async ({ page }) => {
+  // The real list outgrows one page of the archive, so serve a short one.
+  const real = await (await page.request.get("/stories.json")).json();
+  await page.route("**/stories.json", (r) => r.fulfill({ json: real.slice(0, 5) }));
   await page.goto("/");
   await expect(page.locator("#grid .card").first()).toBeVisible();
   await expect(page.locator("#more")).toBeHidden();

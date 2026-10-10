@@ -13,6 +13,10 @@ on:
         description: "Add a story even if today's is already up."
         type: boolean
         default: false
+      repaint:
+        description: "Repaint stories already on the site instead: a number (the newest that many) or story ids separated by spaces."
+        required: false
+        default: ""
   push:
     branches: [main]
 
@@ -27,8 +31,9 @@ jobs:
   update:
     if: github.event_name != 'push'
     runs-on: ubuntu-latest
-    # A stuck API call would otherwise wait for GitHub's 6-hour limit.
-    timeout-minutes: 25
+    # A stuck API call would otherwise wait for GitHub's 6-hour limit. A detailed painting can
+    # take several minutes, and a repaint makes one call per story.
+    timeout-minutes: 90
     permissions:
       contents: write # commit the new story
     steps:
@@ -42,8 +47,13 @@ jobs:
           ANTHROPIC_MODEL: ${{ vars.ANTHROPIC_MODEL }}
           ONLY_SOURCE: ${{ inputs.source }}
           EXTRA_STORY: ${{ inputs.extra && '1' || '' }}
+          REPAINT: ${{ inputs.repaint }}
         run: node scripts/update.mjs
       - name: Commit if something changed
+        # Also after a repaint that only partly worked, so the stories it did repaint are kept.
+        if: success() || (failure() && inputs.repaint != '')
+        env:
+          MESSAGE: ${{ inputs.repaint != '' && 'Repaint stories' || 'Add today''s story' }}
         run: |
           if git diff --quiet public/stories.json; then
             echo "Nothing new to commit."
@@ -52,7 +62,7 @@ jobs:
           git config user.name "wild-watercolors-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public/stories.json
-          git commit -m "Add today's story"
+          git commit -m "$MESSAGE"
           # Someone may have pushed to main during the run; put the story on top of their work.
           git pull --rebase origin main
           git push
