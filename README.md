@@ -36,10 +36,10 @@ Everything in `public/` goes live as it is, so a new page, script or image only 
 
 1. **Pages:** Settings → Pages → Build and deployment → Source: **GitHub Actions**.
 2. **API key:** Settings → Secrets and variables → Actions → New repository secret named `ANTHROPIC_API_KEY`.
-3. Optional: add a repository **variable** `ANTHROPIC_MODEL` to change the model (default `claude-opus-5-5`). Each call's token use and rough cost is printed in the run's log.
+3. Optional: add a repository **variable** `ANTHROPIC_MODEL` to change the model (default `claude-opus-5-5`).
 4. Actions → "Paint today's story" → **Run workflow** to test it once.
 
-Each run is one feed download and one API call with one page fetch, about $0.40 on Opus 5.5 (a detailed painting is most of it). On days when the top story hasn't changed, nothing gets committed.
+Each run is one feed download and one API call in which Claude fetches the article. The first repaints on Opus 5.5 cost $1–2 a story, most of it the fetched page being re-read when a turn pauses; the conversation is cached as it goes, so a re-read costs a fraction of the input price. Each call's log line shows its rounds, pages fetched, input tokens (and how many came from the cache), output tokens and rough cost. On days when the top story hasn't changed, nothing gets committed.
 
 ## Accounts (Supabase)
 
