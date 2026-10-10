@@ -1,13 +1,23 @@
 /* Story page: paints the day's story, the archive and the Hen Pecks card. */
-const SAFE_TAGS = new Set(["g","path","circle","ellipse","rect","line","polyline","polygon"]);
-const SAFE_ATTRS = new Set(["d","cx","cy","r","rx","ry","x","y","x1","y1","x2","y2","width","height","points","fill","fill-opacity","stroke","stroke-width","stroke-opacity","stroke-linecap","stroke-linejoin","opacity","transform","filter","fill-rule"]);
-const OK_FILTER = /^url\(#(wc|wash|line)\)$/;
+const SAFE_TAGS = new Set(["g","path","circle","ellipse","rect","line","polyline","polygon","defs","linearGradient","radialGradient","stop","clipPath"]);
+// Tags whose children are cleaned too; the rest are drawn as they are.
+const CONTAINERS = new Set(["g","defs","linearGradient","radialGradient","clipPath"]);
+const SAFE_ATTRS = new Set(["d","cx","cy","r","rx","ry","x","y","x1","y1","x2","y2","width","height","points","fill","fill-opacity","stroke","stroke-width","stroke-opacity","stroke-linecap","stroke-linejoin","stroke-dasharray","opacity","transform","filter","fill-rule","clip-path","clip-rule","id","offset","stop-color","stop-opacity","gradientUnits","gradientTransform","fx","fy","fr","spreadMethod","style"]);
+const OK_FILTER = /^url\(#(wc|wash|line|bloom|dry)\)$/;
+// The one style a painting may use: a multiply glaze, so a layer darkens what's under it like real paint.
+const OK_STYLE = /^\s*mix-blend-mode\s*:\s*multiply\s*;?\s*$/;
+const LOCAL_REF = /^url\(#([\w-]+)\)$/;
+// Every painting on the page gets its own id prefix, so one painting's gradients can't
+// clash with (or be borrowed by) another's.
+let paintCount = 0;
 
 function paint(svg, scene){
   svg.textContent = "";
   const doc = new DOMParser().parseFromString(`<svg xmlns="http://www.w3.org/2000/svg">${scene||""}</svg>`, "image/svg+xml");
   const root = doc.documentElement;
   if (root.nodeName !== "svg") return;
+  const prefix = `p${++paintCount}-`;
+  const ids = new Set([...root.querySelectorAll("[id]")].map(el => el.id).filter(id => /^[\w-]+$/.test(id)));
   const bg = document.createElementNS("http://www.w3.org/2000/svg","rect");
   bg.setAttribute("width","400"); bg.setAttribute("height","300"); bg.setAttribute("fill","#FBF7EE");
   svg.appendChild(bg);
@@ -18,20 +28,31 @@ function paint(svg, scene){
       const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
       for (const a of child.attributes) {
         if (!SAFE_ATTRS.has(a.name)) continue;
-        const v = a.value;
-        if (a.name === "filter" && !OK_FILTER.test(v.trim())) continue;
-        if (/url\(|javascript:/i.test(v) && a.name !== "filter") continue;
+        let v = a.value.trim();
+        if (a.name === "filter") { if (!OK_FILTER.test(v)) continue; }
+        else if (a.name === "style") { if (!OK_STYLE.test(v)) continue; }
+        else if (a.name === "id") { if (!ids.has(v)) continue; v = prefix + v; }
+        else if (/url\(/i.test(v)) {
+          // Only the painting's own gradients and clip paths, by their prefixed id.
+          const m = v.match(LOCAL_REF);
+          if (!m || !ids.has(m[1]) || !["fill","stroke","clip-path"].includes(a.name)) continue;
+          v = `url(#${prefix}${m[1]})`;
+        }
+        if (/javascript:/i.test(v)) continue;
         el.setAttribute(a.name, v);
       }
       parent.appendChild(el);
-      if (tag === "g") clean(child, el);
+      if (CONTAINERS.has(tag)) clean(child, el);
     }
   };
   clean(root, svg);
-  const g = document.createElementNS("http://www.w3.org/2000/svg","rect");
-  g.setAttribute("width","400"); g.setAttribute("height","300"); g.setAttribute("filter","url(#grain)");
-  g.setAttribute("style","mix-blend-mode:multiply");
-  svg.appendChild(g);
+  // The paper: fine grain, then the cold-press texture, both pressed into the paint.
+  for (const f of ["grain","paper"]) {
+    const g = document.createElementNS("http://www.w3.org/2000/svg","rect");
+    g.setAttribute("width","400"); g.setAttribute("height","300"); g.setAttribute("filter",`url(#${f})`);
+    g.setAttribute("style","mix-blend-mode:multiply");
+    svg.appendChild(g);
+  }
 }
 
 const $ = id => document.getElementById(id);

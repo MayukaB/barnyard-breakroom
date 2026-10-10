@@ -121,19 +121,52 @@
 <!-- Shared watercolor kit referenced by every painting -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <filter id="wc" x="-15%" y="-15%" width="130%" height="130%">
+    <!-- Paintings (index.js paint() and the prompt in scripts/update.mjs list these):
+         wc = a watercolor shape: wobbly edge, pigment pooled darker at the rim, granulated inside
+         wash = a loose, soft background wash; bloom = wet-in-wet, soft and feathery with a faint backrun edge
+         dry = dry brush: broken, streaky paint for grass, bark, fur and sparkle on water; line = wobbly pencil
+         grain + paper = the paper, laid over every painting by paint() -->
+    <filter id="wc" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">
       <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7" result="n"/>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G" result="d"/>
-      <feGaussianBlur in="d" stdDeviation="0.7" result="soft"/>
-      <feMorphology in="d" operator="erode" radius="1.4" result="inner"/>
-      <feComposite in="soft" in2="inner" operator="out" result="edge"/>
-      <feColorMatrix in="edge" type="matrix" values="0.7 0 0 0 0  0 0.7 0 0 0  0 0 0.7 0 0  0 0 0 0.9 0" result="darkedge"/>
-      <feMerge><feMergeNode in="soft"/><feMergeNode in="darkedge"/></feMerge>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="6" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="0.6" result="soft"/>
+      <!-- Granulation: pigment settles unevenly, a little lighter in patches -->
+      <feTurbulence type="fractalNoise" baseFrequency="0.07 0.09" numOctaves="3" seed="21" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.3 0 0 0 0.28" result="gmask"/>
+      <feComposite in="soft" in2="gmask" operator="in" result="grained"/>
+      <!-- Edge pooling: a darker rim where the wash dried -->
+      <feMorphology in="d" operator="erode" radius="1.2" result="inner"/>
+      <feGaussianBlur in="inner" stdDeviation="0.9" result="innerSoft"/>
+      <feComposite in="soft" in2="innerSoft" operator="out" result="edge"/>
+      <feColorMatrix in="edge" type="matrix" values="0.62 0 0 0 0  0 0.6 0 0 0  0 0 0.64 0 0  0 0 0 0.85 0" result="darkedge"/>
+      <feMerge><feMergeNode in="grained"/><feMergeNode in="darkedge"/></feMerge>
     </filter>
-    <filter id="wash" x="-10%" y="-10%" width="120%" height="120%">
+    <filter id="wash" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
       <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="4" seed="2" result="n"/>
       <feDisplacementMap in="SourceGraphic" in2="n" scale="18" xChannelSelector="R" yChannelSelector="G" result="d"/>
-      <feGaussianBlur in="d" stdDeviation="3"/>
+      <feGaussianBlur in="d" stdDeviation="3" result="soft"/>
+      <!-- Uneven wash: the pigment is denser in some places than others -->
+      <feTurbulence type="fractalNoise" baseFrequency="0.025" numOctaves="3" seed="13" result="m"/>
+      <feColorMatrix in="m" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.4 0 0 0 0.2" result="mmask"/>
+      <feComposite in="soft" in2="mmask" operator="in"/>
+    </filter>
+    <filter id="bloom" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="5" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="14" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feGaussianBlur in="d" stdDeviation="2.4" result="soft"/>
+      <!-- Backrun: a faint cauliflower ring where wet paint pushed outwards -->
+      <feMorphology in="soft" operator="dilate" radius="1" result="grown"/>
+      <feComposite in="grown" in2="soft" operator="out" result="ring"/>
+      <feColorMatrix in="ring" type="matrix" values="0.75 0 0 0 0  0 0.75 0 0 0  0 0 0.78 0 0  0 0 0 0.6 0" result="darkring"/>
+      <feMerge><feMergeNode in="soft"/><feMergeNode in="darkring"/></feMerge>
+    </filter>
+    <filter id="dry" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="9" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="4" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <!-- Streaky bristle texture: paint skips over the paper's tooth -->
+      <feTurbulence type="fractalNoise" baseFrequency="0.5 0.06" numOctaves="2" seed="17" result="s"/>
+      <feColorMatrix in="s" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  4 0 0 0 -1.4" result="smask"/>
+      <feComposite in="d" in2="smask" operator="in"/>
     </filter>
     <filter id="line" x="-10%" y="-10%" width="120%" height="120%">
       <feTurbulence type="fractalNoise" baseFrequency="0.08" numOctaves="2" seed="4" result="n"/>
@@ -142,6 +175,13 @@
     <filter id="grain">
       <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="11"/>
       <feColorMatrix type="matrix" values="0 0 0 0 0.42  0 0 0 0 0.36  0 0 0 0 0.28  0 0 0 0.6 -0.28"/>
+    </filter>
+    <!-- Cold-press paper: soft hills and dips that catch the light, laid over the grain -->
+    <filter id="paper" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feTurbulence type="fractalNoise" baseFrequency="0.11" numOctaves="2" seed="31" result="t"/>
+      <feGaussianBlur in="t" stdDeviation="0.6" result="ts"/>
+      <feDiffuseLighting in="ts" surfaceScale="1.2" lighting-color="#fff" result="lit"><feDistantLight azimuth="225" elevation="60"/></feDiffuseLighting>
+      <feColorMatrix in="lit" type="matrix" values="0 0 0 0 0.45  0 0 0 0 0.4  0 0 0 0 0.33  -0.45 0 0 0 0.42"/>
     </filter>
       <!-- Title pig: same filter on both pages so it looks the same everywhere -->
     <filter id="wct" x="-15%" y="-15%" width="130%" height="130%">

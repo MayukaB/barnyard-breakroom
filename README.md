@@ -14,7 +14,7 @@ supabase/    the database setup for accounts (Hen Pecks and Biscuit and Marshmal
 
 Everything in `public/` goes live as it is, so a new page, script or image only has to be put there. The files below are in `public/` unless their path says otherwise.
 
-- `index.html` is **Wild Watercolors**, the story page, and `index.js` runs it. It reads `stories.json` and draws each painting as SVG with shared watercolor filters. Under the painting are two game cards, one for Hen Pecks and one for Biscuit and Marshmallow. Each shows how far along today's game is, and the menu gets a dot while either game is unfinished.
+- `index.html` is **Wild Watercolors**, the story page, and `index.js` runs it. It reads `stories.json` and draws each painting as SVG with shared watercolor filters (defined at the top of `index.html`): `wash` for loose background washes, `wc` for crisp shapes with a darker pooled rim and granulated pigment, `bloom` for soft wet-in-wet, `dry` for streaky dry brush and `line` for pencil, with cold-press paper texture laid over every painting. `paint()` in `index.js` only lets through safe SVG: shapes, groups, the painting's own gradients and clip paths (their ids get a prefix per painting, so paintings on the same page can't clash), those filters, and `mix-blend-mode:multiply` for glazes. Under the painting are two game cards, one for Hen Pecks and one for Biscuit and Marshmallow. Each shows how far along today's game is, and the menu gets a dot while either game is unfinished.
 - `stories.json` holds every story, newest first.
 - `site.css` holds the styles both pages share: colors (light and dark), the top bar, the menu, the sign-in dialog and the footer. Page-only styles stay in `index.html` and `pecks.css`.
 - `site.js` runs the top bar on every page: the menu (switch between Wild Watercolors and Hen Pecks) and the light/dark switch. A visitor's light/dark choice is saved in their browser; with none saved, the site follows their device. It also runs each game's how-to-play pop-up (`#howto` in `pecks.html` and `biscuit.html`): a short version of the rules with a picture for each step. It opens by itself on a player's first visit to that game (not for players who already have a game saved there, and not while a sign-in link is opening, when it waits for the next visit), and from the "?" by the game's title after that. The full rules stay in the page's "How to play" section, which the pop-up links to.
@@ -36,10 +36,10 @@ Everything in `public/` goes live as it is, so a new page, script or image only 
 
 1. **Pages:** Settings → Pages → Build and deployment → Source: **GitHub Actions**.
 2. **API key:** Settings → Secrets and variables → Actions → New repository secret named `ANTHROPIC_API_KEY`.
-3. Optional: add a repository **variable** `ANTHROPIC_MODEL` to change the model (default `claude-sonnet-5`).
+3. Optional: add a repository **variable** `ANTHROPIC_MODEL` to change the model (default `claude-opus-5-5`). Each call's token use and rough cost is printed in the run's log.
 4. Actions → "Paint today's story" → **Run workflow** to test it once.
 
-Each run is one feed download and one API call with one page fetch. On days when the top story hasn't changed, nothing gets committed.
+Each run is one feed download and one API call with one page fetch, about $0.40 on Opus 5.5 (a detailed painting is most of it). On days when the top story hasn't changed, nothing gets committed.
 
 ## Accounts (Supabase)
 
@@ -174,5 +174,7 @@ Stories link back to the original articles. The summaries are written in Claude'
 **National Geographic is no longer a source.** The site's first stories came from nationalgeographic.com/animals, but National Geographic's site runs under the [Disney Terms of Use](https://disneytermsofuse.com/english/), which forbid transforming its content with AI tools, including by prompting them (section 2A), and accessing it with scripts or other automated means (section 2B(x)). The daily run did both, so it was removed. The earlier National Geographic paintings are still in `stories.json` and link to the original articles.
 
 To try one source on its own: Actions → "Paint today's story" → **Run workflow**, and type its key in the source box. Locally: `node scripts/update.mjs mongabay`.
+
+To repaint stories already on the site (say, after changing the painting rules in `scripts/update.mjs`): Actions → "Paint today's story" → **Run workflow**, and fill in the repaint box with a number (the newest that many stories) or story ids separated by spaces. Only the paintings and their alt text change; each story is one API call. Locally: `REPAINT=5 node scripts/update.mjs`.
 
 Before adding a source, check its terms and its robots.txt, not just robots.txt: National Geographic's robots.txt allowed Claude even though its terms don't. The Guardian's API terms forbid using its articles with AI, and The Conversation and the BBC block Claude in robots.txt. Mongabay sits behind bot protection that often turns away scripted page loads, but not its feed. That's why the list of articles comes from the feed, and why Claude falls back to the feed's opening paragraphs when it can't open an article. If the feed itself is ever turned away, the run fails with `Feed 403` and the alert issue opens.
