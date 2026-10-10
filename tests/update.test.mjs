@@ -199,6 +199,13 @@ for (const [name, [options, message]] of Object.entries(refused)) {
   });
 }
 
+test("keeps what's inside a painting wrapped in its own <svg> tag, which the page would draw blank", () => {
+  const wrapped = `<svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">${SCENE}</svg>`;
+  const r = run({ replies: [reply(story({ scene: wrapped }))] });
+  assert.equal(r.code, 0, r.out);
+  assert.equal(r.stories[0].scene, SCENE);
+});
+
 test("leaves out shapes whose position or size isn't a single number, and keeps the rest", () => {
   const bad = '<ellipse cx="280,268" rx="7" ry="4" fill="#b3a483"/>';
   const alsoBad = '<rect x="10" y="" width="5" height="5"></rect>';
