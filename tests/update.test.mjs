@@ -228,6 +228,7 @@ test("asks Opus 5.5 at high effort and prints what the call cost", () => {
   assert.equal(r.code, 0, r.out);
   const [req] = r.requests;
   assert.equal(req.model, "claude-opus-5-5");
+  assert.equal(req.stream, true);
   assert.deepEqual(req.output_config, { effort: "high" });
   assert.match(req.messages[0].content, /mix-blend-mode:multiply/);
   assert.match(r.out, /Mongabay: 15000 input and 20000 output tokens on claude-opus-5-5, about \$0\.46\./);
@@ -297,4 +298,13 @@ test("REPAINT refuses an id that isn't on the site, without calling Claude", () 
   assert.match(r.out, /No story with the id: nope/);
   assert.equal(r.requests.length, 0);
   assert.ok(r.unchanged);
+});
+
+test("REPAINT doesn't fetch a story from a site that's no longer a source", () => {
+  const natgeo = { ...onSite(1), url: "https://www.nationalgeographic.com/animals/article/kiwi" };
+  const r = run({ list: [natgeo], env: { REPAINT: "1" }, replies: [reply({ alt: "New.", scene: NEW_SCENE })] });
+  assert.equal(r.code, 0, r.out);
+  assert.equal(r.requests[0].tools, undefined);
+  assert.doesNotMatch(r.requests[0].messages[0].content, /web_fetch/);
+  assert.equal(r.stories[0].scene, NEW_SCENE);
 });

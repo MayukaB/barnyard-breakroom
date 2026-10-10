@@ -69,7 +69,9 @@ jobs:
 
   deploy:
     needs: update
-    if: always() && (needs.update.result == 'success' || needs.update.result == 'skipped')
+    # A repaint that only partly worked still commits the stories it did repaint, so publish those too
+    # (a commit pushed from inside a workflow doesn't start another run that would deploy it).
+    if: always() && (needs.update.result == 'success' || needs.update.result == 'skipped' || (needs.update.result == 'failure' && inputs.repaint != ''))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
