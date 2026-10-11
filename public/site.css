@@ -120,6 +120,9 @@ html:has(dialog.menu[open]){overflow:hidden}
 .btn:focus-visible{outline:3px solid var(--ochre);outline-offset:2px}
 footer{font-size:13px;color:var(--ink-soft);display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 24px;border-top:1px solid var(--rule);padding-top:16px}
 footer p{margin:0}
+/* Privacy and Terms sit on their own line under the footer text and credit, whatever the width. */
+footer .legal-links{order:3;flex-basis:100%}
+footer .legal-links a{color:inherit;display:inline-block;padding:10px 0;margin:-10px 0}
 footer .credit{font:700 20px/1 Caveat,cursive;color:var(--ink)}
 
 /* Sign-in dialog (account.js): the same on every page */
