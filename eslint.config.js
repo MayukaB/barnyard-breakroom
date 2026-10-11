@@ -3,7 +3,7 @@ import js from "@eslint/js";
 import globals from "globals";
 
 export default [
-  { ignores: ["node_modules/", "test-results/", "playwright-report/", "public/vendor/"] },
+  { ignores: ["node_modules/", "test-results/", "playwright-report/", "public/vendor/", "local-checks/"] },
   js.configs.recommended,
   {
     // The pages' scripts: classic browser scripts that share window globals.

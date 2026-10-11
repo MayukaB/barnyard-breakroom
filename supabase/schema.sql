@@ -257,6 +257,8 @@ create table if not exists public.discord_results (
   primary key (game, user_id, date)
 );
 create index if not exists discord_results_day on public.discord_results (game, date, channel_id);
+-- /recap without a date: a channel's latest day.
+create index if not exists discord_results_channel on public.discord_results (game, channel_id, date desc);
 
 -- Recaps already posted, so a channel gets each day's recap once.
 create table if not exists public.discord_recaps (
@@ -372,3 +374,26 @@ revoke all on function public.discord_pecks_sync(text, jsonb, jsonb, text, jsonb
 revoke all on function public.discord_biscuit_sync(text, jsonb) from public, anon, authenticated;
 grant execute on function public.discord_pecks_sync(text, jsonb, jsonb, text, jsonb, boolean) to service_role;
 grant execute on function public.discord_biscuit_sync(text, jsonb) to service_role;
+
+-- For a deletion request (see the privacy policy): everything kept about one Discord player, in every table.
+-- Run in SQL Editor:  select public.discord_forget_player('<their Discord user id>');
+-- It answers how many rows went from each table. Messages already posted in Discord stay; delete those in
+-- Discord if asked. Website accounts: see README, Deleting a player's data.
+create or replace function public.discord_forget_player(p_user text)
+returns jsonb
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  launches int; results int; pecks int; biscuit int;
+begin
+  delete from public.discord_launches        where user_id = p_user; get diagnostics launches = row_count;
+  delete from public.discord_results         where user_id = p_user; get diagnostics results  = row_count;
+  delete from public.discord_pecks_players   where user_id = p_user; get diagnostics pecks    = row_count;
+  delete from public.discord_biscuit_players where user_id = p_user; get diagnostics biscuit  = row_count;
+  return jsonb_build_object('launches', launches, 'results', results, 'pecks_stats', pecks, 'biscuit_stats', biscuit);
+end
+$$;
+revoke all on function public.discord_forget_player(text) from public, anon, authenticated;
+grant execute on function public.discord_forget_player(text) to service_role;

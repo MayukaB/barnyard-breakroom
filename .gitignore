@@ -35,3 +35,6 @@ desktop.ini
 
 # The Supabase CLI's local state (which project it last deployed to).
 supabase/.temp/
+
+# Checks for the database schema and the Discord functions that are kept on this computer only.
+local-checks/

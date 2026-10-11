@@ -50,6 +50,8 @@ test("the heading says today so far, yesterday, or just the game", () => {
   );
   assert.match(recap("pecks", "2026-10-05", one, "2026-10-06"), /^🐔 \*\*Yesterday's Hen Pecks\*\*/);
   assert.match(recap("pecks", "2026-10-05", one, "2026-10-20"), /^🐔 \*\*Hen Pecks\*\* · #9/);
+  // /recap passes null: results are filed under each player's own date, so it just names the game.
+  assert.match(recap("pecks", "2026-10-05", one, null), /^🐔 \*\*Hen Pecks\*\* · #9 · Mon, Oct 5/);
   // Across a month's end.
   assert.match(
     recap("pecks", "2026-09-30", [row(ID(1), pecks("t1", { date: "2026-09-30" }))], "2026-10-01"),
