@@ -61,6 +61,26 @@ as $$
   )
 $$;
 
+-- Keeps only well-formed days and known outcomes from a device's log (pecks_sync and discord_pecks_sync).
+create or replace function public.pecks_clean_log(p_log jsonb)
+returns jsonb
+language plpgsql immutable
+set search_path = ''
+as $$
+declare
+  clean jsonb;
+begin
+  if jsonb_typeof(coalesce(p_log, '{}'::jsonb)) <> 'object' then
+    raise exception 'p_log must be an object' using errcode = '22023';
+  end if;
+  select coalesce(jsonb_object_agg(e.key, e.value), '{}'::jsonb) into clean
+    from jsonb_each(coalesce(p_log, '{}'::jsonb)) e
+   where e.key ~ '^\d{4}-\d{2}-\d{2}$'
+     and e.value #>> '{}' in ('pecks', 't1', 't2', 't3', 'miss');
+  return clean;
+end
+$$;
+
 -- The one call the game makes. Merges this device's games into the player's row and returns the row.
 --   p_log:      this device's games by day. Days already saved keep their saved result.
 --   p_base:     this device's totals from before day-by-day logging (sent until the device is recorded).
@@ -87,15 +107,7 @@ begin
   if uid is null then
     raise exception 'Sign in first' using errcode = '28000';
   end if;
-  if jsonb_typeof(coalesce(p_log, '{}'::jsonb)) <> 'object' then
-    raise exception 'p_log must be an object' using errcode = '22023';
-  end if;
-
-  -- Keep only well-formed days and known outcomes.
-  select coalesce(jsonb_object_agg(e.key, e.value), '{}'::jsonb) into clean
-    from jsonb_each(coalesce(p_log, '{}'::jsonb)) e
-   where e.key ~ '^\d{4}-\d{2}-\d{2}$'
-     and e.value #>> '{}' in ('pecks', 't1', 't2', 't3', 'miss');
+  clean := public.pecks_clean_log(p_log);
 
   insert into public.pecks_players (user_id) values (uid) on conflict (user_id) do nothing;
 
@@ -152,6 +164,30 @@ create policy "Players update their own row" on public.biscuit_players
 revoke all on public.biscuit_players from anon;
 grant select, insert, update on public.biscuit_players to authenticated;
 
+-- Keeps only well-formed days from a device's log: a whole number of swaps and 1 to 3 stars
+-- (biscuit_sync and discord_biscuit_sync).
+create or replace function public.biscuit_clean_log(p_log jsonb)
+returns jsonb
+language plpgsql immutable
+set search_path = ''
+as $$
+declare
+  clean jsonb;
+begin
+  if jsonb_typeof(coalesce(p_log, '{}'::jsonb)) <> 'object' then
+    raise exception 'p_log must be an object' using errcode = '22023';
+  end if;
+  select coalesce(jsonb_object_agg(e.key, jsonb_build_object('moves', (e.value->>'moves')::int, 'stars', (e.value->>'stars')::int)), '{}'::jsonb)
+    into clean
+    from jsonb_each(coalesce(p_log, '{}'::jsonb)) e
+   where e.key ~ '^\d{4}-\d{2}-\d{2}$'
+     and jsonb_typeof(e.value) = 'object'
+     and coalesce(e.value->>'moves', '') ~ '^\d{1,4}$'
+     and coalesce(e.value->>'stars', '') in ('1', '2', '3');
+  return clean;
+end
+$$;
+
 -- The one call the game makes. Merges this device's solved boards into the player's row and returns it.
 --   p_log: this device's solved boards by day. Days already saved keep their saved result.
 create or replace function public.biscuit_sync(p_log jsonb default '{}'::jsonb)
@@ -168,18 +204,7 @@ begin
   if uid is null then
     raise exception 'Sign in first' using errcode = '28000';
   end if;
-  if jsonb_typeof(coalesce(p_log, '{}'::jsonb)) <> 'object' then
-    raise exception 'p_log must be an object' using errcode = '22023';
-  end if;
-
-  -- Keep only well-formed days: a whole number of swaps and 1 to 3 stars.
-  select coalesce(jsonb_object_agg(e.key, jsonb_build_object('moves', (e.value->>'moves')::int, 'stars', (e.value->>'stars')::int)), '{}'::jsonb)
-    into clean
-    from jsonb_each(coalesce(p_log, '{}'::jsonb)) e
-   where e.key ~ '^\d{4}-\d{2}-\d{2}$'
-     and jsonb_typeof(e.value) = 'object'
-     and coalesce(e.value->>'moves', '') ~ '^\d{1,4}$'
-     and coalesce(e.value->>'stars', '') in ('1', '2', '3');
+  clean := public.biscuit_clean_log(p_log);
 
   insert into public.biscuit_players (user_id) values (uid) on conflict (user_id) do nothing;
 
@@ -246,3 +271,104 @@ alter table public.discord_launches enable row level security;
 alter table public.discord_results  enable row level security;
 alter table public.discord_recaps   enable row level security;
 revoke all on public.discord_launches, public.discord_results, public.discord_recaps from anon, authenticated;
+
+-- Discord players' stats: the same as pecks_players and biscuit_players, for players in a Discord Activity,
+-- where there's no website sign-in. user_id is their Discord user id, which the discord-activity function
+-- (route "stats") checks with Discord before calling discord_pecks_sync or discord_biscuit_sync.
+create table if not exists public.discord_pecks_players (
+  user_id    text primary key,
+  log        jsonb  not null default '{}'::jsonb,
+  base       jsonb  not null default '{}'::jsonb,
+  devices    text[] not null default '{}',
+  settings   jsonb  not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create table if not exists public.discord_biscuit_players (
+  user_id    text primary key,
+  log        jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table public.discord_pecks_players   enable row level security;
+alter table public.discord_biscuit_players enable row level security;
+revoke all on public.discord_pecks_players, public.discord_biscuit_players from anon, authenticated;
+
+-- pecks_sync for the Discord player p_user.
+create or replace function public.discord_pecks_sync(
+  p_user text,
+  p_log jsonb default '{}'::jsonb,
+  p_base jsonb default null,
+  p_device text default null,
+  p_settings jsonb default null,
+  p_overwrite_settings boolean default false
+)
+returns public.discord_pecks_players
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  clean jsonb := public.pecks_clean_log(p_log);
+  add_base boolean;
+  r public.discord_pecks_players;
+begin
+  if coalesce(p_user, '') !~ '^\d{1,25}$' then
+    raise exception 'p_user must be a Discord user id' using errcode = '22023';
+  end if;
+
+  insert into public.discord_pecks_players (user_id) values (p_user) on conflict (user_id) do nothing;
+
+  select p_base is not null and p_device is not null and not (p_device = any (p.devices))
+    into add_base
+    from public.discord_pecks_players p where p.user_id = p_user;
+
+  update public.discord_pecks_players p set
+    log        = clean || p.log,   -- right side wins, so days already saved keep their result
+    base       = case when add_base then public.pecks_add_base(p.base, p_base) else p.base end,
+    devices    = case when add_base then p.devices || p_device else p.devices end,
+    settings   = case
+                   when p_settings is null then p.settings
+                   when p_overwrite_settings then p.settings || p_settings
+                   else p_settings || p.settings
+                 end,
+    updated_at = now()
+  where p.user_id = p_user
+  returning p.* into r;
+
+  return r;
+end
+$$;
+
+-- biscuit_sync for the Discord player p_user.
+create or replace function public.discord_biscuit_sync(p_user text, p_log jsonb default '{}'::jsonb)
+returns public.discord_biscuit_players
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  clean jsonb := public.biscuit_clean_log(p_log);
+  r public.discord_biscuit_players;
+begin
+  if coalesce(p_user, '') !~ '^\d{1,25}$' then
+    raise exception 'p_user must be a Discord user id' using errcode = '22023';
+  end if;
+
+  insert into public.discord_biscuit_players (user_id) values (p_user) on conflict (user_id) do nothing;
+
+  update public.discord_biscuit_players p set
+    log        = clean || p.log,   -- right side wins, so days already saved keep their result
+    updated_at = now()
+  where p.user_id = p_user
+  returning p.* into r;
+
+  return r;
+end
+$$;
+
+-- Only the Discord functions (service_role) may call these, since they take any Discord user id.
+revoke all on function public.discord_pecks_sync(text, jsonb, jsonb, text, jsonb, boolean) from public, anon, authenticated;
+revoke all on function public.discord_biscuit_sync(text, jsonb) from public, anon, authenticated;
+grant execute on function public.discord_pecks_sync(text, jsonb, jsonb, text, jsonb, boolean) to service_role;
+grant execute on function public.discord_biscuit_sync(text, jsonb) to service_role;
