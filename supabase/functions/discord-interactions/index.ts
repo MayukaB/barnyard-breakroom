@@ -5,7 +5,11 @@
 // Starting a game (the App Launcher's entry point command, /pecks or /biscuit, or a message's Play button)
 // opens the Activity, then posts "<name> is playing …" in the channel and keeps the interaction's token,
 // so discord-activity can edit that message into the player's result when they finish. Tokens last 15 minutes.
-import { app, db, discord, GAMES, isGame, json, message, plain } from "../_shared/discord.ts";
+//
+// /recap [date] shows a day's results in this channel, best first, like the morning recap (discord-recap),
+// for everyone in the channel. Without a date it's the latest day anyone finished here. Being a reply to a
+// command, it works even where the game's bot hasn't been added.
+import { app, db, discord, GAMES, isGame, json, message, plain, recap, recapDate } from "../_shared/discord.ts";
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void };
 
@@ -32,6 +36,8 @@ Deno.serve(async (req) => {
   const i = JSON.parse(body);
 
   if (i.type === 1) return json({ type: 1 }); // PING, when the endpoint is saved in the Developer Portal
+
+  if (i.type === 2 && i.data?.name === "recap") return json(await recapReply(game, i));
 
   // 2: a command (the entry point or /pecks); 3: a button (Play)
   if (i.type === 2 || (i.type === 3 && i.data?.custom_id === "play")) {
@@ -70,4 +76,36 @@ async function announce(game: keyof typeof GAMES, appId: string, i: any) {
       token: i.token,
       message_id: msg?.id ?? null,
     });
+}
+
+// The reply to /recap: the day's recap for everyone in the channel, or a note only the asker sees.
+async function recapReply(game: keyof typeof GAMES, i: any) {
+  const only = (content: string) => ({ type: 4, data: { content, flags: 64 } }); // 64: only the asker sees it
+  const channel = i.channel_id ?? i.channel?.id;
+  const option = i.data?.options?.find((o: any) => o.name === "date")?.value;
+  let date = recapDate(option);
+  if (date === null) return only("Give the date like 2026-10-05 (year, month, day), or leave it out for the latest.");
+  if (!channel) return only("There's no recap here.");
+  const sb = db();
+  if (!date) {
+    const { data: latest } = await sb
+      .from("discord_results")
+      .select("date")
+      .eq("game", game)
+      .eq("channel_id", channel)
+      .order("date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!latest) return only(`Nobody has finished ${GAMES[game].name} in this channel yet. Press **Play** to be the first!`);
+    date = latest.date as string;
+  }
+  const { data: players, error } = await sb
+    .from("discord_results")
+    .select("user_id, display_name, result, created_at")
+    .eq("game", game)
+    .eq("channel_id", channel)
+    .eq("date", date);
+  if (error) return only("The recap couldn't be loaded just now. Try again in a moment.");
+  if (!players?.length) return only(`Nobody finished ${GAMES[game].name} in this channel on ${date}.`);
+  return { type: 4, data: message(recap(game, date, players)) };
 }
