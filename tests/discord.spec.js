@@ -1,6 +1,7 @@
 // Browser tests for the games inside a Discord Activity (public/discord.js). The browser is told that
 // 111.discordsays.com is this computer, so the pages run at a Discord-style address. Discord's SDK and the
-// discord-activity function are replaced with stand-ins that record what the game asked for.
+// discord-activity function are replaced with stand-ins that record what the game asked for. The stand-in
+// function keeps the player's saved stats in `saved`, merging each sync like discord_*_sync in schema.sql.
 import { readFile } from "node:fs/promises";
 import { test, expect } from "@playwright/test";
 
@@ -28,12 +29,13 @@ export class DiscordSDK {
   ready() { return Promise.resolve(); }
 }`;
 
-let errors, sent, posted, tokenStatus;
+let errors, sent, posted, tokenStatus, saved;
 test.beforeEach(async ({ page, context }) => {
   errors = [];
   sent = [];
   posted = true;
   tokenStatus = 200;
+  saved = { log: {}, base: {}, settings: {} };
   page.on("pageerror", (e) => errors.push(e.message));
   await context.route(
     /supabase\.co|jsdelivr|accounts\.google|fonts\.(googleapis|gstatic)|\/x\/(gfonts|gstatic)\//,
@@ -44,6 +46,11 @@ test.beforeEach(async ({ page, context }) => {
     const path = new URL(r.request().url()).pathname.split("/").pop();
     sent.push([path, r.request().postDataJSON()]);
     if (path === "token" && tokenStatus !== 200) return r.fulfill({ status: tokenStatus, json: { error: "no" } });
+    if (path === "stats") {
+      const { args } = r.request().postDataJSON();
+      saved.log = { ...args.p_log, ...saved.log }; // days already saved keep their result
+      return r.fulfill({ json: { player: "42", ...saved } });
+    }
     await r.fulfill({
       json: path === "token" ? { access_token: "the-token" } : { posted, reason: "not started here" },
     });
@@ -83,19 +90,45 @@ test("winning Hen Pecks in Discord signs in with Discord and posts the result", 
   expect(await calls(page, "authorize")).toEqual([
     { client_id: "111", response_type: "code", state: "", prompt: "none", scope: ["identify"] },
   ]);
-  expect(sent[0]).toEqual(["token", { game: "pecks", code: "the-code" }]);
-  const [path, body] = sent[1];
+  const posts = () => sent.filter(([p]) => p !== "stats"); // stats are tested below
+  expect(posts()[0]).toEqual(["token", { game: "pecks", code: "the-code" }]);
+  const [path, body] = posts()[1];
   expect(path).toBe("result");
   expect(body).toMatchObject({ game: "pecks", access_token: "the-token", channel_id: "c1" });
   expect(body.result).toMatchObject({ game: "pecks", date: "2026-09-29", no: 3, outcome: "t1", hard: false });
   expect(body.result.hits).toHaveLength(7);
   expect(body.result.text).toBeUndefined(); // the function writes the message itself
-  expect(sent).toHaveLength(2);
+  expect(posts()).toHaveLength(2);
 
   // A reload of the finished game sends it again (the function only posts it once).
   await page.reload();
   await expect(page.locator("#discordNote")).toHaveText("Your result is in the channel.");
   expect(sent.filter(([p]) => p === "result")).toHaveLength(2);
+});
+
+test("in Discord, Hen Pecks stats are kept with the player's Discord account", async ({ page }) => {
+  // Two days already won on another device, saved with this Discord account.
+  saved.log = { "2026-09-27": "t2", "2026-09-28": "pecks" };
+  await winPecks(page);
+  // Today's win carries the saved streak on, and is saved with the account too.
+  await expect(page.locator("#stats")).toContainText("3 played");
+  await expect(page.locator("#stats")).toContainText("3 streak");
+  await expect(page.locator("#acctNote")).toHaveText(
+    "Saved with your Discord account, so these follow you to any device.",
+  );
+  await expect.poll(() => saved.log["2026-09-29"]).toBe("t1");
+  const [, body] = sent.findLast(([p]) => p === "stats");
+  expect(body).toMatchObject({ game: "pecks", access_token: "the-token" });
+  expect(body.args).toMatchObject({ p_device: expect.any(String), p_settings: { hard: false } });
+  expect(await page.locator("#acctBtn").isHidden()).toBe(true); // no website sign-in in Discord
+});
+
+test("in Discord, a player whose stats can't be loaded still plays, with this device's stats", async ({ page }) => {
+  tokenStatus = 401;
+  await winPecks(page);
+  await expect(page.locator("#stats")).toContainText("1 played");
+  await expect(page.locator("#acctNote")).toBeHidden();
+  expect(sent.filter(([p]) => p === "stats")).toEqual([]);
 });
 
 test("in Discord, the menu, sign-in and the other game are hidden, and Share uses Discord's dialog", async ({
@@ -167,6 +200,11 @@ test("solving Biscuit and Marshmallow in Discord posts the result", async ({ pag
   const moves = Number(await page.locator("#moves").textContent());
   expect(body.result).toMatchObject({ game: "biscuit", date: "2026-09-30", no: 1, moves });
   expect(body.result.par).toBeGreaterThan(0);
+  // The solved board is saved with the player's Discord account.
+  await expect.poll(() => saved.log["2026-09-30"]).toMatchObject({ moves });
+  await expect(page.locator("#acctNote")).toHaveText(
+    "Saved with your Discord account, so these follow you to any device.",
+  );
 });
 
 test("the Activity opens on the home page and goes on to its game, still talking to Discord", async ({ page }) => {

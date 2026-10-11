@@ -506,12 +506,19 @@ function tickNext() {
 }
 
 /* ---------- Accounts: keep stats in the player's account ----------
-   Signing in and out is handled for the whole site by account.js (window.Account). This part only
-   syncs Biscuit and Marshmallow: when a player signs in, this device's solved boards go up and the
-   merged copy comes back. db.cloud holds that copy while signed in. */
+   On the website, signing in and out is handled for the whole site by account.js (window.Account).
+   Inside Discord there's no sign-in: discord.js says who's playing (window.DiscordPlayer), and their
+   stats are kept with their Discord account instead. This part only syncs Biscuit and Marshmallow:
+   this device's solved boards go up and the merged copy comes back. db.cloud holds that copy. */
 let syncChain = Promise.resolve();
 
 function renderAcct() {
+  if (window.InDiscord) {
+    const note = $("acctNote");
+    note.hidden = !db.cloud;
+    note.textContent = "Saved with your Discord account, so these follow you to any device.";
+    return;
+  }
   if (!Account.enabled) return;
   const inAcct = !!db.cloud;
   $("acctBtnText").textContent = inAcct ? "Stats saved to your account" : "Sign in to save stats";
@@ -535,15 +542,23 @@ function cloudSync(opts = {}) {
   return syncChain;
 }
 async function doSync({ first = false } = {}) {
-  const sb = Account.client, user = Account.user;
-  if (!sb || !user) return;
-  const uid = user.id;
   const log = {};
   for (const [day, e] of Object.entries(db.log)) log[day] = { moves: e.moves, stars: e.stars };
-  const { data, error } = await sb.rpc("biscuit_sync", { p_log: log });
-  if (!Account.user || Account.user.id !== uid) return; // signed out while this was on its way
+  let uid, res;
+  if (window.InDiscord) {
+    if (!window.DiscordPlayer) return;
+    res = await window.DiscordPlayer.sync({ p_log: log });
+    uid = res.data && "discord:" + res.data.player;
+  } else {
+    const sb = Account.client, user = Account.user;
+    if (!sb || !user) return;
+    uid = user.id;
+    res = await sb.rpc("biscuit_sync", { p_log: log });
+    if (!Account.user || Account.user.id !== uid) return; // signed out while this was on its way
+  }
+  const { data, error } = res;
   if (error || !data) {
-    if (first) Account.message("Signed in, but your Biscuit and Marshmallow stats couldn’t be saved just now. They’re safe here and will be saved next time.", true);
+    if (first && !window.InDiscord) Account.message("Signed in, but your Biscuit and Marshmallow stats couldn’t be saved just now. They’re safe here and will be saved next time.", true);
     return;
   }
   db.cloud = { uid, log: data.log || {} };
@@ -551,6 +566,12 @@ async function doSync({ first = false } = {}) {
 }
 
 function initCloud() {
+  if (window.InDiscord) {
+    renderAcct();
+    if (window.DiscordPlayer) cloudSync();
+    else document.addEventListener("discord:player", () => cloudSync(), { once: true });
+    return;
+  }
   if (!Account.enabled) return;
   $("acctBtn").hidden = false;
   $("acctBtn").addEventListener("click", Account.open);

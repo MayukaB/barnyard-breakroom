@@ -7,6 +7,10 @@
 //     started the game: by editing their "is playing" message while its token lasts (15 minutes), and
 //     otherwise as a new message from the app's bot, which needs the bot in that server.
 //     It only ever posts where that player started the game, so it can't be used to post anywhere else.
+//   POST …/discord-activity/stats   { game, access_token, args }            → { player, log, … }
+//     The player's saved stats, so streaks follow them to any device: args are what the website sends to
+//     pecks_sync or biscuit_sync (supabase/schema.sql), minus the sign-in, and this device's games are merged
+//     in with discord_pecks_sync or discord_biscuit_sync. player is their Discord user id.
 import { app, checkResult, db, discord, GAMES, isGame, json, message, plain, summary, title } from "../_shared/discord.ts";
 
 const FRESH_MS = 14 * 60 * 1000; // a little under the token's 15 minutes
@@ -18,6 +22,7 @@ Deno.serve(async (req) => {
   if (!isGame(body.game)) return json({ error: "unknown game" }, 400);
   if (route === "token") return token(body.game, body.code);
   if (route === "result") return result(body);
+  if (route === "stats") return stats(body);
   return new Response("Not found", { status: 404 });
 });
 
@@ -39,13 +44,35 @@ async function token(game: keyof typeof GAMES, code: unknown) {
   return json({ access_token: data.access_token });
 }
 
+// Who this is, if the token was made for this game's app.
+async function player(game: keyof typeof GAMES, accessToken: unknown) {
+  if (typeof accessToken !== "string") return null;
+  const me = await discord("/oauth2/@me", { auth: `Bearer ${accessToken}` });
+  return me.ok && me.data?.application?.id === app(game).id && me.data?.user ? me.data.user : null;
+}
+
+// The sync arguments each game may send (the rest of pecks_sync's and biscuit_sync's, minus the sign-in).
+const SYNC_ARGS = {
+  pecks: ["p_log", "p_base", "p_device", "p_settings", "p_overwrite_settings"],
+  biscuit: ["p_log"],
+} as const;
+
+async function stats(body: Record<string, any>) {
+  const game = body.game as keyof typeof GAMES;
+  const user = await player(game, body.access_token);
+  if (!user) return json({ error: "not signed in" }, 401);
+  const args: Record<string, unknown> = { p_user: user.id };
+  for (const k of SYNC_ARGS[game]) if (body.args?.[k] !== undefined) args[k] = body.args[k];
+  const { data, error } = await db().rpc(`discord_${game}_sync`, args);
+  if (error || !data) return json({ error: "couldn't save" }, 400);
+  return json({ player: user.id, log: data.log, base: data.base, settings: data.settings });
+}
+
 async function result(body: Record<string, any>) {
   const game = body.game as keyof typeof GAMES;
   const a = app(game);
-  // Who this is, and that the token was made for this game's app.
-  const me = await discord("/oauth2/@me", { auth: `Bearer ${body.access_token}` });
-  if (!me.ok || me.data?.application?.id !== a.id || !me.data?.user) return json({ error: "not signed in" }, 401);
-  const user = me.data.user;
+  const user = await player(game, body.access_token);
+  if (!user) return json({ error: "not signed in" }, 401);
   const r = checkResult(game, body.result);
   if (!r || typeof body.channel_id !== "string") return json({ error: "bad result" }, 400);
 

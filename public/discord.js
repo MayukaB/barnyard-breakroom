@@ -5,6 +5,9 @@
    - when the game ends (the game's "game:finished" event, or a finished game already saved on this
      device), sends window.GameResult() to the discord-activity function, which posts it in the channel
      (supabase/functions/discord-activity),
+   - once it knows who's playing, sets window.DiscordPlayer and fires "discord:player" on document, so the
+     game can keep the player's stats with their Discord account (DiscordPlayer.sync(args): the same
+     arguments the website sends to pecks_sync or biscuit_sync; it answers { data, error } like Supabase),
    - turns "Copy my result" into "Share in Discord", since the clipboard is often blocked in Discord,
    - opens links to other pages in the player's browser, because the Activity can only show its own game.
    The app ID is the first part of the address (<app id>.discordsays.com). The function is reached through
@@ -62,6 +65,21 @@ async function main() {
     return r.access_token;
   })();
   token.catch(failed);
+  token.then(
+    (access_token) => {
+      window.DiscordPlayer = Object.freeze({
+        async sync(args) {
+          try {
+            return { data: await post("stats", { game, access_token, args }), error: null };
+          } catch (error) {
+            return { data: null, error };
+          }
+        },
+      });
+      document.dispatchEvent(new Event("discord:player"));
+    },
+    () => {},
+  );
 
   let sent = null; // the date already sent, so a result is only sent once per page view
   async function report() {

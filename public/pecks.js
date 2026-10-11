@@ -574,12 +574,18 @@ function tickNext(){
 }
 
 /* ---------- Accounts: keep stats in the player's account ----------
-   Signing in and out is handled for the whole site by account.js (window.Account). This part only
-   syncs Hen Pecks: when a player signs in, this device's games go up and the merged copy comes back.
-   db.cloud holds that merged copy while signed in. */
+   On the website, signing in and out is handled for the whole site by account.js (window.Account).
+   Inside Discord there's no sign-in: discord.js says who's playing (window.DiscordPlayer), and their
+   stats are kept with their Discord account instead. This part only syncs Hen Pecks: this device's
+   games go up and the merged copy comes back. db.cloud holds that merged copy. */
 let syncChain = Promise.resolve();
 
 function renderAcct(){
+  if (window.InDiscord){
+    const note = $("acctNote"); note.hidden = !db.cloud;
+    note.textContent = "Saved with your Discord account, so these follow you to any device.";
+    return;
+  }
   if (!Account.enabled) return;
   const inAcct = !!db.cloud;
   $("acctBtnText").textContent = inAcct ? "Stats saved to your account" : "Sign in to save stats";
@@ -600,19 +606,28 @@ function cloudSync(opts = {}){
   return syncChain;
 }
 async function doSync({first = false} = {}){
-  const sb = Account.client, user = Account.user;
-  if (!sb || !user) return;
-  const uid = user.id, email = user.email;
-  const { data, error } = await sb.rpc("pecks_sync", {
+  const args = {
     p_log: db.log,
     p_base: db.base && db.base.played ? db.base : null,
     p_device: db.device,
     p_settings: db.settings,
     p_overwrite_settings: !first
-  });
-  if (!Account.user || Account.user.id !== uid) return;          // signed out while this was on its way
+  };
+  let uid, email, res;
+  if (window.InDiscord){
+    if (!window.DiscordPlayer) return;
+    res = await window.DiscordPlayer.sync(args);
+    uid = res.data && "discord:" + res.data.player;
+  } else {
+    const sb = Account.client, user = Account.user;
+    if (!sb || !user) return;
+    uid = user.id; email = user.email;
+    res = await sb.rpc("pecks_sync", args);
+    if (!Account.user || Account.user.id !== uid) return;        // signed out while this was on its way
+  }
+  const { data, error } = res;
   if (error || !data){
-    if (first) Account.message("Signed in, but your stats couldn’t be saved just now. They’re safe here and will be saved next time.", true);
+    if (first && !window.InDiscord) Account.message("Signed in, but your stats couldn’t be saved just now. They’re safe here and will be saved next time.", true);
     return;
   }
   db.cloud = { uid, email, base: data.base || {}, log: data.log || {} };
@@ -621,6 +636,13 @@ async function doSync({first = false} = {}){
 }
 
 function initCloud(){
+  if (window.InDiscord){
+    // The first sync with a Discord player lets their saved settings win, like a first sign-in.
+    const go = () => cloudSync({first: !(db.cloud && String(db.cloud.uid).startsWith("discord:"))});
+    renderAcct();
+    if (window.DiscordPlayer) go(); else document.addEventListener("discord:player", go, {once: true});
+    return;
+  }
   if (!Account.enabled) return;
   $("acctBtn").hidden = false;
   $("acctBtn").addEventListener("click", Account.open);
