@@ -9,7 +9,7 @@
 // /recap [date] shows a day's results in this channel, best first, like the morning recap (discord-recap),
 // for everyone in the channel. Without a date it's the latest day anyone finished here. Being a reply to a
 // command, it works even where the game's bot hasn't been added.
-import { app, db, discord, GAMES, isGame, json, message, plain, recap, recapDate } from "../_shared/discord.ts";
+import { app, db, discord, GAMES, isGame, json, message, plain, PLAY, recap, recapDate } from "../_shared/discord.ts";
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void };
 
@@ -80,7 +80,11 @@ async function announce(game: keyof typeof GAMES, appId: string, i: any) {
 
 // The reply to /recap: the day's recap for everyone in the channel, or a note only the asker sees.
 async function recapReply(game: keyof typeof GAMES, i: any) {
-  const only = (content: string) => ({ type: 4, data: { content, flags: 64 } }); // 64: only the asker sees it
+  // 64: only the asker sees it. play adds the Play button.
+  const only = (content: string, play = false) => ({
+    type: 4,
+    data: { content, flags: 64, ...(play ? { components: PLAY } : {}) },
+  });
   const channel = i.channel_id ?? i.channel?.id;
   const option = i.data?.options?.find((o: any) => o.name === "date")?.value;
   let date = recapDate(option);
@@ -96,7 +100,7 @@ async function recapReply(game: keyof typeof GAMES, i: any) {
       .order("date", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (!latest) return only(`Nobody has finished ${GAMES[game].name} in this channel yet. Press **Play** to be the first!`);
+    if (!latest) return only(`Nobody has finished ${GAMES[game].name} in this channel yet. Press **Play** to be the first!`, true);
     date = latest.date as string;
   }
   const { data: players, error } = await sb
@@ -107,5 +111,5 @@ async function recapReply(game: keyof typeof GAMES, i: any) {
     .eq("date", date);
   if (error) return only("The recap couldn't be loaded just now. Try again in a moment.");
   if (!players?.length) return only(`Nobody finished ${GAMES[game].name} in this channel on ${date}.`);
-  return { type: 4, data: message(recap(game, date, players)) };
+  return { type: 4, data: message(recap(game, date, players, null)) };
 }

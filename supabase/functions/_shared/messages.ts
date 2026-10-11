@@ -73,12 +73,19 @@ export function rank(r: Result) {
 
 /* ---------- Recaps ---------- */
 // A channel's results for one day, best first: the morning recap (discord-recap) and /recap
-// (discord-interactions). players are rows of discord_results. today is the date in UTC, so the
-// heading can say "Today's … so far" or "Yesterday's …".
+// (discord-interactions). players are rows of discord_results. today is the date in UTC, so the morning
+// recap's heading can say "Yesterday's …"; /recap passes null, since results are filed under each player's
+// own date and can be a day ahead of UTC or behind it, so "today" and "yesterday" would be guesses there.
+// The heading always shows the date.
 export type Player = { user_id: string; display_name: string; result: Result; created_at: string };
 const LIMIT = 1900; // Discord allows 2000 characters
 
-export function recap(game: Game, date: string, players: Player[], today = new Date().toISOString().slice(0, 10)) {
+export function recap(
+  game: Game,
+  date: string,
+  players: Player[],
+  today: string | null = new Date().toISOString().slice(0, 10),
+) {
   const g = GAMES[game];
   players = [...players].sort(
     (a, b) => rank(a.result) - rank(b.result) || Date.parse(a.created_at) - Date.parse(b.created_at),
@@ -89,7 +96,7 @@ export function recap(game: Game, date: string, players: Player[], today = new D
     day: "numeric",
     timeZone: "UTC",
   });
-  const yesterday = new Date(Date.parse(today + "T12:00:00Z") - 864e5).toISOString().slice(0, 10);
+  const yesterday = today && new Date(Date.parse(today + "T12:00:00Z") - 864e5).toISOString().slice(0, 10);
   const heading = date === today ? `Today's ${g.name} so far` : date === yesterday ? `Yesterday's ${g.name}` : g.name;
   const first = players[0].result;
   const no = first.game === "pecks" ? `#${first.no}` : `#${first.no} ${first.shape}`;
