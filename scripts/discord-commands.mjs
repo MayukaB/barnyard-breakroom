@@ -1,10 +1,11 @@
-// Sets up a game's Discord commands: the App Launcher's entry point ("Launch") and a slash command
-// (/pecks or /biscuit). Both are sent to the discord-interactions function (handler 1, APP_HANDLER), which
-// opens the Activity and posts "<name> is playing …", instead of Discord opening it by itself.
+// Sets up a game's Discord commands: the App Launcher's entry point ("Launch"), a slash command (/pecks or
+// /biscuit) and /recap. The first two are sent to the discord-interactions function (handler 1, APP_HANDLER),
+// which opens the Activity and posts "<name> is playing …", instead of Discord opening it by itself. /recap
+// [date] shows a day's results in the channel, also from discord-interactions.
 // Run once per app, and again after changing the commands below:
 //   DISCORD_APP_ID=... DISCORD_BOT_TOKEN=... node scripts/discord-commands.mjs pecks
 // (PowerShell: $env:DISCORD_APP_ID="..."; $env:DISCORD_BOT_TOKEN="..."; node scripts/discord-commands.mjs pecks)
-// It replaces the app's whole command list with these two.
+// It replaces the app's whole command list with these three.
 const GAMES = {
   pecks: "Play today’s Hen Pecks, the daily animal-expression puzzle",
   biscuit: "Play today’s Biscuit and Marshmallow, the daily word grid puzzle",
@@ -22,6 +23,13 @@ const where = { integration_types: [0, 1], contexts: [0, 1, 2] };
 const commands = [
   { name: "launch", description: GAMES[game], type: 4, handler: 1, ...where },
   { name: game, description: GAMES[game], type: 1, ...where },
+  {
+    name: "recap",
+    description: "Show a day's results in this channel, best first",
+    type: 1,
+    options: [{ name: "date", description: "A day, like 2026-10-05. Leave it out for the latest.", type: 3 }],
+    ...where,
+  },
 ];
 
 const r = await fetch(`https://discord.com/api/v10/applications/${appId}/commands`, {
@@ -34,4 +42,5 @@ if (!r.ok) {
   console.error(`Discord said ${r.status}:`, JSON.stringify(body, null, 2));
   process.exit(1);
 }
-console.log(`Set ${body.map((c) => (c.type === 4 ? "the entry point" : "/" + c.name)).join(" and ")} for ${game}.`);
+const names = body.map((c) => (c.type === 4 ? "the entry point" : "/" + c.name));
+console.log(`Set ${names.slice(0, -1).join(", ")} and ${names.at(-1)} for ${game}.`);
