@@ -19,7 +19,7 @@ const OUT = fileURLToPath(new URL("../public/biscuit-puzzles.js", import.meta.ur
 const START_DATE = "2026-09-30";
 // Par is the swaps this script needs to solve a board, plus about 30% more, plus this many to
 // spare, so par is in reach without a perfect run, and bigger boards get more room.
-const PAR_LEEWAY = 3;
+const PAR_LEEWAY = 0;
 const parFor = (swaps) => swaps + Math.round(swaps * 0.3) + PAR_LEEWAY;
 
 /* ---------- The weekly shapes ---------- */
@@ -359,7 +359,7 @@ function write(data) {
    scripts/make-biscuit.mjs (run it to add more; boards already here never change) and checked by
    npm run check. Each weekday has its own shape (k). A board is a list of rows: "." is a hole,
    1 is the kitten, 2 is the sheep, 3 is the ball of yarn.
-   s: the solution. b: how the board starts. par: the swaps it takes to solve, plus about 30% more, plus 3 to spare. */
+   s: the solution. b: how the board starts. par: the swaps it takes to solve, plus about 30% more. */
 window.BISCUIT_PUZZLES = {
   startDate: ${JSON.stringify(data.startDate)},
   list: [
