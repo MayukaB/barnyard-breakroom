@@ -67,7 +67,9 @@ jobs:
   browser:
     # Plays Hen Pecks in a real browser (desktop and phone sizes): winning, losing,
     # hard mode, reloading, the story page card and upgrading old saved data.
-    runs-on: ubuntu-latest
+    # Pinned: Playwright 1.56 can't install Chromium on ubuntu-latest (26.04). Move back to
+    # ubuntu-latest after upgrading @playwright/test to a release that supports 26.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
